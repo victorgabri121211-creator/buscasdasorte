@@ -266,6 +266,18 @@ document.getElementById('f-cep').addEventListener('input',function(){
   this.value=v;
 });
 
+function getApiKeyForEp(ep) {
+  if (ep.isNegativacao) return 'n_' + getNegativKey();
+  return 'main';
+}
+
+function getCached(path, suffix) {
+  const ck = cacheKey(path, suffix || 'main');
+  const cached = responseCache.get(ck);
+  if (cached && Date.now() - cached.ts < CACHE_TTL_MS) return cached.data;
+  return null;
+}
+
 function fetchComTimeout(ep){
   // Cache: main usa 'main' como sufixo; negativação usa a própria chave (pode mudar)
   const ckSuffix = ep.isNegativacao ? 'n_' + getNegativKey() : 'main';
@@ -328,25 +340,8 @@ function runSearchBatch(toSearch, meta) {
     dossieOpened = true;
   }
 
-  const onOneDone = (res) => {
-    done++;
-    allResults.push(res);
-    const el = document.getElementById('contador');
-    if (el) el.textContent = ` ${done} de ${total} consulta${total !== 1 ? 's' : ''}`;
-
-    const hasData = typeof isSearchSuccess === 'function' ? isSearchSuccess(res) : (res && res.ok);
-    if (hasData) {
-      if (typeof openDossie === 'function' && typeof dossieIsLoading === 'function' && dossieIsLoading()) {
-        openDossie([res], label, icon);
-      } else if (typeof appendDossieResult === 'function') {
-        appendDossieResult(res);
-      } else if (typeof openDossie === 'function') {
-        openDossie([res], label, icon);
-        dossieOpened = true;
-      }
-    }
-
-    if (done >= total) {
+  const finalize = () => {
+    try {
       const successList = allResults.filter(r =>
         typeof isSearchSuccess === 'function' ? isSearchSuccess(r) : (r && r.ok)
       );
@@ -359,7 +354,7 @@ function runSearchBatch(toSearch, meta) {
         openDossie(successList, label, icon);
       } else if (!okCount && allResults.length > 0 && typeof openDossie === 'function') {
         openDossie(allResults, label, icon);
-      } else if (!okCount && !dossieOpened) {
+      } else {
         const firstErr = allResults.find(r => r && !(
           typeof isSearchSuccess === 'function' ? isSearchSuccess(r) : r.ok
         ));
@@ -369,17 +364,47 @@ function runSearchBatch(toSearch, meta) {
         showError(msg);
         if (typeof closeDossie === 'function') closeDossie();
       }
+    } catch (e) {
+      if (typeof closeDossie === 'function') try { closeDossie(); } catch (_) {}
     }
   };
 
+  const onOneDone = (res) => {
+    done++;
+    allResults.push(res);
+
+    try {
+      const el = document.getElementById('contador');
+      if (el) el.textContent = ` ${done} de ${total} consulta${total !== 1 ? 's' : ''}`;
+
+      const hasData = typeof isSearchSuccess === 'function' ? isSearchSuccess(res) : (res && res.ok);
+      if (hasData) {
+        if (typeof openDossie === 'function' && typeof dossieIsLoading === 'function' && dossieIsLoading()) {
+          openDossie([res], label, icon);
+        } else if (typeof appendDossieResult === 'function') {
+          appendDossieResult(res);
+        } else if (typeof openDossie === 'function') {
+          openDossie([res], label, icon);
+          dossieOpened = true;
+        }
+      }
+    } catch (_) {}
+
+    if (done >= total) finalize();
+  };
+
   toSearch.forEach(ep => {
-    const apiKey = getApiKeyForEp(ep);
-    const cached = getCached(ep.path, apiKey);
-    if (cached) {
-      onOneDone(cached);
-      return;
+    try {
+      const apiKey = getApiKeyForEp(ep);
+      const cached = getCached(ep.path, apiKey);
+      if (cached) {
+        onOneDone(cached);
+        return;
+      }
+      fetchComTimeout(ep).then(onOneDone).catch(() => onOneDone({ ep, ok: false, status: 0, data: { error: 'Erro interno' } }));
+    } catch (_) {
+      onOneDone({ ep, ok: false, status: 0, data: { error: 'Erro ao iniciar consulta' } });
     }
-    fetchComTimeout(ep).then(onOneDone);
   });
 }
 

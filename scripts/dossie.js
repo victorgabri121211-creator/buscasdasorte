@@ -3,6 +3,7 @@ let dossieResults = [];
 let dossieStreamMeta = { label: '', icon: '' };
 let dossieLoading = false;
 let dossieRenderQueued = false;
+let dossieLoadingTimer = null;
 
 const CROSSHAIR_SVG = '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/></svg>';
 
@@ -406,6 +407,19 @@ function openDossieLoading(queryLabel, iconSvg) {
   dossieLoading = true;
   dossieStreamMeta = { label: queryLabel || 'Consulta', icon: iconSvg || '' };
 
+  clearTimeout(dossieLoadingTimer);
+  dossieLoadingTimer = setTimeout(() => {
+    if (!dossieLoading) return;
+    dossieLoading = false;
+    const content = document.getElementById('dossie-content');
+    const box = document.getElementById('dossie-box');
+    if (box) { box.classList.remove('dossie-box-loading'); box.classList.add('dossie-box-empty'); }
+    if (content) content.innerHTML =
+      '<div class="dossie-loading">' +
+        '<p style="color:#f87171">Tempo limite atingido. Verifique sua conexão e tente novamente.</p>' +
+      '</div>';
+  }, 30000);
+
   const now = new Date();
   document.getElementById('dossie-datetime').textContent =
     'Data: ' + now.toLocaleDateString('pt-BR') + ', ' + now.toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit'});
@@ -436,6 +450,7 @@ function dossieIsLoading() {
 }
 
 function openDossie(results, queryLabel, iconSvg) {
+  clearTimeout(dossieLoadingTimer);
   dossieResults = results.slice();
   dossieLoading = false;
   dossieStreamMeta = { label: queryLabel || 'Resultado da Consulta', icon: iconSvg || '' };
@@ -540,6 +555,7 @@ function buildResultPanel(result, idx) {
 }
 
 function closeDossie() {
+  clearTimeout(dossieLoadingTimer);
   dossieLoading = false;
   document.getElementById('dossie-overlay').classList.remove('open');
 }

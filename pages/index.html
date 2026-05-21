@@ -427,6 +427,10 @@
               <button type="button" class="admin-filter-btn active" data-filter="all">Todos</button>
               <button type="button" class="admin-filter-btn" data-filter="active">Ativos</button>
               <button type="button" class="admin-filter-btn" data-filter="inactive">Inativos</button>
+              <button type="button" id="admin-sync-btn" class="admin-sync-btn" onclick="adminSyncFromSupabase()">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+                Sincronizar
+              </button>
             </div>
           </div>
           <div id="admin-clients-table"></div>
@@ -694,19 +698,19 @@ document.getElementById('login-user').addEventListener('keydown',e=>{if(e.key===
 
 </script>
 
-<script src="../scripts/db.js"></script>
-<script src="../scripts/clovers.js"></script>
-<script src="../scripts/auth.js"></script>
-<script src="../scripts/api.js"></script>
-<script src="../scripts/modal.js"></script>
-<script src="../scripts/sales.js"></script>
-<script src="../scripts/plans.js"></script>
-<script src="../scripts/reseller-logins.js"></script>
-<script src="../scripts/modules.js"></script>
-<script src="../scripts/admin.js"></script>
-<script src="../scripts/dossie.js"></script>
-<script src="../scripts/negativ.js"></script>
-<script src="../scripts/utils.js"></script>
+<script src="../scripts/db.js?v=3"></script>
+<script src="../scripts/clovers.js?v=3"></script>
+<script src="../scripts/auth.js?v=3"></script>
+<script src="../scripts/api.js?v=3"></script>
+<script src="../scripts/modal.js?v=3"></script>
+<script src="../scripts/sales.js?v=3"></script>
+<script src="../scripts/plans.js?v=3"></script>
+<script src="../scripts/reseller-logins.js?v=3"></script>
+<script src="../scripts/modules.js?v=3"></script>
+<script src="../scripts/admin.js?v=3"></script>
+<script src="../scripts/dossie.js?v=3"></script>
+<script src="../scripts/negativ.js?v=3"></script>
+<script src="../scripts/utils.js?v=3"></script>
 <script>
 if (typeof bootAppAfterScripts === 'function') bootAppAfterScripts();
 if (typeof renderPills === 'function') renderPills();
