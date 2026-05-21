@@ -299,12 +299,18 @@ function fetchComTimeout(ep){
     }, FETCH_TIMEOUT_MS);
 
     fetch(PROXY + ep.path, { headers, signal: ctrl.signal })
-      .then(r => r.json().then(d => {
-        clearTimeout(t);
-        const res = { ep, ok: r.ok, status: r.status, data: d };
-        if (r.ok) responseCache.set(ck, { ts: Date.now(), data: res });
-        resolve(res);
-      }))
+      .then(r => {
+        r.json().then(d => {
+          clearTimeout(t);
+          const res = { ep, ok: r.ok, status: r.status, data: d };
+          if (r.ok) responseCache.set(ck, { ts: Date.now(), data: res });
+          resolve(res);
+        }).catch(() => {
+          // Resposta não é JSON válido (ex: página de erro do Cloudflare)
+          clearTimeout(t);
+          resolve({ ep, ok: false, status: r.status, data: { error: 'API indisponível (código ' + r.status + '). Verifique sua conexão ou tente mais tarde.' } });
+        });
+      })
       .catch(err => { clearTimeout(t); reject(err); });
   })
   .catch(err => ({
