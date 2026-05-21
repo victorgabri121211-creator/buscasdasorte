@@ -279,7 +279,6 @@ function getCached(path, suffix) {
 }
 
 function fetchComTimeout(ep){
-  // Cache: main usa 'main' como sufixo; negativação usa a própria chave (pode mudar)
   const ckSuffix = ep.isNegativacao ? 'n_' + getNegativKey() : 'main';
   const ck = cacheKey(ep.path, ckSuffix);
   const cached = responseCache.get(ck);
@@ -289,21 +288,34 @@ function fetchComTimeout(ep){
 
   const headers = getHeadersForEp(ep);
   const ctrl = new AbortController();
-  const t = setTimeout(() => ctrl.abort(), FETCH_TIMEOUT_MS);
 
-  const promise = fetch(PROXY + ep.path, { headers, signal: ctrl.signal })
-    .then(r => r.json().then(d => {
-      clearTimeout(t);
-      const res = { ep, ok: r.ok, status: r.status, data: d };
-      // Só cacheia respostas OK (erros devem poder ser retentados)
-      if (r.ok) responseCache.set(ck, { ts: Date.now(), data: res });
-      return res;
-    }))
-    .catch(err => {
-      clearTimeout(t);
-      return { ep, ok: false, status: 0, data: { error: err.name === 'AbortError' ? 'Timeout (' + (FETCH_TIMEOUT_MS/1000) + 's)' : err.message } };
-    })
-    .finally(() => { inflightRequests.delete(ck); });
+  // Wrapping em new Promise garante que o timer sempre resolve/rejeita a
+  // promise dentro de FETCH_TIMEOUT_MS, mesmo que ctrl.abort() não interrompa
+  // r.json() (leitura do body) em todos os navegadores.
+  const promise = new Promise((resolve, reject) => {
+    const t = setTimeout(() => {
+      ctrl.abort();
+      reject(new Error('RequestTimeout'));
+    }, FETCH_TIMEOUT_MS);
+
+    fetch(PROXY + ep.path, { headers, signal: ctrl.signal })
+      .then(r => r.json().then(d => {
+        clearTimeout(t);
+        const res = { ep, ok: r.ok, status: r.status, data: d };
+        if (r.ok) responseCache.set(ck, { ts: Date.now(), data: res });
+        resolve(res);
+      }))
+      .catch(err => { clearTimeout(t); reject(err); });
+  })
+  .catch(err => ({
+    ep,
+    ok: false,
+    status: 0,
+    data: { error: (err.name === 'AbortError' || err.message === 'RequestTimeout')
+      ? 'Timeout (' + (FETCH_TIMEOUT_MS / 1000) + 's)'
+      : (err.message || 'Erro na requisição') },
+  }))
+  .finally(() => { inflightRequests.delete(ck); });
 
   inflightRequests.set(ck, promise);
   return promise;
