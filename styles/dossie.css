@@ -1,0 +1,626 @@
+/* ===== DOSSIÊ DE RESULTADOS ===== */
+.dossie-overlay {
+  position: fixed; inset: 0; z-index: 300;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(24px) saturate(1.2);
+  -webkit-backdrop-filter: blur(24px) saturate(1.2);
+  display: flex; align-items: center; justify-content: center;
+  padding: 20px;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.28s;
+}
+
+.dossie-overlay.open { opacity: 1; pointer-events: all; }
+
+.dossie-box {
+  width: 100%; max-width: 820px;
+  max-height: 88vh;
+  background: rgba(4, 12, 8, 0.92);
+  border: 1px solid rgba(22, 101, 52, 0.35);
+  border-radius: 22px;
+  display: flex; flex-direction: column;
+  transform: translateY(24px) scale(0.96);
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  backdrop-filter: blur(36px) saturate(1.4);
+  -webkit-backdrop-filter: blur(36px) saturate(1.4);
+  box-shadow:
+    0 0 100px rgba(34, 197, 94, 0.1),
+    0 40px 100px rgba(0, 0, 0, 0.8),
+    0 0 0 1px rgba(34, 197, 94, 0.1) inset;
+  overflow: hidden;
+}
+
+.dossie-overlay.open .dossie-box { transform: translateY(0) scale(1); }
+
+.dossie-header {
+  display: flex; align-items: center; gap: 12px;
+  padding: 18px 22px;
+  border-bottom: 1px solid var(--border);
+  background: rgba(20, 83, 45, 0.15);
+  flex-shrink: 0;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.dossie-header-icon {
+  width: 36px; height: 36px; border-radius: 10px;
+  background: rgba(34, 197, 94, 0.15);
+  border: 1px solid var(--border2);
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 0 16px var(--green-glow-strong);
+}
+
+.dossie-header-icon svg {
+  width: 17px; height: 17px;
+  stroke: var(--green-bright); stroke-width: 1.8; fill: none;
+  stroke-linecap: round; stroke-linejoin: round;
+  filter: drop-shadow(0 0 4px rgba(74, 222, 128, 0.7));
+}
+
+.dossie-header-title {
+  font-size: 12px; font-weight: 700;
+  color: var(--green-bright);
+  letter-spacing: 0.1em; text-transform: uppercase;
+}
+
+.dossie-header-actions { display: flex; gap: 7px; margin-left: auto; }
+
+.dossie-btn-copy, .dossie-btn-txt, .dossie-btn-pdf {
+  padding: 7px 14px; border-radius: 9px; font-size: 12px;
+  font-weight: 600; cursor: pointer; font-family: inherit;
+  display: flex; align-items: center; gap: 5px;
+  transition: all 0.2s; border: 1px solid;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.dossie-btn-copy {
+  background: var(--green-dim);
+  color: var(--green-bright);
+  border-color: rgba(34, 197, 94, 0.3);
+}
+
+.dossie-btn-copy:hover {
+  background: rgba(34, 197, 94, 0.2);
+  box-shadow: 0 0 20px var(--green-glow);
+}
+
+.dossie-btn-txt {
+  background: rgba(0, 0, 0, 0.3);
+  color: var(--text2);
+  border-color: var(--border);
+}
+
+.dossie-btn-txt:hover {
+  background: rgba(0, 0, 0, 0.5);
+  color: var(--text);
+  border-color: var(--border2);
+}
+
+.dossie-btn-pdf {
+  background: var(--danger-bg);
+  color: var(--danger);
+  border-color: rgba(248, 113, 113, 0.25);
+}
+
+.dossie-btn-pdf:hover { background: rgba(248, 113, 113, 0.15); }
+
+.dossie-close {
+  width: 30px; height: 30px; border-radius: 50%;
+  background: rgba(0, 0, 0, 0.4); border: 1px solid var(--border);
+  color: var(--text2); font-size: 14px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.2s; margin-left: 6px;
+}
+
+.dossie-close:hover {
+  background: var(--danger-bg);
+  border-color: rgba(248, 113, 113, 0.3);
+  color: var(--danger);
+}
+
+.dossie-body { overflow-y: auto; flex: 1; padding: 22px; }
+
+.dossie-hero {
+  text-align: center;
+  padding: 16px 12px 22px;
+  border-bottom: 1px solid rgba(20, 83, 45, 0.35);
+  margin-bottom: 22px;
+  border-radius: 12px;
+  transition: background 0.3s ease, box-shadow 0.3s ease;
+}
+
+.dossie-hero:hover {
+  background: rgba(20, 83, 45, 0.12);
+  box-shadow: 0 0 32px rgba(22, 101, 52, 0.15);
+}
+
+.dossie-hero-title {
+  display: inline-block;
+  font-size: 15px;
+  font-weight: 800;
+  color: #166534;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  text-shadow:
+    0 0 18px rgba(34, 197, 94, 0.55),
+    0 0 36px rgba(22, 101, 52, 0.45),
+    0 0 8px rgba(74, 222, 128, 0.35);
+  filter: blur(0.2px);
+  transition: color 0.25s ease, text-shadow 0.25s ease, transform 0.25s ease, filter 0.25s ease;
+  cursor: default;
+}
+
+.dossie-hero:hover .dossie-hero-title {
+  color: #22c55e;
+  filter: blur(0);
+  transform: scale(1.02);
+  text-shadow:
+    0 0 22px rgba(74, 222, 128, 0.75),
+    0 0 44px rgba(34, 197, 94, 0.5),
+    0 0 12px rgba(22, 163, 74, 0.6);
+}
+
+.dossie-box-has-data {
+  border-color: rgba(22, 101, 52, 0.35);
+  box-shadow:
+    0 0 80px rgba(34, 197, 94, 0.08),
+    0 40px 100px rgba(0, 0, 0, 0.85),
+    0 0 0 1px rgba(22, 101, 52, 0.15) inset;
+}
+
+.dossie-hero-divider,
+.dossie-box-has-data .dossie-hero-divider {
+  width: 200px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(22, 101, 52, 0.85), transparent);
+  margin: 12px auto 14px;
+  box-shadow: 0 0 12px rgba(34, 197, 94, 0.35);
+  transition: width 0.3s ease, box-shadow 0.3s ease;
+}
+
+.dossie-hero:hover .dossie-hero-divider {
+  width: 240px;
+  box-shadow: 0 0 18px rgba(74, 222, 128, 0.45);
+}
+
+.dossie-hero-meta {
+  font-size: 12px; color: var(--text2);
+  line-height: 1.8;
+}
+
+.dossie-hero-meta strong { color: var(--green); font-weight: 600; }
+
+/* Bloco ALVO — estilo Dossiê Tático Sheik (PDF) */
+.dossie-alvo-block {
+  margin-bottom: 28px;
+  padding-bottom: 28px;
+  border-bottom: 1px solid rgba(22, 101, 52, 0.15);
+}
+
+.dossie-alvo-block:last-child {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.dossie-tactical-panel {
+  border: 1px dashed rgba(22, 101, 52, 0.35);
+  border-radius: 14px;
+  padding: 18px 16px 16px;
+  background: rgba(4, 14, 10, 0.55);
+}
+
+.dossie-source-inner,
+.dossie-source-inner-primary {
+  border: 1px solid rgba(34, 197, 94, 0.22);
+  border-radius: 12px;
+  padding: 14px;
+  background: rgba(4, 12, 8, 0.65);
+}
+
+.dossie-source-inner-primary {
+  margin-top: 4px;
+}
+
+.dossie-source-section {
+  margin-top: 18px;
+}
+
+.dossie-source-section:first-of-type {
+  margin-top: 14px;
+}
+
+.dossie-source-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.dossie-source-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  color: #4ade80;
+  flex-shrink: 0;
+}
+
+.dossie-source-icon svg {
+  width: 16px;
+  height: 16px;
+  stroke: currentColor;
+  stroke-width: 1.75;
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.dossie-source-title {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #4ade80;
+  text-shadow: 0 0 16px rgba(34, 197, 94, 0.35);
+}
+
+.dossie-source-section-muted .dossie-source-title {
+  color: rgba(148, 163, 184, 0.8);
+}
+
+.dossie-source-section-muted .dossie-source-inner {
+  opacity: 0.65;
+}
+
+.dossie-source-inner-muted {
+  opacity: 0.65;
+  margin-top: 16px;
+}
+
+.dossie-section-head {
+  margin-bottom: 16px;
+}
+
+.dossie-section-head-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.dossie-section-icon {
+  width: 22px; height: 22px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  color: var(--green-bright);
+  filter: drop-shadow(0 0 6px rgba(74, 222, 128, 0.5));
+}
+
+.dossie-section-icon svg {
+  width: 18px; height: 18px;
+  stroke: currentColor; stroke-width: 2;
+  fill: none; stroke-linecap: round;
+}
+
+.dossie-section-title {
+  font-size: 13px; font-weight: 800;
+  color: #4ade80;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  text-shadow: 0 0 20px rgba(74, 222, 128, 0.35);
+}
+
+.dossie-section-line {
+  height: 1px;
+  width: 100%;
+  max-width: 220px;
+  background: linear-gradient(90deg, rgba(34, 197, 94, 0.7), rgba(34, 197, 94, 0.15), transparent);
+  box-shadow: 0 0 8px rgba(34, 197, 94, 0.2);
+}
+
+.dossie-section-sub {
+  font-size: 10px; font-weight: 600;
+  color: rgba(107, 158, 122, 0.65);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin: 22px 0 12px;
+  padding-top: 18px;
+  border-top: 1px dashed rgba(34, 197, 94, 0.12);
+}
+
+.dossie-section { margin-bottom: 0; }
+
+.dossie-grid,
+.dossie-tactical-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+
+@media (max-width: 520px) {
+  .dossie-grid,
+  .dossie-tactical-grid { grid-template-columns: 1fr; }
+}
+
+.dossie-field,
+.dossie-tactical-cell {
+  background: rgba(4, 14, 10, 0.75);
+  border: 1px solid rgba(34, 197, 94, 0.18);
+  border-radius: 10px;
+  padding: 12px 14px;
+  min-height: 68px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.dossie-field:hover,
+.dossie-tactical-cell:hover {
+  border-color: rgba(74, 222, 128, 0.4);
+  box-shadow: 0 0 20px rgba(34, 197, 94, 0.1);
+}
+
+.dossie-field-key {
+  font-size: 10px; font-weight: 700;
+  color: #4ade80;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 8px;
+  line-height: 1.2;
+}
+
+.dossie-field-val {
+  font-size: 14px;
+  color: #f1f5f9;
+  font-weight: 600;
+  word-break: break-word;
+  line-height: 1.4;
+  letter-spacing: 0.01em;
+}
+
+.dossie-field-val.null-val {
+  color: var(--text3);
+  font-style: italic;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.dossie-field-photo-cell {
+  grid-column: 1 / -1;
+}
+
+.dossie-field-photo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 0 4px;
+  min-height: 0;
+}
+
+.dossie-photo-img {
+  max-width: 100%;
+  max-height: 280px;
+  width: auto;
+  height: auto;
+  border-radius: 10px;
+  border: 1px solid rgba(34, 197, 94, 0.25);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.45);
+  object-fit: contain;
+  background: rgba(0, 0, 0, 0.35);
+}
+
+.dossie-grid-muted .dossie-field {
+  opacity: 0.55;
+  min-height: 64px;
+}
+
+.dossie-content-sep {
+  height: 1px;
+  margin: 8px 0 20px;
+  background: linear-gradient(90deg, transparent, rgba(34, 197, 94, 0.2), transparent);
+}
+
+.dossie-raw {
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--border);
+  border-radius: 11px; padding: 16px;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.dossie-raw pre {
+  font-family: 'SF Mono', 'Fira Code', 'Courier New', monospace;
+  font-size: 11.5px; color: rgba(34, 197, 94, 0.65);
+  line-height: 1.75; white-space: pre-wrap; word-break: break-all;
+}
+
+.dossie-footer {
+  padding: 16px 22px;
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.dossie-btn-nova {
+  width: 100%; padding: 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(34, 197, 94, 0.3);
+  background: var(--green-dim);
+  color: var(--green-bright);
+  font-size: 13px; font-weight: 700; font-family: inherit;
+  letter-spacing: 0.1em; text-transform: uppercase;
+  cursor: pointer; transition: all 0.22s;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.dossie-btn-nova:hover {
+  background: rgba(34, 197, 94, 0.18);
+  box-shadow: 0 0 28px rgba(34, 197, 94, 0.15);
+  transform: translateY(-1px);
+}
+
+.dossie-tabs { display: flex; gap: 7px; flex-wrap: wrap; margin-bottom: 18px; }
+
+.dossie-tab {
+  padding: 6px 15px; border-radius: 20px; font-size: 12px;
+  cursor: pointer; border: 1px solid var(--border);
+  background: rgba(0, 0, 0, 0.3);
+  color: var(--text2);
+  transition: all 0.2s; font-family: inherit; font-weight: 500;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.dossie-tab.active {
+  background: rgba(34, 197, 94, 0.15);
+  color: var(--green-bright);
+  border-color: rgba(34, 197, 94, 0.35);
+  box-shadow: 0 0 16px var(--green-glow);
+}
+
+.dossie-tab-panel { display: none; }
+.dossie-tab-panel.active { display: block; }
+
+/* Resultados empilhados — todas as fontes, uma abaixo da outra */
+.dossie-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.dossie-stack-panel {
+  display: block;
+}
+
+.dossie-stack-panel .dossie-alvo-block {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+/* Estado vazio — consulta sem retorno */
+.dossie-box-empty {
+  border-color: rgba(22, 101, 52, 0.3);
+  box-shadow:
+    0 0 80px rgba(34, 197, 94, 0.06),
+    0 40px 100px rgba(0, 0, 0, 0.8),
+    0 0 0 1px rgba(22, 101, 52, 0.12) inset;
+}
+
+.dossie-box-empty .dossie-hero-title {
+  color: #166534;
+  text-shadow:
+    0 0 18px rgba(34, 197, 94, 0.55),
+    0 0 36px rgba(22, 101, 52, 0.45);
+}
+
+.dossie-box-empty .dossie-hero:hover .dossie-hero-title {
+  color: #22c55e;
+}
+
+.dossie-empty {
+  padding: 8px 0 16px;
+}
+
+.dossie-empty-panel {
+  border: 1px solid rgba(22, 101, 52, 0.22);
+  border-radius: 14px;
+  background: rgba(0, 0, 0, 0.35);
+  padding: 36px 28px;
+  min-height: 160px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dossie-empty-status {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  text-align: center;
+  max-width: 420px;
+}
+
+.dossie-empty-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  color: #f59e0b;
+  filter: drop-shadow(0 0 12px rgba(245, 158, 11, 0.35));
+}
+
+.dossie-empty-icon svg {
+  width: 44px;
+  height: 44px;
+}
+
+.dossie-empty-msg {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.55;
+  color: #fbbf24;
+  letter-spacing: 0.01em;
+}
+
+.dossie-empty-error .dossie-empty-icon {
+  color: #f87171;
+  filter: drop-shadow(0 0 12px rgba(248, 113, 113, 0.35));
+}
+
+.dossie-empty-error .dossie-empty-msg {
+  color: #fca5a5;
+}
+
+.dossie-box-empty .dossie-btn-nova {
+  border-color: rgba(255, 255, 255, 0.12);
+  background: transparent;
+  color: rgba(209, 213, 219, 0.9);
+  font-weight: 600;
+  letter-spacing: 0.14em;
+}
+
+.dossie-box-empty .dossie-btn-nova:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.2);
+  color: #f3f4f6;
+  box-shadow: none;
+  transform: none;
+}
+
+.dossie-box-loading {
+  border-color: rgba(34, 197, 94, 0.25);
+}
+
+.dossie-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  min-height: 220px;
+  padding: 40px 24px;
+  text-align: center;
+}
+
+.dossie-loading p {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--green-bright);
+  letter-spacing: 0.02em;
+}
+
+.dossie-loading-hint {
+  font-size: 12px;
+  color: var(--text2);
+  max-width: 280px;
+  line-height: 1.45;
+}

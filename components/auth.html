@@ -1,0 +1,74 @@
+<!-- Login e Registro -->
+<div id="auth-screen">
+  <div class="auth-cursor-glow" id="auth-cursor-glow" aria-hidden="true"></div>
+  <div class="auth-card" id="auth-card">
+    <div class="auth-card-content">
+    <div class="auth-logo">
+      <div class="brand-mark">
+        <span class="brand-logo-icon" aria-hidden="true"></span>
+        <div class="brand">Buscas<span class="dot">Dasorte</span></div>
+      </div>
+      <div class="tagline">Acesse sua conta para continuar</div>
+    </div>
+
+    <div class="auth-tabs">
+      <div class="auth-tab active" onclick="switchTab('login')">Entrar</div>
+      <div class="auth-tab" onclick="switchTab('register')">Registrar</div>
+    </div>
+
+    <div class="auth-form active" id="form-login">
+      <div class="form-group">
+        <label>Usuário</label>
+        <div class="input-wrap">
+          <input type="text" id="login-user" placeholder="Seu usuário" autocomplete="username"/>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Senha</label>
+        <div class="input-wrap">
+          <input type="password" id="login-pass" placeholder="Senha de acesso" autocomplete="current-password"/>
+          <button class="toggle-pass" type="button" onclick="togglePassVis('login-pass',this)" tabindex="-1">
+            <svg id="eye-login" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="auth-msg" id="login-msg"></div>
+      <button class="btn-primary" onclick="doLogin()">Entrar</button>
+      <div style="text-align:center;margin-top:10px">
+        <span onclick="clearSession();location.reload()" style="font-size:12px;color:rgba(255,255,255,0.18);cursor:pointer;text-decoration:underline;text-underline-offset:2px">Problemas para entrar? Limpar sessão</span>
+      </div>
+    </div>
+
+    <div class="auth-form" id="form-register">
+      <div class="form-group">
+        <label>Usuário</label>
+        <div class="input-wrap">
+          <input type="text" id="reg-user" placeholder="Escolha um nome de usuário" autocomplete="off"/>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Senha</label>
+        <div class="input-wrap">
+          <input type="password" id="reg-pass" placeholder="Mínimo 6 caracteres" autocomplete="new-password"/>
+          <button class="toggle-pass" type="button" onclick="togglePassVis('reg-pass',this)" tabindex="-1">
+            <svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Confirmar senha</label>
+        <div class="input-wrap">
+          <input type="password" id="reg-pass2" placeholder="Repita a senha" autocomplete="new-password"/>
+          <button class="toggle-pass" type="button" onclick="togglePassVis('reg-pass2',this)" tabindex="-1">
+            <svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="auth-msg" id="reg-msg"></div>
+      <button class="btn-primary" onclick="doRegister()">Criar conta</button>
+    </div>
+    </div>
+    <div class="auth-card-spotlight" id="auth-card-spotlight" aria-hidden="true"></div>
+    <div class="auth-card-border-glow" aria-hidden="true"></div>
+  </div>
+</div>

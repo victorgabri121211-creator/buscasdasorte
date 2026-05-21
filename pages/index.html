@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>BuscasDasorte</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Nunito:wght@500;600;700;800&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="../styles/variables.css"/>
+<link rel="stylesheet" href="../styles/effects.css"/>
+<link rel="stylesheet" href="../styles/auth.css"/>
+<link rel="stylesheet" href="../styles/layout.css"/>
+<link rel="stylesheet" href="../styles/modal.css"/>
+<link rel="stylesheet" href="../styles/dossie.css"/>
+<link rel="stylesheet" href="../styles/negativ.css"/>
+<link rel="stylesheet" href="../styles/modules.css"/>
+<link rel="stylesheet" href="../styles/admin.css"/>
+</head>
+<body>
+
+<div id="bg-clovers" aria-hidden="true"></div>
+
+<!-- AUTH -->
+<div id="auth-screen">
+  <div class="auth-cursor-glow" id="auth-cursor-glow" aria-hidden="true"></div>
+  <div class="auth-card" id="auth-card">
+    <div class="auth-card-content">
+    <div class="auth-logo">
+      <div class="brand-mark">
+        <span class="brand-logo-icon" aria-hidden="true"></span>
+        <div class="brand">Buscas<span class="dot">Dasorte</span></div>
+      </div>
+      <div class="tagline">Acesse sua conta para continuar</div>
+    </div>
+
+    <div class="auth-tabs">
+      <div class="auth-tab active" onclick="switchTab('login')">Entrar</div>
+      <div class="auth-tab" onclick="switchTab('register')">Registrar</div>
+    </div>
+
+    <div class="auth-form active" id="form-login">
+      <div class="form-group">
+        <label>Usuário</label>
+        <div class="input-wrap">
+          <input type="text" id="login-user" placeholder="Seu usuário" autocomplete="username"/>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Senha</label>
+        <div class="input-wrap">
+          <input type="password" id="login-pass" placeholder="Senha de acesso" autocomplete="current-password"/>
+          <button class="toggle-pass" type="button" onclick="togglePassVis('login-pass',this)" tabindex="-1">
+            <svg id="eye-login" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="auth-msg" id="login-msg"></div>
+      <button class="btn-primary" onclick="doLogin()">Entrar</button>
+      <div style="text-align:center;margin-top:10px">
+        <span onclick="clearSession();location.reload()" style="font-size:12px;color:rgba(255,255,255,0.18);cursor:pointer;text-decoration:underline;text-underline-offset:2px">Problemas para entrar? Limpar sessão</span>
+      </div>
+    </div>
+
+    <div class="auth-form" id="form-register">
+      <div class="form-group">
+        <label>Usuário</label>
+        <div class="input-wrap">
+          <input type="text" id="reg-user" placeholder="Escolha um nome de usuário" autocomplete="off"/>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Senha</label>
+        <div class="input-wrap">
+          <input type="password" id="reg-pass" placeholder="Mínimo 6 caracteres" autocomplete="new-password"/>
+          <button class="toggle-pass" type="button" onclick="togglePassVis('reg-pass',this)" tabindex="-1">
+            <svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Confirmar senha</label>
+        <div class="input-wrap">
+          <input type="password" id="reg-pass2" placeholder="Repita a senha" autocomplete="new-password"/>
+          <button class="toggle-pass" type="button" onclick="togglePassVis('reg-pass2',this)" tabindex="-1">
+            <svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="auth-msg" id="reg-msg"></div>
+      <button class="btn-primary" onclick="doRegister()">Criar conta</button>
+    </div>
+    </div>
+    <div class="auth-card-spotlight" id="auth-card-spotlight" aria-hidden="true"></div>
+    <div class="auth-card-border-glow" aria-hidden="true"></div>
+  </div>
+</div>
+
+<!-- DOSSIÊ DE RESULTADOS -->
+<div class="dossie-overlay" id="dossie-overlay">
+    <div class="dossie-box" id="dossie-box">
+      <div class="dossie-header">
+        <div class="dossie-header-icon">
+          <svg id="dossie-hdr-icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        </div>
+        <div class="dossie-header-title" id="dossie-hdr-title">Resultado da Consulta</div>
+        <div class="dossie-header-actions">
+          <button class="dossie-btn-copy" onclick="dossieAction('copy')">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            Copiar
+          </button>
+          <button class="dossie-btn-txt" onclick="dossieAction('txt')">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            TXT
+          </button>
+          <button class="dossie-btn-pdf" onclick="dossieAction('pdf')">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+            PDF
+          </button>
+        </div>
+        <button class="dossie-close" onclick="closeDossie()">&#x2715;</button>
+      </div>
+
+      <div class="dossie-body" id="dossie-body">
+        <div class="dossie-hero">
+          <div class="dossie-hero-title">Resultados da busca</div>
+          <div class="dossie-hero-divider"></div>
+          <div class="dossie-hero-meta">
+            Operação autorizada por: <strong>BuscasDasorte</strong><br/>
+            <span id="dossie-datetime"></span>
+          </div>
+        </div>
+        <div id="dossie-tabs-nav" class="dossie-tabs"></div>
+        <div id="dossie-content"></div>
+      </div>
+
+      <div class="dossie-footer">
+        <button class="dossie-btn-nova" onclick="closeDossie()">Fazer nova consulta</button>
+      </div>
+    </div>
+  </div>
+
+<!-- SETTINGS: NEGATIVACAO KEY -->
+<div class="modal-overlay" id="negativ-overlay" onclick="if(event.target===this)closeNegativSettings()">
+    <div class="modal-box" id="negativ-box" style="max-width:400px">
+      <button class="modal-close" onclick="closeNegativSettings()">&#x2715;</button>
+      <span class="modal-top-line" style="background:linear-gradient(90deg,transparent,rgba(255,159,10,0.6),transparent)"></span>
+      <div class="modal-icon-wrap" style="background:rgba(255,159,10,0.08);border-color:rgba(255,159,10,0.2);box-shadow:0 0 20px rgba(255,159,10,0.12)">
+        <svg viewBox="0 0 24 24" style="stroke:#ff9f0a;filter:drop-shadow(0 0 4px rgba(255,159,10,0.6))"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      </div>
+      <div class="modal-title">Chave de Negativação</div>
+      <div class="modal-sub">Cole abaixo a API Key com cargo <strong style="color:#ff9f0a">negativacao</strong> para habilitar esta consulta.</div>
+      <div class="negativ-key-wrap">
+        <div class="negativ-key-label">X-Api-Key (negativação)</div>
+        <input class="negativ-key-input" id="negativ-key-input" type="text" placeholder="fc_..." autocomplete="off" spellcheck="false"/>
+        <button class="negativ-save-btn" onclick="saveNegativKey()">Salvar chave</button>
+      </div>
+      <div class="auth-msg" id="negativ-msg" style="margin-top:10px"></div>
+    </div>
+  </div>
+
+<!-- MODAL DE CONSULTA -->
+
+
+<!-- Modal: login criado (painel revendedor) -->
+<div class="modal-overlay" id="reseller-login-created-overlay" onclick="if(event.target===this)closeResellerLoginCreatedModal()">
+  <div class="modal-box reseller-login-created-box">
+    <button type="button" class="modal-close" onclick="closeResellerLoginCreatedModal()">&#x2715;</button>
+    <span class="modal-top-line reseller-login-created-line"></span>
+    <h3 class="reseller-login-created-title">Acesso criado</h3>
+    <p class="reseller-login-created-lead">Repasse os dados abaixo ao seu cliente:</p>
+    <div class="reseller-login-created-card">
+      <div class="reseller-login-created-row">
+        <span class="reseller-login-created-label">NOME:</span>
+        <span class="reseller-login-created-value" id="reseller-created-name">—</span>
+      </div>
+      <div class="reseller-login-created-row">
+        <span class="reseller-login-created-label">SENHA:</span>
+        <span class="reseller-login-created-value" id="reseller-created-pass">—</span>
+      </div>
+      <div class="reseller-login-created-row">
+        <span class="reseller-login-created-label">DIAS DE PUXADA:</span>
+        <span class="reseller-login-created-value" id="reseller-created-days">—</span>
+      </div>
+    </div>
+    <button type="button" class="reseller-login-created-copy" id="reseller-created-copy-btn" onclick="copyResellerLoginCreated()">Copiar dados</button>
+    <button type="button" class="modal-btn-cancel reseller-login-created-close" onclick="closeResellerLoginCreatedModal()">Fechar</button>
+  </div>
+</div>
+
+<!-- Modal: adicionar créditos ao revendedor (admin) -->
+<div class="modal-overlay" id="admin-reseller-credits-overlay" onclick="if(event.target===this)closeAdminResellerCreditsModal()">
+  <div class="modal-box admin-reseller-credits-box">
+    <button type="button" class="modal-close" onclick="closeAdminResellerCreditsModal()">&#x2715;</button>
+    <span class="modal-top-line" style="background:linear-gradient(90deg,transparent,rgba(74,222,128,0.55),transparent)"></span>
+    <h3 class="admin-reseller-credits-title" id="admin-reseller-credits-title">Adicionar créditos</h3>
+    <p class="admin-reseller-credits-current" id="admin-reseller-credits-current"></p>
+    <form class="admin-reseller-credits-form" id="admin-reseller-credits-form">
+      <div class="field-group">
+        <label class="field-label" for="admin-reseller-credits-amount">Quantidade de créditos (logins)</label>
+        <input class="field-input" type="number" id="admin-reseller-credits-amount" min="1" max="9999" value="10" required/>
+      </div>
+      <div class="admin-credits-quick" id="admin-reseller-credits-quick">
+        <button type="button" class="admin-credits-quick-btn" data-amount="5">+5</button>
+        <button type="button" class="admin-credits-quick-btn" data-amount="10">+10</button>
+        <button type="button" class="admin-credits-quick-btn" data-amount="20">+20</button>
+        <button type="button" class="admin-credits-quick-btn" data-amount="30">+30</button>
+        <button type="button" class="admin-credits-quick-btn" data-amount="50">+50</button>
+      </div>
+      <button type="submit" class="admin-reseller-credits-submit">Adicionar créditos</button>
+      <p class="admin-reseller-credits-msg" id="admin-reseller-credits-msg"></p>
+    </form>
+    <button type="button" class="modal-btn-cancel admin-reseller-credits-close" onclick="closeAdminResellerCreditsModal()">Fechar</button>
+  </div>
+</div>
+
+<!-- Modal: logins do revendedor (admin) -->
+<div class="modal-overlay" id="admin-reseller-logins-overlay" onclick="if(event.target===this)closeAdminResellerLoginsModal()">
+  <div class="modal-box admin-reseller-logins-box">
+    <button type="button" class="modal-close" onclick="closeAdminResellerLoginsModal()">&#x2715;</button>
+    <span class="modal-top-line" style="background:linear-gradient(90deg,transparent,rgba(251,146,60,0.55),transparent)"></span>
+    <h3 class="admin-reseller-logins-title" id="admin-reseller-logins-title">Logins do revendedor</h3>
+    <p class="admin-reseller-logins-credits" id="admin-reseller-logins-credits"></p>
+    <div id="admin-reseller-logins-body"></div>
+    <button type="button" class="modal-btn-cancel admin-reseller-logins-close" onclick="closeAdminResellerLoginsModal()">Fechar</button>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <div class="topbar">
+    <div class="menu-btn" id="menu-btn" onclick="toggleSidebar()">
+      <span></span><span></span><span></span>
+    </div>
+    <div class="topbar-brand" onclick="showAppView('modules')" title="Módulos">Buscas<span>Dasorte</span></div>
+    <div class="topbar-right">
+      <div class="user-chip user-chip--reveal" id="topbar-username" title="">
+        <span class="user-chip-avatar" aria-hidden="true"></span>
+        <span class="user-chip-name"></span>
+      </div>
+    </div>
+  </div>
+
+
+
+  <!-- MODAL DE CONSULTA -->
+  <div class="modal-overlay" id="modal-overlay" onclick="closeModalOutside(event)">
+    <div class="modal-box" id="modal-box">
+      <button class="modal-close" onclick="closeModal()">&#x2715;</button>
+      <span class="modal-top-line"></span>
+      <div class="modal-icon-wrap">
+        <svg id="modal-icon" viewBox="0 0 24 24"></svg>
+      </div>
+      <div class="modal-title" id="modal-title">Consulta</div>
+      <div class="modal-sub" id="modal-sub">Preencha o campo abaixo para buscar</div>
+      <div class="modal-input-wrap">
+        <input class="modal-input" id="modal-input" type="text" placeholder="Digite aqui..." autocomplete="off"/>
+      </div>
+      <button class="modal-btn-search" onclick="runModalSearch()">Buscar</button>
+      <button class="modal-btn-cancel" onclick="closeModal()">Cancelar</button>
+    </div>
+  </div>
+
+  <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
+
+  <div class="sidebar" id="sidebar">
+    <div class="sidebar-body">
+    <div class="sidebar-section" id="sidebar-user-menu">
+      <div class="sidebar-section-title">Menu</div>
+      <div class="sidebar-item active" id="nav-modulos" onclick="showAppView('modules');closeSidebar()">
+        <div class="s-icon"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></div>Módulos
+      </div>
+      <div class="sidebar-item sidebar-item-orange" id="nav-revendedor" hidden aria-hidden="true" onclick="openResellerPanel();closeSidebar()">
+        <div class="s-icon" style="background:rgba(251,146,60,0.12);border-color:rgba(251,146,60,0.25)"><svg viewBox="0 0 24 24" style="stroke:#fb923c"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg></div>Revendedor
+      </div>
+      <div class="sidebar-item sidebar-item-green" id="nav-loja" onclick="renderPlansGrid();showAppView('loja');closeSidebar()">
+        <div class="s-icon" style="background:rgba(34,197,94,0.12);border-color:rgba(34,197,94,0.25)"><svg viewBox="0 0 24 24" style="stroke:#4ade80"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><line x1="9" y1="22" x2="9" y2="12"/><line x1="15" y1="22" x2="15" y2="12"/></svg></div>Loja de Planos
+      </div>
+    </div>
+    <div class="sidebar-section" id="sidebar-admin-menu" hidden>
+      <div class="sidebar-section-title">Administração</div>
+      <div class="sidebar-item sidebar-item-dash active" id="nav-admin-dashboard" onclick="showAppView('admin-dashboard');closeSidebar()">
+        <div class="s-icon"><svg viewBox="0 0 24 24"><path d="M3 3v8h8V3z"/><path d="M13 3v4h8V3z"/><path d="M13 9v12h8V9z"/><path d="M3 13v8h8v-8z"/></svg></div>Dashboard
+      </div>
+      <div class="sidebar-item sidebar-item-clients" id="nav-admin-clientes" onclick="showAppView('admin-clientes');closeSidebar()">
+        <div class="s-icon"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>Clientes
+      </div>
+      <div class="sidebar-item sidebar-item-resellers" id="nav-admin-revendedores" onclick="showAppView('admin-revendedores');closeSidebar()">
+        <div class="s-icon"><svg viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg></div>Revendedores
+      </div>
+    </div>
+    <div id="sidebar-consultas-wrap">
+    <div class="sidebar-divider sidebar-consultas-divider"></div>
+    <div id="sidebar-consultas-list" class="sidebar-consultas-topics"></div>
+    <div class="sidebar-divider sidebar-consultas-divider"></div>
+    <div class="sidebar-settings-btn sidebar-consultas-section" id="sidebar-negativ-settings" onclick="openNegativSettings();closeSidebar()">
+      <div class="s-icon" style="background:rgba(255,255,255,0.04);border-color:rgba(255,255,255,0.07);box-shadow:none"><svg viewBox="0 0 24 24" style="stroke:rgba(255,255,255,0.3);filter:none"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></div>
+      Configurar chave de negativação
+    </div>
+    </div>
+    </div>
+    <div class="sidebar-user-footer" id="sidebar-user-footer">
+      <div class="sidebar-user-footer-profile">
+        <div class="sidebar-user-avatar sidebar-user-avatar-clover" id="sidebar-user-avatar" aria-hidden="true"></div>
+        <div class="sidebar-user-meta">
+          <span class="sidebar-user-name" id="sidebar-user-name">Usuário</span>
+          <span class="sidebar-user-access sidebar-user-access-unlimited" id="sidebar-user-access">
+            <span class="sidebar-user-badge"><span class="sidebar-user-badge-text">Puxadas ilimitadas</span></span>
+          </span>
+        </div>
+      </div>
+      <button type="button" class="sidebar-user-logout" id="sidebar-user-logout" onclick="doLogout();closeSidebar()" title="Sair da conta" aria-label="Sair da conta">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <div class="main">
+
+    <div id="view-modules" class="app-view active">
+      <div class="modules-hub">
+        <div id="modules-plan-active" class="modules-plan-active" hidden></div>
+        <div id="modules-plan-banner" class="modules-plan-banner" hidden></div>
+        <div class="modules-hero">
+          <h1>SELECIONE UM <span>MÓDULO</span></h1>
+          <p>Escolha abaixo o tipo de consulta que deseja realizar.</p>
+          <button type="button" class="modules-link-search" onclick="showAppView('search')">Busca avançada (múltiplos campos)</button>
+        </div>
+        <div id="modules-categories"></div>
+      </div>
+    </div>
+
+    <div id="view-revendedor" class="app-view">
+      <div class="service-page service-page-orange">
+        <button type="button" class="view-search-back" onclick="showAppView('modules')">← Voltar aos módulos</button>
+        <div class="service-page-header">
+          <div class="service-page-icon">
+            <svg viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+          </div>
+          <div>
+            <h2>Área do Revendedor</h2>
+            <p>Revenda acessos e gerencie logins dos seus clientes.</p>
+          </div>
+        </div>
+        <div class="reseller-pricing-block">
+          <p class="reseller-pricing-lead">Revenda com margem — <strong>escolha o pacote e compre na hora</strong></p>
+          <div id="reseller-packages-grid" class="reseller-packages-grid" role="list"></div>
+          <div class="reseller-trust-bar">
+            <span>✓ Ativação rápida</span>
+            <span>✓ Repasse para seus clientes</span>
+            <span>✓ Suporte revenda</span>
+          </div>
+        </div>
+        <div class="reseller-panel-entry">
+          <div class="reseller-panel-entry-text">
+            <h3>Painel de revenda</h3>
+            <p>Veja créditos usados e restantes, logins criados e tempo de duração dos clientes.</p>
+          </div>
+          <button type="button" class="service-cta service-cta-orange" onclick="openResellerPanel()">Abrir painel</button>
+        </div>
+        <div class="service-info-card">
+          <h3>Como funciona</h3>
+          <ul>
+            <li>Clique em <strong>Comprar agora</strong> no pacote desejado</li>
+            <li>Cada login é repassado a um cliente seu com acesso às consultas</li>
+            <li>Quanto maior o pacote, menor o custo por login — mais lucro na revenda</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div id="view-loja" class="app-view">
+      <div class="service-page service-page-green">
+        <button type="button" class="view-search-back" onclick="showAppView('modules')">← Voltar aos módulos</button>
+        <div class="service-page-header">
+          <div class="service-page-icon">
+            <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><line x1="9" y1="22" x2="9" y2="12"/><line x1="15" y1="22" x2="15" y2="12"/></svg>
+          </div>
+          <div>
+            <h2>Loja de Planos</h2>
+            <p>Assine um plano e libere o acesso a todos os módulos de consulta.</p>
+          </div>
+        </div>
+        <div id="store-active-plan" class="store-active-plan" hidden></div>
+        <div class="store-pricing-block">
+          <p class="store-pricing-lead">Consultas liberadas — <strong>escolha o plano e compre na hora</strong></p>
+          <div id="plans-grid" class="store-plans-grid" role="list"></div>
+          <div class="store-trust-bar">
+            <span>✓ Ativação imediata</span>
+            <span>✓ Todos os módulos incluídos</span>
+            <span>✓ Suporte na plataforma</span>
+          </div>
+        </div>
+        <div class="service-info-card service-info-card-green">
+          <h3>Como funciona</h3>
+          <ul>
+            <li>Clique em <strong>Comprar agora</strong> no plano desejado</li>
+            <li>Seu acesso é liberado assim que o plano for ativado</li>
+            <li>Quanto maior o período, melhor o custo-benefício para você</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div id="view-admin-dashboard" class="app-view">
+      <div class="admin-page">
+        <div class="admin-page-head">
+          <h2>Dashboard de vendas</h2>
+          <p>Acompanhe faturamento e últimas vendas da plataforma.</p>
+        </div>
+        <section class="sales-dashboard-wrap" id="sales-dashboard"></section>
+        <div class="sales-recent-panel">
+          <h4>Últimas vendas</h4>
+          <div id="sales-recent"></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="view-admin-clientes" class="app-view">
+      <div class="admin-page">
+        <div class="admin-page-head">
+          <h2>Clientes</h2>
+          <p>Planos ativos e inativos de todos os usuários.</p>
+        </div>
+        <div class="admin-panel">
+          <div class="admin-panel-head">
+            <div id="admin-clients-counts" class="admin-clients-counts"></div>
+            <div class="admin-filter-bar">
+              <button type="button" class="admin-filter-btn active" data-filter="all">Todos</button>
+              <button type="button" class="admin-filter-btn" data-filter="active">Ativos</button>
+              <button type="button" class="admin-filter-btn" data-filter="inactive">Inativos</button>
+            </div>
+          </div>
+          <div id="admin-clients-table"></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="view-admin-revendedores" class="app-view">
+      <div class="admin-page">
+        <div class="admin-page-head">
+          <h2>Revendedores</h2>
+          <p>Habilite quem pode acessar a Área do Revendedor e revender logins.</p>
+        </div>
+        <div class="admin-panel admin-panel-resellers">
+          <div class="admin-panel-head admin-panel-head-resellers">
+            <div>
+              <h3>Permissões de revenda</h3>
+              <p class="admin-resellers-intro">Controle quem pode revender, quantos logins cada um pode criar e o que já foi gerado.</p>
+            </div>
+            <span class="admin-panel-hint" id="admin-resellers-count"></span>
+          </div>
+          <div id="admin-resellers-table"></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="view-revendedor-painel" class="app-view">
+      <div class="service-page service-page-orange service-page-wide reseller-panel-page">
+        <div id="reseller-dashboard-root" class="reseller-dashboard-root">
+          <p class="reseller-dash-loading">Carregando painel…</p>
+        </div>
+      </div>
+    </div>
+
+    <div id="view-search" class="app-view">
+    <div class="view-search-header">
+      <div class="section-label" style="margin:0">Busca avançada</div>
+      <button type="button" class="view-search-back" onclick="showAppView('modules')">← Voltar aos módulos</button>
+    </div>
+    <div class="search-card">
+      <div class="search-grid">
+        <div class="field-group"><label class="field-label">CPF</label><input class="field-input" id="f-cpf" placeholder="000.000.000-00" maxlength="14"/></div>
+        <div class="field-group"><label class="field-label">Nome</label><input class="field-input" id="f-nome" placeholder="Nome completo"/></div>
+        <div class="field-group"><label class="field-label">Telefone</label><input class="field-input" id="f-tel" placeholder="(00) 00000-0000" maxlength="15"/></div>
+        <div class="field-group"><label class="field-label">E-mail (por CPF)</label><input class="field-input" id="f-email" placeholder="000.000.000-00" maxlength="14"/></div>
+        <div class="field-group"><label class="field-label">CEP</label><input class="field-input" id="f-cep" placeholder="00000-000" maxlength="9"/></div>
+        <div class="field-group"><label class="field-label">Placa</label><input class="field-input" id="f-placa" placeholder="ABC-1234" maxlength="8"/></div>
+        <div class="field-group"><label class="field-label">RG</label><input class="field-input" id="f-rg" placeholder="Número do RG"/></div>
+        <div class="field-group"><label class="field-label">BIN</label><input class="field-input" id="f-bin" placeholder="Primeiros 6 dígitos" maxlength="6"/></div>
+        <div class="field-group"><label class="field-label">Processo</label><input class="field-input" id="f-processo" placeholder="Número do processo"/></div>
+        <div class="field-group"><label class="field-label">Irmãos (nome da mãe)</label><input class="field-input" id="f-irmaos" placeholder="Nome da mãe"/></div>
+        <div class="field-group"><label class="field-label">Chassi</label><input class="field-input" id="f-chassi" placeholder="Número do chassi"/></div>
+      </div>
+      <div class="btn-row">
+        <button class="btn-buscar" onclick="executarBusca()">Buscar</button>
+        <button class="btn-limpar" onclick="limparTudo()">Limpar</button>
+      </div>
+    </div>
+
+    <div class="pills-wrap" id="pills-container">
+      <span style="font-size:13px;color:var(--text3)">Preencha um campo para ver as opções</span>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="result-area" id="result-area">
+      <div class="empty-state"><p>Preencha um campo e clique em buscar</p></div>
+    </div>
+
+    </div>
+
+  </div>
+</div>
+
+<script>
+// ── Credenciais admin ──────────────────────────────────────────────────────
+// O username é ofuscado (base64) e a senha é comparada como hash SHA-256.
+// Isso evita que as credenciais apareçam em texto claro no código-fonte.
+const _AU = atob('RGFzb3J0ZQ==');
+// Hash SHA-256 da senha admin — a senha real nunca aparece no código
+const _APH = '9dc3eba65b8905b9ea4fb08b06c800de0b35256d0ecfdd80bc59d9713b0bed8c';
+
+const STORE_KEY = 'bds_users';
+const SESSION_KEY = 'bds_session';
+
+// ── Rate limiting ──────────────────────────────────────────────────────────
+const _MAX_ATTEMPTS = 5;
+const _LOCKOUT_MS = 60 * 1000;
+function _getLock() { try { return JSON.parse(sessionStorage.getItem('_bds_lo') || 'null') || {c:0,l:0}; } catch { return {c:0,l:0}; } }
+function _saveLock(s) { try { sessionStorage.setItem('_bds_lo', JSON.stringify(s)); } catch {} }
+
+// ── Hash de senha ──────────────────────────────────────────────────────────
+async function _hashPass(s) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+}
+
+function getUsers() { try { return JSON.parse(localStorage.getItem(STORE_KEY)) || []; } catch { return []; } }
+function saveUsers(u) { localStorage.setItem(STORE_KEY, JSON.stringify(u)); }
+function getSession() { return localStorage.getItem(SESSION_KEY); }
+function setSession(u) { localStorage.setItem(SESSION_KEY, u); }
+function clearSession() { localStorage.removeItem(SESSION_KEY); }
+
+function switchTab(tab) {
+  document.querySelectorAll('.auth-tab').forEach((t,i) => t.classList.toggle('active', (i===0&&tab==='login')||(i===1&&tab==='register')));
+  document.getElementById('form-login').classList.toggle('active', tab==='login');
+  document.getElementById('form-register').classList.toggle('active', tab==='register');
+}
+
+function showMsg(id, msg, type) {
+  const el = document.getElementById(id);
+  el.textContent = msg; el.className = 'auth-msg ' + type;
+}
+
+function _resetPassField() {
+  const inp = document.getElementById('login-pass');
+  inp.value = ''; inp.type = 'password';
+  document.getElementById('eye-login').innerHTML = '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>';
+  inp.focus();
+}
+
+async function doLogin() {
+  // Verifica bloqueio por muitas tentativas
+  const lock = _getLock();
+  const now = Date.now();
+  if (lock.l > now) {
+    const secs = Math.ceil((lock.l - now) / 1000);
+    showMsg('login-msg', `⚠️ Bloqueado. Aguarde ${secs}s`, 'error');
+    return;
+  }
+
+  const user = document.getElementById('login-user').value.trim();
+  const pass = document.getElementById('login-pass').value;
+  if (!user || !pass) { showMsg('login-msg','⚠️ Preencha todos os campos','error'); shakeInput('login-user'); return; }
+
+  // Verifica admin (hash SHA-256)
+  const passHash = await _hashPass(pass);
+  if (user === _AU && passHash === _APH) {
+    _saveLock({c:0,l:0});
+    setSession(user); enterApp(user); return;
+  }
+
+  // Verifica usuário comum
+  const found = getUsers().find(u => u.user === user && u.pass === pass);
+  if (found) {
+    _saveLock({c:0,l:0});
+    setSession(user); enterApp(user); return;
+  }
+
+  // Falha — incrementa contador
+  const newCount = (lock.c || 0) + 1;
+  if (newCount >= _MAX_ATTEMPTS) {
+    _saveLock({c:0, l: now + _LOCKOUT_MS});
+    showMsg('login-msg', `⚠️ Muitas tentativas. Bloqueado por 60s`, 'error');
+  } else {
+    _saveLock({c: newCount, l: 0});
+    showMsg('login-msg', `✕ Credenciais inválidas (${newCount}/${_MAX_ATTEMPTS})`, 'error');
+  }
+  shakeInput('login-pass');
+  _resetPassField();
+}
+
+function shakeInput(id) {
+  const el = document.getElementById(id);
+  el.classList.remove('shake');
+  void el.offsetWidth;
+  el.classList.add('shake');
+  setTimeout(() => el.classList.remove('shake'), 500);
+}
+
+function togglePassVis(id, btn) {
+  const inp = document.getElementById(id);
+  const isPass = inp.type === 'password';
+  inp.type = isPass ? 'text' : 'password';
+  btn.querySelector('svg').innerHTML = isPass
+    ? '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>'
+    : '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>';
+  btn.style.color = isPass ? 'rgba(74,222,128,0.7)' : 'rgba(255,255,255,0.25)';
+}
+
+function doRegister() {
+  const user = document.getElementById('reg-user').value.trim();
+  const pass = document.getElementById('reg-pass').value;
+  const pass2 = document.getElementById('reg-pass2').value;
+  if (!user||!pass||!pass2) { showMsg('reg-msg','⚠️  Preencha todos os campos','error'); return; }
+  if (pass.length<6) { showMsg('reg-msg','⚠️  Senha deve ter mínimo 6 caracteres','error'); shakeInput('reg-pass'); return; }
+  if (pass!==pass2) { showMsg('reg-msg','✕  As senhas não coincidem','error'); shakeInput('reg-pass2'); return; }
+  if (user===_AU) { showMsg('reg-msg','✕  Nome de usuário indisponível','error'); return; }
+  const users = getUsers();
+  if (users.find(u=>u.user===user)) { showMsg('reg-msg','Usuário já existe','error'); return; }
+  users.push({ user, pass, createdAt: Date.now() }); saveUsers(users);
+  showMsg('reg-msg','Conta criada com sucesso!','success');
+  setTimeout(()=>switchTab('login'),1500);
+}
+
+function doLogout() { clearSession(); location.reload(); }
+
+function enterApp(user) {
+  document.getElementById('auth-screen').style.display='none';
+  document.getElementById('app').style.display='block';
+  if (typeof updateTopbarUsername === 'function') updateTopbarUsername(user);
+  else document.getElementById('topbar-username').textContent = user;
+  if (typeof updateSidebarUserFooter === 'function') updateSidebarUserFooter();
+  if (typeof showAppView === 'function') {
+    showAppView(typeof getDefaultViewForUser === 'function' ? getDefaultViewForUser() : 'modules');
+  }
+  if (typeof bootAppAfterScripts === 'function') bootAppAfterScripts();
+  else if (typeof refreshClientPlanState === 'function') refreshClientPlanState();
+}
+
+document.getElementById('login-pass').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
+document.getElementById('login-user').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
+
+// Busca, modal e dossiê: scripts/api.js, modal.js, dossie.js
+
+</script>
+
+<script src="../scripts/clovers.js"></script>
+<script src="../scripts/auth.js"></script>
+<script src="../scripts/api.js"></script>
+<script src="../scripts/modal.js"></script>
+<script src="../scripts/sales.js"></script>
+<script src="../scripts/plans.js"></script>
+<script src="../scripts/reseller-logins.js"></script>
+<script src="../scripts/modules.js"></script>
+<script src="../scripts/admin.js"></script>
+<script src="../scripts/dossie.js"></script>
+<script src="../scripts/negativ.js"></script>
+<script src="../scripts/utils.js"></script>
+<script>
+if (typeof bootAppAfterScripts === 'function') bootAppAfterScripts();
+if (typeof renderPills === 'function') renderPills();
+</script>
+</body>
+</html>

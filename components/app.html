@@ -1,0 +1,956 @@
+<!-- Topbar + Sidebar + Main -->
+<div id="app">
+  <div class="topbar">
+    <div class="menu-btn" id="menu-btn" onclick="toggleSidebar()">
+      <span></span><span></span><span></span>
+    </div>
+    <div class="topbar-brand" onclick="showAppView('modules')" title="Módulos">Buscas<span>Dasorte</span></div>
+    <div class="topbar-right">
+      <div class="user-chip user-chip--reveal" id="topbar-username" title="">
+        <span class="user-chip-avatar" aria-hidden="true"></span>
+        <span class="user-chip-name"></span>
+      </div>
+    </div>
+  </div>
+
+
+
+  <!-- DOSSIÊ DE RESULTADOS -->
+  <div class="dossie-overlay" id="dossie-overlay">
+    <div class="dossie-box" id="dossie-box">
+      <div class="dossie-header">
+        <div class="dossie-header-icon">
+          <svg id="dossie-hdr-icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        </div>
+        <div class="dossie-header-title" id="dossie-hdr-title">Resultado da Consulta</div>
+        <div class="dossie-header-actions">
+          <button class="dossie-btn-copy" onclick="dossieAction('copy')">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            Copiar
+          </button>
+          <button class="dossie-btn-txt" onclick="dossieAction('txt')">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            TXT
+          </button>
+          <button class="dossie-btn-pdf" onclick="dossieAction('pdf')">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+            PDF
+          </button>
+        </div>
+        <button class="dossie-close" onclick="closeDossie()">&#x2715;</button>
+      </div>
+
+      <div class="dossie-body" id="dossie-body">
+        <div class="dossie-hero">
+          <div class="dossie-hero-title">Resultados da busca</div>
+          <div class="dossie-hero-divider"></div>
+          <div class="dossie-hero-meta">
+            Operação autorizada por: <strong>BuscasDasorte</strong><br/>
+            <span id="dossie-datetime"></span>
+          </div>
+        </div>
+        <div id="dossie-tabs-nav" class="dossie-tabs"></div>
+        <div id="dossie-content"></div>
+      </div>
+
+      <div class="dossie-footer">
+        <button class="dossie-btn-nova" onclick="closeDossie()">Fazer nova consulta</button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- SETTINGS: NEGATIVACAO KEY -->
+  <div class="modal-overlay" id="negativ-overlay" onclick="if(event.target===this)closeNegativSettings()">
+    <div class="modal-box" id="negativ-box" style="max-width:400px">
+      <button class="modal-close" onclick="closeNegativSettings()">&#x2715;</button>
+      <span class="modal-top-line" style="background:linear-gradient(90deg,transparent,rgba(255,159,10,0.6),transparent)"></span>
+      <div class="modal-icon-wrap" style="background:rgba(255,159,10,0.08);border-color:rgba(255,159,10,0.2);box-shadow:0 0 20px rgba(255,159,10,0.12)">
+        <svg id="modal-icon" viewBox="0 0 24 24" style="stroke:#ff9f0a;filter:drop-shadow(0 0 4px rgba(255,159,10,0.6))"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      </div>
+      <div class="modal-title">Chave de Negativação</div>
+      <div class="modal-sub">Cole abaixo a API Key com cargo <strong style="color:#ff9f0a">negativacao</strong> para habilitar esta consulta.</div>
+      <div class="negativ-key-wrap">
+        <div class="negativ-key-label">X-Api-Key (negativação)</div>
+        <input class="negativ-key-input" id="negativ-key-input" type="text" placeholder="fc_..." autocomplete="off" spellcheck="false"/>
+        <button class="negativ-save-btn" onclick="saveNegativKey()">Salvar chave</button>
+      </div>
+      <div class="auth-msg" id="negativ-msg" style="margin-top:10px"></div>
+    </div>
+  </div>
+
+  <!-- MODAL DE CONSULTA -->
+  <div class="modal-overlay" id="modal-overlay" onclick="closeModalOutside(event)">
+    <div class="modal-box" id="modal-box">
+      <button class="modal-close" onclick="closeModal()">&#x2715;</button>
+      <span class="modal-top-line"></span>
+      <div class="modal-icon-wrap">
+        <svg id="modal-icon" viewBox="0 0 24 24"></svg>
+      </div>
+      <div class="modal-title" id="modal-title">Consulta</div>
+      <div class="modal-sub" id="modal-sub">Preencha o campo abaixo para buscar</div>
+      <div class="modal-input-wrap">
+        <input class="modal-input" id="modal-input" type="text" placeholder="Digite aqui..." autocomplete="off"/>
+      </div>
+      <button class="modal-btn-search" onclick="runModalSearch()">Buscar</button>
+      <button class="modal-btn-cancel" onclick="closeModal()">Cancelar</button>
+    </div>
+  </div>
+
+  <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
+
+  <div class="sidebar" id="sidebar">
+    <div class="sidebar-body">
+    <div class="sidebar-section" id="sidebar-user-menu">
+      <div class="sidebar-section-title">Menu</div>
+      <div class="sidebar-item active" id="nav-modulos" onclick="showAppView('modules');closeSidebar()">
+        <div class="s-icon"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></div>Módulos
+      </div>
+      <div class="sidebar-item sidebar-item-orange" id="nav-revendedor" hidden aria-hidden="true" onclick="showAppView('revendedor');closeSidebar()">
+        <div class="s-icon" style="background:rgba(251,146,60,0.12);border-color:rgba(251,146,60,0.25)"><svg viewBox="0 0 24 24" style="stroke:#fb923c"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg></div>Revendedor
+      </div>
+      <div class="sidebar-item sidebar-item-green" id="nav-loja" onclick="renderPlansGrid();showAppView('loja');closeSidebar()">
+        <div class="s-icon" style="background:rgba(34,197,94,0.12);border-color:rgba(34,197,94,0.25)"><svg viewBox="0 0 24 24" style="stroke:#4ade80"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><line x1="9" y1="22" x2="9" y2="12"/><line x1="15" y1="22" x2="15" y2="12"/></svg></div>Loja de Planos
+      </div>
+    </div>
+    <div class="sidebar-section" id="sidebar-admin-menu" hidden>
+      <div class="sidebar-section-title">Administração</div>
+      <div class="sidebar-item sidebar-item-dash active" id="nav-admin-dashboard" onclick="showAppView('admin-dashboard');closeSidebar()">
+        <div class="s-icon"><svg viewBox="0 0 24 24"><path d="M3 3v8h8V3z"/><path d="M13 3v4h8V3z"/><path d="M13 9v12h8V9z"/><path d="M3 13v8h8v-8z"/></svg></div>Dashboard
+      </div>
+      <div class="sidebar-item sidebar-item-clients" id="nav-admin-clientes" onclick="showAppView('admin-clientes');closeSidebar()">
+        <div class="s-icon"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>Clientes
+      </div>
+      <div class="sidebar-item sidebar-item-resellers" id="nav-admin-revendedores" onclick="showAppView('admin-revendedores');closeSidebar()">
+        <div class="s-icon"><svg viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg></div>Revendedores
+      </div>
+    </div>
+    <div id="sidebar-consultas-wrap">
+    <div class="sidebar-divider sidebar-consultas-divider"></div>
+    <div id="sidebar-consultas-list" class="sidebar-consultas-topics"></div>
+    <div class="sidebar-divider sidebar-consultas-divider"></div>
+    <div class="sidebar-settings-btn sidebar-consultas-section" id="sidebar-negativ-settings" onclick="openNegativSettings();closeSidebar()">
+      <div class="s-icon" style="background:rgba(255,255,255,0.04);border-color:rgba(255,255,255,0.07);box-shadow:none"><svg viewBox="0 0 24 24" style="stroke:rgba(255,255,255,0.3);filter:none"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></div>
+      Configurar chave de negativação
+    </div>
+    </div>
+    </div>
+    <div class="sidebar-user-footer" id="sidebar-user-footer">
+      <div class="sidebar-user-footer-profile">
+        <div class="sidebar-user-avatar sidebar-user-avatar-clover" id="sidebar-user-avatar" aria-hidden="true"></div>
+        <div class="sidebar-user-meta">
+          <span class="sidebar-user-name" id="sidebar-user-name">Usuário</span>
+          <span class="sidebar-user-access sidebar-user-access-unlimited" id="sidebar-user-access">
+            <span class="sidebar-user-badge"><span class="sidebar-user-badge-text">Puxadas ilimitadas</span></span>
+          </span>
+        </div>
+      </div>
+      <button type="button" class="sidebar-user-logout" id="sidebar-user-logout" onclick="doLogout();closeSidebar()" title="Sair da conta" aria-label="Sair da conta">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <div class="main">
+
+    <div id="view-modules" class="app-view active">
+      <div class="modules-hub">
+        <div id="modules-plan-banner" class="modules-plan-banner" hidden></div>
+        <div class="modules-hero">
+          <h1>SELECIONE UM <span>MÓDULO</span></h1>
+          <p>Escolha abaixo o tipo de consulta que deseja realizar.</p>
+          <button type="button" class="modules-link-search" onclick="showAppView('search')">Busca avançada (múltiplos campos)</button>
+        </div>
+        <div id="modules-categories"></div>
+      </div>
+    </div>
+
+    <div id="view-revendedor" class="app-view">
+      <div class="service-page service-page-orange">
+        <button type="button" class="view-search-back" onclick="showAppView('modules')">← Voltar aos módulos</button>
+        <div class="service-page-header">
+          <div class="service-page-icon">
+            <svg viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+          </div>
+          <div>
+            <h2>Área do Revendedor</h2>
+            <p>Revenda acessos e gerencie logins dos seus clientes.</p>
+          </div>
+        </div>
+        <div class="reseller-pricing-block">
+          <p class="reseller-pricing-lead">Revenda com margem — <strong>escolha o pacote e compre na hora</strong></p>
+          <div id="reseller-packages-grid" class="reseller-packages-grid" role="list"></div>
+          <div class="reseller-trust-bar">
+            <span>✓ Ativação rápida</span>
+            <span>✓ Repasse para seus clientes</span>
+            <span>✓ Suporte revenda</span>
+          </div>
+        </div>
+        <div class="service-info-card">
+          <h3>Como funciona</h3>
+          <ul>
+            <li>Clique em <strong>Comprar agora</strong> no pacote desejado</li>
+            <li>Cada login é repassado a um cliente seu com acesso às consultas</li>
+            <li>Quanto maior o pacote, menor o custo por login — mais lucro na revenda</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div id="view-loja" class="app-view">
+      <div class="service-page service-page-green">
+        <button type="button" class="view-search-back" onclick="showAppView('modules')">← Voltar aos módulos</button>
+        <div class="service-page-header">
+          <div class="service-page-icon">
+            <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><line x1="9" y1="22" x2="9" y2="12"/><line x1="15" y1="22" x2="15" y2="12"/></svg>
+          </div>
+          <div>
+            <h2>Loja de Planos</h2>
+            <p>Assine um plano e libere o acesso a todos os módulos de consulta.</p>
+          </div>
+        </div>
+        <div id="store-active-plan" class="store-active-plan" hidden></div>
+        <div class="store-pricing-block">
+          <p class="store-pricing-lead">Consultas liberadas — <strong>escolha o plano e compre na hora</strong></p>
+          <div id="plans-grid" class="store-plans-grid" role="list"></div>
+          <div class="store-trust-bar">
+            <span>✓ Ativação imediata</span>
+            <span>✓ Todos os módulos incluídos</span>
+            <span>✓ Suporte na plataforma</span>
+          </div>
+        </div>
+        <div class="service-info-card service-info-card-green">
+          <h3>Como funciona</h3>
+          <ul>
+            <li>Clique em <strong>Comprar agora</strong> no plano desejado</li>
+            <li>Seu acesso é liberado assim que o plano for ativado</li>
+            <li>Quanto maior o período, melhor o custo-benefício para você</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div id="view-admin-dashboard" class="app-view">
+      <div class="admin-page">
+        <div class="admin-page-head">
+          <h2>Dashboard de vendas</h2>
+          <p>Acompanhe faturamento e últimas vendas da plataforma.</p>
+        </div>
+        <section class="sales-dashboard-wrap" id="sales-dashboard"></section>
+        <div class="sales-recent-panel">
+          <h4>Últimas vendas</h4>
+          <div id="sales-recent"></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="view-admin-clientes" class="app-view">
+      <div class="admin-page">
+        <div class="admin-page-head">
+          <h2>Clientes</h2>
+          <p>Planos ativos e inativos de todos os usuários.</p>
+        </div>
+        <div class="admin-panel">
+          <div class="admin-panel-head">
+            <div id="admin-clients-counts" class="admin-clients-counts"></div>
+            <div class="admin-filter-bar">
+              <button type="button" class="admin-filter-btn active" data-filter="all">Todos</button>
+              <button type="button" class="admin-filter-btn" data-filter="active">Ativos</button>
+              <button type="button" class="admin-filter-btn" data-filter="inactive">Inativos</button>
+            </div>
+          </div>
+          <div id="admin-clients-table"></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="view-admin-revendedores" class="app-view">
+      <div class="admin-page">
+        <div class="admin-page-head">
+          <h2>Revendedores</h2>
+          <p>Habilite quem pode acessar a Área do Revendedor e revender logins.</p>
+        </div>
+        <div class="admin-panel">
+          <div class="admin-panel-head">
+            <h3>Permissões de revenda</h3>
+            <span class="admin-panel-hint" id="admin-resellers-count"></span>
+          </div>
+          <div id="admin-resellers-table"></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="view-search" class="app-view">
+    <div class="view-search-header">
+      <div class="section-label" style="margin:0">Busca avançada</div>
+      <button type="button" class="view-search-back" onclick="showAppView('modules')">← Voltar aos módulos</button>
+    </div>
+    <div class="search-card">
+      <div class="search-grid">
+        <div class="field-group"><label class="field-label">CPF</label><input class="field-input" id="f-cpf" placeholder="000.000.000-00" maxlength="14"/></div>
+        <div class="field-group"><label class="field-label">Nome</label><input class="field-input" id="f-nome" placeholder="Nome completo"/></div>
+        <div class="field-group"><label class="field-label">Telefone</label><input class="field-input" id="f-tel" placeholder="(00) 00000-0000" maxlength="15"/></div>
+        <div class="field-group"><label class="field-label">Email</label><input class="field-input" id="f-email" placeholder="email@exemplo.com"/></div>
+        <div class="field-group"><label class="field-label">CEP</label><input class="field-input" id="f-cep" placeholder="00000-000" maxlength="9"/></div>
+        <div class="field-group"><label class="field-label">Placa</label><input class="field-input" id="f-placa" placeholder="ABC-1234" maxlength="8"/></div>
+        <div class="field-group"><label class="field-label">RG</label><input class="field-input" id="f-rg" placeholder="Número do RG"/></div>
+        <div class="field-group"><label class="field-label">BIN</label><input class="field-input" id="f-bin" placeholder="Primeiros 6 dígitos" maxlength="6"/></div>
+        <div class="field-group"><label class="field-label">Processo</label><input class="field-input" id="f-processo" placeholder="Número do processo"/></div>
+        <div class="field-group"><label class="field-label">Irmãos (nome da mãe)</label><input class="field-input" id="f-irmaos" placeholder="Nome da mãe"/></div>
+        <div class="field-group"><label class="field-label">Chassi</label><input class="field-input" id="f-chassi" placeholder="Número do chassi"/></div>
+      </div>
+      <div class="btn-row">
+        <button class="btn-buscar" onclick="executarBusca()">Buscar</button>
+        <button class="btn-limpar" onclick="limparTudo()">Limpar</button>
+      </div>
+    </div>
+
+    <div class="pills-wrap" id="pills-container">
+      <span style="font-size:13px;color:var(--text3)">Preencha um campo para ver as opções</span>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="result-area" id="result-area">
+      <div class="empty-state"><p>Preencha um campo e clique em buscar</p></div>
+    </div>
+
+    </div>
+
+  </div>
+</div>
+
+<script>
+// Credenciais movidas para index.html (obfuscadas) — este componente não é carregado diretamente
+const STORE_KEY = 'bds_users';
+const SESSION_KEY = 'bds_session';
+
+function getUsers() { try { return JSON.parse(localStorage.getItem(STORE_KEY)) || []; } catch { return []; } }
+function saveUsers(u) { localStorage.setItem(STORE_KEY, JSON.stringify(u)); }
+function getSession() { return localStorage.getItem(SESSION_KEY); }
+function setSession(u) { localStorage.setItem(SESSION_KEY, u); }
+function clearSession() { localStorage.removeItem(SESSION_KEY); }
+
+function switchTab(tab) {
+  document.querySelectorAll('.auth-tab').forEach((t,i) => t.classList.toggle('active', (i===0&&tab==='login')||(i===1&&tab==='register')));
+  document.getElementById('form-login').classList.toggle('active', tab==='login');
+  document.getElementById('form-register').classList.toggle('active', tab==='register');
+}
+
+function showMsg(id, msg, type) {
+  const el = document.getElementById(id);
+  el.textContent = msg; el.className = 'auth-msg ' + type;
+}
+
+function doLogin() {
+  const user = document.getElementById('login-user').value.trim();
+  const pass = document.getElementById('login-pass').value.trim();
+  if (!user || !pass) { showMsg('login-msg','⚠️  Preencha todos os campos','error'); shakeInput('login-user'); return; }
+  // Admin check
+  // Autenticação admin — tratada em index.html (com hash SHA-256 e rate limit)
+  // User check
+  const found = getUsers().find(u => u.user === user && u.pass === pass);
+  if (found) { setSession(user); enterApp(user); return; }
+  // Failed
+  showMsg('login-msg','✕  Usuário ou senha incorretos','error');
+  shakeInput('login-pass');
+  document.getElementById('login-pass').value = '';
+  // Reset eye icon
+  const passInp = document.getElementById('login-pass');
+  passInp.type = 'password';
+  document.getElementById('eye-login').innerHTML = '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>';
+  passInp.focus();
+}
+
+function shakeInput(id) {
+  const el = document.getElementById(id);
+  el.classList.remove('shake');
+  void el.offsetWidth;
+  el.classList.add('shake');
+  setTimeout(() => el.classList.remove('shake'), 500);
+}
+
+function togglePassVis(id, btn) {
+  const inp = document.getElementById(id);
+  const isPass = inp.type === 'password';
+  inp.type = isPass ? 'text' : 'password';
+  btn.querySelector('svg').innerHTML = isPass
+    ? '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>'
+    : '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>';
+  btn.style.color = isPass ? 'rgba(74,222,128,0.7)' : 'rgba(255,255,255,0.25)';
+}
+
+function doRegister() {
+  const user = document.getElementById('reg-user').value.trim();
+  const pass = document.getElementById('reg-pass').value;
+  const pass2 = document.getElementById('reg-pass2').value;
+  if (!user||!pass||!pass2) { showMsg('reg-msg','⚠️  Preencha todos os campos','error'); return; }
+  if (pass.length<6) { showMsg('reg-msg','⚠️  Senha deve ter mínimo 6 caracteres','error'); shakeInput('reg-pass'); return; }
+  if (pass!==pass2) { showMsg('reg-msg','✕  As senhas não coincidem','error'); shakeInput('reg-pass2'); return; }
+  if (user===atob('RGFzb3J0ZQ==')) { showMsg('reg-msg','✕  Nome de usuário indisponível','error'); return; }
+  const users = getUsers();
+  if (users.find(u=>u.user===user)) { showMsg('reg-msg','Usuário já existe','error'); return; }
+  users.push({user,pass}); saveUsers(users);
+  showMsg('reg-msg','Conta criada com sucesso!','success');
+  setTimeout(()=>switchTab('login'),1500);
+}
+
+function doLogout() { clearSession(); location.reload(); }
+
+function enterApp(user) {
+  document.getElementById('auth-screen').style.display='none';
+  document.getElementById('app').style.display='block';
+  if (typeof updateTopbarUsername === 'function') updateTopbarUsername(user);
+  else document.getElementById('topbar-username').textContent = user;
+  if (typeof updateSidebarUserFooter === 'function') updateSidebarUserFooter();
+  if (typeof renderModulesHub === 'function') renderModulesHub();
+  if (typeof showAppView === 'function') showAppView('modules');
+}
+
+const sess = getSession();
+if (sess) enterApp(sess);
+
+document.getElementById('login-pass').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
+document.getElementById('login-user').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
+
+// BUSCA
+const PROXY = 'https://ancient-glitter-ad86.victorgabri121211.workers.dev';
+// API_KEY removida — injetada pelo Cloudflare Worker no servidor
+const CONSULT_TIPOS = ['serasa','spc','receita','tse','denatran'];
+
+function isHorarioComercial() {
+  const d=new Date(),day=d.getDay(),h=d.getHours();
+  return day>=1&&day<=5&&h>=8&&h<18;
+}
+
+function getEndpoints() {
+  const cpf=document.getElementById('f-cpf').value.replace(/\D/g,'');
+  const nome=document.getElementById('f-nome').value.trim();
+  const tel=document.getElementById('f-tel').value.replace(/\D/g,'');
+  const cep=document.getElementById('f-cep').value.replace(/\D/g,'');
+  const placa=document.getElementById('f-placa').value.replace(/[^a-zA-Z0-9]/g,'');
+  const rg=document.getElementById('f-rg').value.trim();
+  const bin=document.getElementById('f-bin').value.trim();
+  const proc=document.getElementById('f-processo').value.trim();
+  const irm=document.getElementById('f-irmaos').value.trim();
+  const chassi=document.getElementById('f-chassi').value.trim();
+  const eps=[];
+  if(cpf){
+    eps.push({id:'cpf',label:'CPF',path:`/api/v1/search/cpf/${cpf}`});
+    CONSULT_TIPOS.forEach(tipo=>{
+      const isS=tipo==='serasa';
+      eps.push({id:`cc-${tipo}`,label:tipo.charAt(0).toUpperCase()+tipo.slice(1),path:`/api/v1/search/consultcenter/${tipo}/cpf/${cpf}`,serasaLocked:isS&&!isHorarioComercial(),serasaNote:isS});
+    });
+    eps.push({id:'foto-cpf',label:'Foto CPF',path:`/api/v1/search/foto/cpf/${cpf}`});
+    eps.push({id:'score',label:'Score',path:`/api/v1/search/score/cpf/${cpf}`});
+    eps.push({id:'foto-sp',label:'Foto SP',path:`/api/v1/search/foto/sp/cpf/${cpf}`});
+  }
+  if(nome){
+    eps.push({id:'nome',label:'Nome',path:`/api/v1/search/nome/${encodeURIComponent(nome)}`});
+    eps.push({id:'foto-pe',label:'Foto PE',path:`/api/v1/search/foto/pe/nome/${encodeURIComponent(nome)}`});
+  }
+  if(tel) eps.push({id:'tel',label:'Telefone',path:`/api/v1/search/telefone/${tel}`});
+  if(cep) eps.push({id:'cep',label:'CEP',path:`/api/v1/search/cep/${cep}`});
+  if(placa) eps.push({id:'placa',label:'Placa',path:`/api/v1/search/placa/${placa}`});
+  if(chassi) eps.push({id:'chassi',label:'Chassi',path:`/api/v1/search/chassi/${chassi}`});
+  if(rg) eps.push({id:'rg',label:'RG',path:`/api/v1/search/rg/${rg}`});
+  if(bin) eps.push({id:'bin',label:'BIN',path:`/api/v1/search/bin/${bin}`});
+  if(proc) eps.push({id:'proc',label:'Processo',path:`/api/v1/search/processo/${proc}`});
+  if(irm) eps.push({id:'irm',label:'Irmãos',path:`/api/v1/search/familiares/irmaos/${encodeURIComponent(irm)}`});
+  return eps;
+}
+
+let selectedIds=new Set(), allEndpoints=[];
+
+function renderPills(){
+  const c=document.getElementById('pills-container');
+  allEndpoints=getEndpoints();
+  if(!allEndpoints.length){c.innerHTML='<span style="font-size:13px;color:var(--text3)">Preencha um campo para ver as opções</span>';return;}
+  c.innerHTML=allEndpoints.map(ep=>{
+    const active=selectedIds.has(ep.id)?'active':'';
+    const locked=ep.serasaLocked?'disabled':'';
+    const hc=ep.serasaNote?`<span class="hc">H.C.</span>`:'';
+    return `<div class="pill ${active} ${locked}" onclick="togglePill('${ep.id}')">${ep.label}${hc}</div>`;
+  }).join('');
+}
+
+function togglePill(id){
+  const ep=allEndpoints.find(e=>e.id===id);
+  if(!ep||ep.serasaLocked)return;
+  if(selectedIds.has(id))selectedIds.delete(id);else selectedIds.add(id);
+  renderPills();
+}
+
+document.querySelectorAll('.field-input').forEach(inp=>{
+  inp.addEventListener('input',()=>{selectedIds.clear();renderPills();});
+  inp.addEventListener('keydown',e=>{if(e.key==='Enter')executarBusca();});
+});
+
+document.getElementById('f-cpf').addEventListener('input',function(){
+  let v=this.value.replace(/\D/g,'').slice(0,11);
+  if(v.length>9)v=v.replace(/(\d{3})(\d{3})(\d{3})(\d{0,2})/,'$1.$2.$3-$4');
+  else if(v.length>6)v=v.replace(/(\d{3})(\d{3})(\d{0,3})/,'$1.$2.$3');
+  else if(v.length>3)v=v.replace(/(\d{3})(\d{0,3})/,'$1.$2');
+  this.value=v;
+});
+document.getElementById('f-tel').addEventListener('input',function(){
+  let v=this.value.replace(/\D/g,'').slice(0,11);
+  if(v.length>7)v=v.length===11?v.replace(/(\d{2})(\d{5})(\d{0,4})/,'($1) $2-$3'):v.replace(/(\d{2})(\d{4})(\d{0,4})/,'($1) $2-$3');
+  else if(v.length>2)v=v.replace(/(\d{2})(\d{0,5})/,'($1) $2');
+  this.value=v;
+});
+document.getElementById('f-cep').addEventListener('input',function(){
+  let v=this.value.replace(/\D/g,'').slice(0,8);
+  if(v.length>5)v=v.replace(/(\d{5})(\d{0,3})/,'$1-$2');
+  this.value=v;
+});
+
+function fetchComTimeout(ep){
+  const ctrl=new AbortController();
+  const t=setTimeout(()=>ctrl.abort(),15000);
+  const key = ep.isNegativacao ? getNegativKey() : API_KEY;
+  return fetch(PROXY+ep.path,{headers:{'X-Api-Key':key},signal:ctrl.signal})
+    .then(r=>r.json().then(d=>{clearTimeout(t);return{ep,ok:r.ok,status:r.status,data:d};}))
+    .catch(err=>{clearTimeout(t);return{ep,ok:false,status:0,data:{error:err.name==='AbortError'?'Timeout (15s)':err.message}};});
+}
+
+async function executarBusca(){
+  allEndpoints=getEndpoints();
+  let toSearch=allEndpoints.filter(ep=>selectedIds.has(ep.id)&&!ep.serasaLocked);
+  if(!toSearch.length)toSearch=allEndpoints.filter(ep=>!ep.serasaLocked);
+  if(!toSearch.length){showError('Nenhum campo preenchido.');return;}
+
+  const area=document.getElementById('result-area');
+  area.innerHTML='';
+
+  const serasaLocked=allEndpoints.filter(ep=>ep.serasaLocked);
+  if(serasaLocked.length){
+    const w=document.createElement('div');w.className='status-bar warn';
+    w.textContent='Serasa disponível apenas em horário comercial (seg–sex, 8h–18h)';
+    area.appendChild(w);
+  }
+
+  const contEl=document.createElement('div');contEl.className='status-bar loading';
+  contEl.innerHTML=`<span class="spinner"></span><span id="contador"> 0 de ${toSearch.length} consultas concluídas</span>`;
+  area.prepend(contEl);
+
+  let done=0;
+  const allResults = [];
+  await Promise.allSettled(toSearch.map(ep=>fetchComTimeout(ep).then(res=>{
+    done++;
+    allResults.push(res);
+    const el=document.getElementById('contador');
+    if(el)el.textContent=` ${done} de ${toSearch.length} consultas concluídas`;
+  })));
+
+  contEl.className='status-bar success';
+  contEl.innerHTML=`${done} consulta${done!==1?'s':''} finalizada${done!==1?'s':''}`;
+
+  // Open dossie with successful results
+  const successResults = allResults.filter(r => r && r.ok);
+  if (successResults.length > 0) {
+    const cfg = currentModalKey ? MODAL_CONFIG[currentModalKey] : null;
+    const icon = cfg ? cfg.icon : '<circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>';
+    const label = (toSearch[0] ? toSearch[0].label : 'Consulta') + (toSearch.length > 1 ? ' + ' + (toSearch.length-1) + ' mais' : '');
+    openDossie(successResults, label.toUpperCase(), icon);
+  }
+}
+
+function showError(msg){document.getElementById('result-area').innerHTML=`<div class="status-bar error">${msg}</div>`;}
+
+function limparTudo(){
+  document.querySelectorAll('.field-input').forEach(i=>i.value='');
+  selectedIds.clear();renderPills();
+  document.getElementById('result-area').innerHTML='<div class="empty-state"><p>Preencha um campo e clique em buscar</p></div>';
+}
+
+
+function toggleSidebar() {
+  const btn = document.getElementById('menu-btn');
+  const sidebar = document.getElementById('sidebar');
+  const overlay = document.getElementById('sidebar-overlay');
+  const isOpen = sidebar.classList.contains('open');
+  if (isOpen) closeSidebar();
+  else {
+    btn.classList.add('open');
+    sidebar.classList.add('open');
+    overlay.classList.add('open');
+  }
+}
+
+function closeSidebar() {
+  document.getElementById('menu-btn').classList.remove('open');
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('sidebar-overlay').classList.remove('open');
+}
+
+function focusField(id) {
+  const el = document.getElementById(id);
+  if (el) { el.scrollIntoView({behavior:'smooth',block:'center'}); el.focus(); }
+}
+
+function selectQuery(tipo) {
+  // highlight sidebar item
+  document.querySelectorAll('.sidebar-item').forEach(i => i.classList.remove('active'));
+  event && event.currentTarget && event.currentTarget.classList.add('active');
+}
+
+
+const MODAL_CONFIG = {
+  cpf:      { title: 'Consulta por CPF', sub: 'Digite o CPF para buscar', placeholder: '000.000.000-00', field: 'f-cpf', icon: '<rect x="3" y="4" width="18" height="16" rx="2"/><line x1="7" y1="9" x2="17" y2="9"/><line x1="7" y1="13" x2="13" y2="13"/>', mask: 'cpf' },
+  serasa:   { title: 'Consulta Serasa', sub: 'Disponível em horário comercial (seg–sex, 8h–18h)', placeholder: '000.000.000-00', field: 'f-cpf', icon: '<polyline points="2 14 6 10 10 14 14 8 18 11 22 6"/><line x1="2" y1="20" x2="22" y2="20"/>', mask: 'cpf' },
+  spc:      { title: 'Consulta SPC', sub: 'Digite o CPF para consultar no SPC', placeholder: '000.000.000-00', field: 'f-cpf', icon: '<path d="M9 12l2 2 4-4"/><rect x="3" y="3" width="18" height="18" rx="2"/>', mask: 'cpf' },
+  receita:  { title: 'Receita Federal', sub: 'Digite o CPF para consultar na Receita', placeholder: '000.000.000-00', field: 'f-cpf', icon: '<line x1="12" y1="2" x2="12" y2="6"/><path d="M5 12H2l5-7 5 7h-3v5a2 2 0 0 0 4 0v-5h-3l5-7 5 7h-3"/><line x1="12" y1="18" x2="12" y2="22"/>', mask: 'cpf' },
+  tse:      { title: 'Consulta TSE', sub: 'Digite o CPF para consultar no TSE', placeholder: '000.000.000-00', field: 'f-cpf', icon: '<path d="M3 3h18v4H3z"/><path d="M8 7v14"/><path d="M16 7v14"/><path d="M3 12h18"/>', mask: 'cpf' },
+  denatran: { title: 'Consulta Denatran', sub: 'Digite o CPF para consultar no Denatran', placeholder: '000.000.000-00', field: 'f-cpf', icon: '<rect x="1" y="8" width="22" height="10" rx="2"/><circle cx="7" cy="18" r="2"/><circle cx="17" cy="18" r="2"/><path d="M5 8V6a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v2"/>', mask: 'cpf' },
+  score:    { title: 'Score de Crédito', sub: 'Digite o CPF para consultar o score', placeholder: '000.000.000-00', field: 'f-cpf', icon: '<path d="M12 20V10"/><path d="M18 20V4"/><path d="M6 20v-4"/>', mask: 'cpf' },
+  'foto-cpf': { title: 'Foto por CPF', sub: 'Digite o CPF para buscar a foto', placeholder: '000.000.000-00', field: 'f-cpf', icon: '<path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/>', mask: 'cpf' },
+  'foto-sp':  { title: 'Foto SP', sub: 'Digite o CPF para buscar foto em SP', placeholder: '000.000.000-00', field: 'f-cpf', icon: '<path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><path d="M9 13a3 3 0 1 0 6 0"/>', mask: 'cpf' },
+  nome:     { title: 'Consulta por Nome', sub: 'Digite o nome completo para buscar', placeholder: 'Nome completo', field: 'f-nome', icon: '<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>', mask: null },
+  tel:      { title: 'Consulta por Telefone', sub: 'Digite o número de telefone', placeholder: '(00) 00000-0000', field: 'f-tel', icon: '<path d="M22 16.92v3a2 2 0 0 1-2.18 2A19.8 19.8 0 0 1 3.1 5.18 2 2 0 0 1 5.09 3h3a2 2 0 0 1 2 1.72 12.8 12.8 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L9.09 10.9a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.8 12.8 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>', mask: 'tel' },
+  email:    { title: 'Consulta por Email', sub: 'Digite o endereço de email', placeholder: 'email@exemplo.com', field: 'f-email', icon: '<path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/>', mask: null },
+  cep:      { title: 'Consulta por CEP', sub: 'Digite o CEP para buscar o endereço', placeholder: '00000-000', field: 'f-cep', icon: '<path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>', mask: 'cep' },
+  placa:    { title: 'Consulta por Placa', sub: 'Digite a placa do veículo', placeholder: 'ABC-1234', field: 'f-placa', icon: '<rect x="2" y="7" width="20" height="10" rx="2"/><line x1="6" y1="11" x2="6" y2="13"/><line x1="9" y1="11" x2="15" y2="11"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="18" y1="11" x2="18" y2="13"/>', mask: null },
+  rg:       { title: 'Consulta por RG', sub: 'Digite o número do RG', placeholder: 'Número do RG', field: 'f-rg', icon: '<rect x="2" y="5" width="20" height="14" rx="2"/><circle cx="8" cy="10" r="2"/><path d="M2 17l4-4 4 4"/><line x1="14" y1="9" x2="20" y2="9"/><line x1="14" y1="13" x2="18" y2="13"/>', mask: null },
+  chassi:   { title: 'Consulta por Chassi', sub: 'Digite o número do chassi', placeholder: 'Número do chassi', field: 'f-chassi', icon: '<circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>', mask: null },
+  bin:      { title: 'Consulta por BIN', sub: 'Digite os primeiros 6 dígitos do cartão', placeholder: '000000', field: 'f-bin', icon: '<rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/>', mask: null },
+  processo: { title: 'Consulta de Processo', sub: 'Digite o número do processo judicial', placeholder: 'Número do processo', field: 'f-processo', icon: '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>', mask: null },
+  irmaos:   { title: 'Consulta de Irmãos', sub: 'Digite o nome da mãe para buscar irmãos', placeholder: 'Nome da mãe', field: 'f-irmaos', icon: '<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>', mask: null },
+  'foto-pe': { title: 'Foto PE', sub: 'Digite o nome completo para buscar foto em PE', placeholder: 'Nome completo', field: 'f-nome', icon: '<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/>', mask: null },
+  'negativacao': { title: 'Negativação', sub: 'Rota restrita — requer chave com cargo "negativacao". Disponível seg–sex, 8h–18h.', placeholder: '000.000.000-00', field: 'f-cpf', icon: '<circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>', mask: 'cpf', isNegativacao: true },
+};
+
+let currentModalKey = null;
+
+function openModal(key) {
+  const cfg = MODAL_CONFIG[key];
+  if (!cfg) return;
+  currentModalKey = key;
+
+  document.getElementById('modal-icon').innerHTML = cfg.icon;
+  document.getElementById('modal-title').textContent = cfg.title;
+  document.getElementById('modal-sub').textContent = cfg.sub;
+  const inp = document.getElementById('modal-input');
+  inp.placeholder = cfg.placeholder;
+  inp.value = '';
+  inp.setAttribute('data-mask', cfg.mask || '');
+
+  // Negativacao: check key + business hours
+  if (cfg.isNegativacao) {
+    const key = getNegativKey();
+    if (!key) {
+      closeModal();
+      openNegativSettings();
+      return;
+    }
+    if (!isHorarioComercial()) {
+      document.getElementById('modal-overlay').classList.add('open');
+      setTimeout(() => {
+        inp.disabled = true;
+        document.querySelector('.modal-btn-search').disabled = true;
+        document.querySelector('.modal-btn-search').style.opacity = '0.4';
+        document.getElementById('modal-sub').innerHTML = '⚠️ Fora do horário comercial. Disponível seg–sex, 8h–18h.';
+      }, 50);
+      return;
+    }
+    inp.disabled = false;
+  }
+  document.getElementById('modal-overlay').classList.add('open');
+  setTimeout(() => inp.focus(), 120);
+}
+
+function closeModal() {
+  document.getElementById('modal-overlay').classList.remove('open');
+  currentModalKey = null;
+}
+
+function closeModalOutside(e) {
+  if (e.target === document.getElementById('modal-overlay')) closeModal();
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeModal();
+});
+
+document.getElementById('modal-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') runModalSearch();
+});
+
+document.getElementById('modal-input').addEventListener('input', function() {
+  const mask = this.getAttribute('data-mask');
+  let v = this.value;
+  if (mask === 'cpf') {
+    v = v.replace(/\D/g,'').slice(0,11);
+    if(v.length>9) v=v.replace(/(\d{3})(\d{3})(\d{3})(\d{0,2})/,'$1.$2.$3-$4');
+    else if(v.length>6) v=v.replace(/(\d{3})(\d{3})(\d{0,3})/,'$1.$2.$3');
+    else if(v.length>3) v=v.replace(/(\d{3})(\d{0,3})/,'$1.$2');
+    this.value = v;
+  } else if (mask === 'tel') {
+    v = v.replace(/\D/g,'').slice(0,11);
+    if(v.length>7) v=v.length===11?v.replace(/(\d{2})(\d{5})(\d{0,4})/,'($1) $2-$3'):v.replace(/(\d{2})(\d{4})(\d{0,4})/,'($1) $2-$3');
+    else if(v.length>2) v=v.replace(/(\d{2})(\d{0,5})/,'($1) $2');
+    this.value = v;
+  } else if (mask === 'cep') {
+    v = v.replace(/\D/g,'').slice(0,8);
+    if(v.length>5) v=v.replace(/(\d{5})(\d{0,3})/,'$1-$2');
+    this.value = v;
+  }
+});
+
+function runModalSearch() {
+  const cfg = MODAL_CONFIG[currentModalKey];
+  if (!cfg) return;
+  const val = document.getElementById('modal-input').value.trim();
+  if (!val) {
+    document.getElementById('modal-input').focus();
+    document.getElementById('modal-input').style.borderColor = 'rgba(255,69,58,0.5)';
+    setTimeout(() => document.getElementById('modal-input').style.borderColor = '', 1000);
+    return;
+  }
+  // Clear ALL fields and results before new search
+  document.querySelectorAll('.field-input').forEach(i => i.value = '');
+  selectedIds.clear();
+  document.getElementById('result-area').innerHTML = '<div class="empty-state"><p>Preencha um campo e clique em buscar</p></div>';
+  // Fill only the selected field and trigger search
+  const field = document.getElementById(cfg.field);
+  if (field) { field.value = val; field.dispatchEvent(new Event('input')); }
+
+  // Negativacao: direct fetch bypassing pills
+  if (currentModalKey === 'negativacao') {
+    closeModal();
+    const cpf = val.replace(/\D/g,'');
+    const ep = { id:'negativacao', label:'Negativação', path:`/api/v1/search/consultcenter/negativacao/cpf/${cpf}`, isNegativacao: true };
+    runDirectSearch([ep], 'Negativação', MODAL_CONFIG.negativacao.icon);
+    return;
+  }
+
+  // For CPF-based consultcenter queries, pre-select only that pill
+  if (['serasa','spc','receita','tse','denatran','score','foto-cpf','foto-sp'].includes(currentModalKey)) {
+    const pillId = ['serasa','spc','receita','tse','denatran'].includes(currentModalKey)
+      ? 'cc-' + currentModalKey
+      : currentModalKey;
+    selectedIds.clear();
+    selectedIds.add(pillId);
+    renderPills();
+  }
+
+  closeModal();
+  setTimeout(() => executarBusca(), 100);
+}
+
+async function runDirectSearch(eps, label, iconSvg) {
+  const area = document.getElementById('result-area');
+  area.innerHTML = '';
+  const contEl = document.createElement('div');
+  contEl.className = 'status-bar loading';
+  contEl.innerHTML = `<span class="spinner"></span><span id="contador"> Consultando ${label}...</span>`;
+  area.prepend(contEl);
+
+  const allResults = [];
+  await Promise.allSettled(eps.map(ep => fetchComTimeout(ep).then(res => {
+    allResults.push(res);
+  })));
+
+  contEl.className = 'status-bar success';
+  contEl.innerHTML = `${allResults.length} consulta finalizada`;
+
+  const successResults = allResults.filter(r => r && r.ok);
+  if (successResults.length > 0) openDossie(successResults, label.toUpperCase(), iconSvg);
+}
+
+
+let dossieResults = [];
+
+function openDossie(results, queryLabel, iconSvg) {
+  dossieResults = results;
+  const now = new Date();
+  document.getElementById('dossie-datetime').textContent =
+    'Data: ' + now.toLocaleDateString('pt-BR') + ', ' + now.toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit'});
+  if (iconSvg) document.getElementById('dossie-hdr-icon').innerHTML = iconSvg;
+  document.getElementById('dossie-hdr-title').textContent = queryLabel || 'Resultado da Consulta';
+
+  const tabsNav = document.getElementById('dossie-tabs-nav');
+  const content = document.getElementById('dossie-content');
+  tabsNav.innerHTML = '';
+  content.innerHTML = '';
+
+  const successful = results.filter(r => r.ok && r.data && !r.data.error);
+
+  if (successful.length === 0) {
+    content.innerHTML = '<div style="text-align:center;padding:40px 0;color:rgba(255,255,255,0.2);font-size:14px">Nenhum dado retornado para esta consulta</div>';
+  } else if (successful.length === 1) {
+    tabsNav.style.display = 'none';
+    content.appendChild(buildResultPanel(successful[0], 0));
+  } else {
+    tabsNav.style.display = 'flex';
+    successful.forEach((r, i) => {
+      const tab = document.createElement('button');
+      tab.className = 'dossie-tab' + (i === 0 ? ' active' : '');
+      tab.textContent = r.ep.label;
+      tab.onclick = () => {
+        document.querySelectorAll('.dossie-tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.dossie-tab-panel').forEach(p => p.classList.remove('active'));
+        tab.classList.add('active');
+        document.getElementById('dossie-panel-' + i).classList.add('active');
+      };
+      tabsNav.appendChild(tab);
+      const panel = buildResultPanel(r, i);
+      panel.id = 'dossie-panel-' + i;
+      panel.className = 'dossie-tab-panel' + (i === 0 ? ' active' : '');
+      content.appendChild(panel);
+    });
+  }
+
+  document.getElementById('dossie-overlay').classList.add('open');
+}
+
+function buildResultPanel(result, idx) {
+  const panel = document.createElement('div');
+  const data = result.data;
+
+  // Try to parse structured data
+  let fields = [];
+  function extractFields(obj, prefix) {
+    if (!obj || typeof obj !== 'object') return;
+    if (Array.isArray(obj)) {
+      obj.forEach((item, i) => extractFields(item, prefix ? prefix + '[' + i + ']' : '[' + i + ']'));
+      return;
+    }
+    Object.entries(obj).forEach(([k, v]) => {
+      const key = prefix ? prefix + '.' + k : k;
+      if (v !== null && typeof v === 'object') extractFields(v, key);
+      else fields.push({ key, val: v });
+    });
+  }
+
+  // Smart extraction: look for data key first
+  const root = data.data || data;
+  if (typeof root === 'object' && !Array.isArray(root)) {
+    extractFields(root, '');
+  } else {
+    fields = [{ key: 'resultado', val: JSON.stringify(data) }];
+  }
+
+  // Split nulls from values
+  const withVal = fields.filter(f => f.val !== null && f.val !== '' && f.val !== 'null' && f.val !== undefined);
+  const nullFields = fields.filter(f => f.val === null || f.val === '' || f.val === 'null' || f.val === undefined);
+
+  // Section: data with values
+  if (withVal.length > 0) {
+    const sec = document.createElement('div');
+    sec.className = 'dossie-section';
+    sec.innerHTML = '<div class="dossie-section-label">Alvo ' + String(idx + 1).padStart(2, '0') + ' — Dados encontrados</div>';
+    const grid = document.createElement('div');
+    grid.className = 'dossie-grid';
+    withVal.forEach(f => {
+      const cell = document.createElement('div');
+      cell.className = 'dossie-field';
+      cell.innerHTML = '<div class="dossie-field-key">' + escHtml(f.key.replace(/^\./, '').replace(/_/g, ' ')) + '</div>' +
+        '<div class="dossie-field-val">' + escHtml(String(f.val)) + '</div>';
+      grid.appendChild(cell);
+    });
+    sec.appendChild(grid);
+    panel.appendChild(sec);
+  }
+
+  // Section: null fields (collapsed, smaller)
+  if (nullFields.length > 0 && withVal.length > 0) {
+    const sec = document.createElement('div');
+    sec.className = 'dossie-section';
+    sec.innerHTML = '<div class="dossie-section-label" style="opacity:0.4">Campos sem dados (' + nullFields.length + ')</div>';
+    const grid = document.createElement('div');
+    grid.className = 'dossie-grid';
+    nullFields.forEach(f => {
+      const cell = document.createElement('div');
+      cell.className = 'dossie-field';
+      cell.innerHTML = '<div class="dossie-field-key">' + escHtml(f.key.replace(/^\./, '').replace(/_/g, ' ')) + '</div>' +
+        '<div class="dossie-field-val null-val">—</div>';
+      grid.appendChild(cell);
+    });
+    sec.appendChild(grid);
+    panel.appendChild(sec);
+  }
+
+  // Fallback: raw JSON
+  if (withVal.length === 0) {
+    const sec = document.createElement('div');
+    sec.className = 'dossie-section';
+    sec.innerHTML = '<div class="dossie-section-label">Dados brutos</div>';
+    const raw = document.createElement('div');
+    raw.className = 'dossie-raw';
+    raw.innerHTML = '<pre>' + escHtml(JSON.stringify(data, null, 2)) + '</pre>';
+    sec.appendChild(raw);
+    panel.appendChild(sec);
+  }
+
+  return panel;
+}
+
+function closeDossie() {
+  document.getElementById('dossie-overlay').classList.remove('open');
+}
+
+function dossieAction(type) {
+  const allText = dossieResults.map(r =>
+    '=== ' + r.ep.label.toUpperCase() + ' ===\n' + JSON.stringify(r.data, null, 2)
+  ).join('\n\n');
+
+  if (type === 'copy') {
+    navigator.clipboard.writeText(allText).then(() => {
+      const btn = document.querySelector('.dossie-btn-copy');
+      const orig = btn.innerHTML;
+      btn.textContent = '✓ Copiado';
+      setTimeout(() => btn.innerHTML = orig, 1800);
+    });
+  } else if (type === 'txt') {
+    const blob = new Blob([allText], { type: 'text/plain' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'buscasdasorte_resultado.txt';
+    a.click();
+  } else if (type === 'pdf') {
+    const s = 'body{font-family:monospace;background:#020604;color:#4ade80;padding:32px;font-size:13px;line-height:1.7}h1{color:#ecfdf5;margin-bottom:16px}p{color:rgba(107,158,122,0.8);margin-bottom:16px}pre{white-space:pre-wrap;word-break:break-all}';
+    const d = new Date().toLocaleString('pt-BR');
+    const t = allText.replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    const pwin = window.open('', '_blank');
+    pwin.document.open();
+    pwin.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>BuscasDasorte<\/title><style>' + s + '<\/style><\/head><body><h1>BuscasDasorte<\/h1><p>Data: ' + d + '<\/p><pre>' + t + '<\/pre><\/body><\/html>');
+    pwin.document.close();
+    pwin.print();
+  }
+}
+
+
+const NEGATIV_KEY_STORE = 'bds_negativ_key';
+function getNegativKey() { return localStorage.getItem(NEGATIV_KEY_STORE) || ''; }
+function saveNegativKey() {
+  const val = document.getElementById('negativ-key-input').value.trim();
+  if (!val) {
+    showNegativMsg('Cole a chave antes de salvar', 'error'); return;
+  }
+  localStorage.setItem(NEGATIV_KEY_STORE, val);
+  showNegativMsg('Chave salva com sucesso!', 'success');
+  setTimeout(() => closeNegativSettings(), 1400);
+}
+function showNegativMsg(msg, type) {
+  const el = document.getElementById('negativ-msg');
+  el.textContent = msg; el.className = 'auth-msg ' + type;
+}
+function openNegativSettings() {
+  const inp = document.getElementById('negativ-key-input');
+  inp.value = getNegativKey();
+  document.getElementById('negativ-msg').className = 'auth-msg';
+  document.getElementById('negativ-overlay').classList.add('open');
+  setTimeout(() => inp.focus(), 120);
+}
+function closeNegativSettings() {
+  document.getElementById('negativ-overlay').classList.remove('open');
+}
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') { closeNegativSettings(); }
+});
+
+function escHtml(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+renderPills();
+</script>

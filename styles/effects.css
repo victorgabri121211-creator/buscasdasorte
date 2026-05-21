@@ -1,0 +1,53 @@
+/* Trevos caindo — fundo global (discretos, lentos) */
+#bg-clovers {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.bg-clover {
+  position: absolute;
+  top: -12vh;
+  left: var(--clover-left, 50%);
+  width: var(--clover-size, 40px);
+  height: var(--clover-size, 40px);
+  margin-left: calc(var(--clover-size, 40px) / -2);
+  opacity: 0;
+  color: rgba(74, 222, 128, 0.95);
+  filter: none;
+  animation: cloverFall var(--clover-duration, 70s) linear infinite;
+  animation-delay: var(--clover-delay, 0s);
+  will-change: transform, opacity;
+}
+
+.bg-clover svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  shape-rendering: geometricPrecision;
+}
+
+@keyframes cloverFall {
+  0% {
+    transform: translate3d(0, -12vh, 0) rotate(var(--clover-rotate-start, 0deg));
+    opacity: 0;
+  }
+  8% {
+    opacity: var(--clover-opacity, 0.1);
+  }
+  92% {
+    opacity: var(--clover-opacity, 0.1);
+  }
+  100% {
+    transform: translate3d(var(--clover-drift, 0px), 112vh, 0) rotate(var(--clover-rotate-end, 180deg));
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #bg-clovers {
+    display: none;
+  }
+}

@@ -1,0 +1,450 @@
+// API & ENDPOINTS
+// A API Key principal está no Cloudflare Worker (não no navegador).
+// Veja worker.js para configuração.
+const PROXY = 'https://ancient-glitter-ad86.victorgabri121211.workers.dev';
+const CONSULT_TIPOS = ['serasa','spc','receita','tse','denatran'];
+const FETCH_TIMEOUT_MS = 10000;
+const CACHE_TTL_MS = 10 * 60 * 1000;
+const PREFETCH_DEBOUNCE_MS = 180;
+
+const responseCache = new Map();
+const inflightRequests = new Map();
+let prefetchTimer = null;
+let modalPrefetchTimer = null;
+
+function isHorarioComercial() {
+  const d=new Date(),day=d.getDay(),h=d.getHours();
+  return day>=1&&day<=5&&h>=8&&h<18;
+}
+
+function cacheKey(path, suffix) { return path + '\0' + suffix; }
+
+/** Retorna os headers a enviar para o proxy conforme o tipo de endpoint. */
+function getHeadersForEp(ep) {
+  // Main endpoints: sem chave (o Cloudflare Worker injeta a API Key automaticamente)
+  // Negativação: envia a chave do usuário via X-Negativ-Key
+  if (ep.isNegativacao) {
+    const nk = getNegativKey();
+    return nk ? { 'X-Negativ-Key': nk } : {};
+  }
+  return {};
+}
+
+/** A API não expõe /search/email/{@}. E-mails vêm por CPF via Consult Center. */
+function appendEmailEndpoints(eps, cpfDigits) {
+  if (!cpfDigits || cpfDigits.length !== 11) return;
+  const hc = !isHorarioComercial();
+  eps.push({
+    id: 'email',
+    label: 'E-mails',
+    path: `/api/v1/search/consultcenter/emails/cpf/${cpfDigits}`,
+    serasaLocked: hc,
+    serasaNote: hc,
+  });
+}
+
+function getEmailFieldEndpoints(raw) {
+  const v = (raw || '').trim();
+  if (!v) return [];
+  if (v.includes('@')) {
+    return [{
+      id: 'email',
+      label: 'E-mail',
+      unsupported: true,
+      unsupportedMsg:
+        'Busca por endereço de e-mail (@) não existe nesta API (erro 404). ' +
+        'Use o CPF: a consulta CPF completa já traz o campo E-mail, ou informe o CPF no campo E-mail (Consult Center, seg–sex 8h–18h).',
+    }];
+  }
+  const cpf = v.replace(/\D/g, '');
+  const out = [];
+  if (cpf.length === 11) appendEmailEndpoints(out, cpf);
+  else if (v) {
+    out.push({
+      id: 'email',
+      label: 'E-mail',
+      unsupported: true,
+      unsupportedMsg: 'Informe um CPF com 11 dígitos para consultar e-mails vinculados.',
+    });
+  }
+  return out;
+}
+
+function getEndpoints() {
+  const cpf=document.getElementById('f-cpf').value.replace(/\D/g,'');
+  const nome=document.getElementById('f-nome').value.trim();
+  const tel=document.getElementById('f-tel').value.replace(/\D/g,'');
+  const cep=document.getElementById('f-cep').value.replace(/\D/g,'');
+  const placa=document.getElementById('f-placa').value.replace(/[^a-zA-Z0-9]/g,'');
+  const rg=document.getElementById('f-rg').value.trim();
+  const bin=document.getElementById('f-bin').value.trim();
+  const proc=document.getElementById('f-processo').value.trim();
+  const irm=document.getElementById('f-irmaos').value.trim();
+  const chassi=document.getElementById('f-chassi').value.trim();
+  const eps=[];
+  if(cpf){
+    eps.push({id:'cpf',label:'CPF',path:`/api/v1/search/cpf/${cpf}`});
+    CONSULT_TIPOS.forEach(tipo=>{
+      const isS=tipo==='serasa';
+      eps.push({id:`cc-${tipo}`,label:tipo.charAt(0).toUpperCase()+tipo.slice(1),path:`/api/v1/search/consultcenter/${tipo}/cpf/${cpf}`,serasaLocked:isS&&!isHorarioComercial(),serasaNote:isS});
+    });
+    eps.push({id:'foto-cpf',label:'Foto CPF',path:`/api/v1/search/foto/cpf/${cpf}`});
+    eps.push({id:'score',label:'Score',path:`/api/v1/search/score/cpf/${cpf}`});
+    eps.push({id:'foto-sp',label:'Foto SP',path:`/api/v1/search/foto/sp/cpf/${cpf}`});
+  }
+  if(nome){
+    eps.push({id:'nome',label:'Nome',path:`/api/v1/search/nome/${encodeURIComponent(nome)}`});
+    eps.push({id:'foto-pe',label:'Foto PE',path:`/api/v1/search/foto/pe/nome/${encodeURIComponent(nome)}`});
+  }
+  const emailRaw=document.getElementById('f-email')?document.getElementById('f-email').value.trim():'';
+  if(tel) eps.push({id:'tel',label:'Telefone',path:`/api/v1/search/telefone/${tel}`});
+  getEmailFieldEndpoints(emailRaw).forEach(ep => eps.push(ep));
+  if(cep) eps.push({id:'cep',label:'CEP',path:`/api/v1/search/cep/${cep}`});
+  if(placa) eps.push({id:'placa',label:'Placa',path:`/api/v1/search/placa/${placa}`});
+  if(chassi) eps.push({id:'chassi',label:'Chassi',path:`/api/v1/search/chassi/${chassi}`});
+  if(rg) eps.push({id:'rg',label:'RG',path:`/api/v1/search/rg/${rg}`});
+  if(bin) eps.push({id:'bin',label:'BIN',path:`/api/v1/search/bin/${bin}`});
+  if(proc) eps.push({id:'proc',label:'Processo',path:`/api/v1/search/processo/${proc}`});
+  if(irm) eps.push({id:'irm',label:'Irmãos',path:`/api/v1/search/familiares/irmaos/${encodeURIComponent(irm)}`});
+  return eps;
+}
+
+function fieldValues() {
+  const cpf = (document.getElementById('f-cpf')?.value || '').replace(/\D/g, '');
+  const nome = (document.getElementById('f-nome')?.value || '').trim();
+  const tel = (document.getElementById('f-tel')?.value || '').replace(/\D/g, '');
+  const cep = (document.getElementById('f-cep')?.value || '').replace(/\D/g, '');
+  const placa = (document.getElementById('f-placa')?.value || '').replace(/[^a-zA-Z0-9]/g, '');
+  const rg = (document.getElementById('f-rg')?.value || '').trim();
+  const bin = (document.getElementById('f-bin')?.value || '').trim();
+  const proc = (document.getElementById('f-processo')?.value || '').trim();
+  const irm = (document.getElementById('f-irmaos')?.value || '').trim();
+  const chassi = (document.getElementById('f-chassi')?.value || '').trim();
+  const emailRaw = (document.getElementById('f-email')?.value || '').trim();
+  const emailCpf = emailRaw.replace(/\D/g, '');
+  return { cpf, nome, tel, cep, placa, rg, bin, proc, irm, chassi, emailRaw, emailCpf };
+}
+
+function isCpfBasedEp(ep) {
+  return (
+    ep.id === 'cpf' ||
+    ep.id.startsWith('cc-') ||
+    ep.id === 'foto-cpf' ||
+    ep.id === 'score' ||
+    ep.id === 'foto-sp'
+  );
+}
+
+/** Sem pills: todas as consultas possíveis para cada campo preenchido (em paralelo). */
+function getAutoEndpoints(eps) {
+  const v = fieldValues();
+  const out = [];
+  const seen = new Set();
+
+  eps.forEach(ep => {
+    if (ep.serasaLocked || ep.unsupported || seen.has(ep.id)) return;
+
+    let include = false;
+    if (isCpfBasedEp(ep)) include = v.cpf.length === 11;
+    else if (ep.id === 'nome' || ep.id === 'foto-pe') include = !!v.nome;
+    else if (ep.id === 'tel') include = v.tel.length >= 10;
+    else if (ep.id === 'cep') include = v.cep.length === 8;
+    else if (ep.id === 'placa') include = v.placa.length >= 7;
+    else if (ep.id === 'chassi') include = !!v.chassi;
+    else if (ep.id === 'rg') include = !!v.rg;
+    else if (ep.id === 'bin') include = !!v.bin;
+    else if (ep.id === 'proc') include = !!v.proc;
+    else if (ep.id === 'irm') include = !!v.irm;
+    else if (ep.id === 'email') include = v.emailCpf.length === 11 && !v.emailRaw.includes('@');
+
+    if (include) {
+      seen.add(ep.id);
+      out.push(ep);
+    }
+  });
+
+  return out;
+}
+
+function endpointFromModalKey(modalKey, cpf) {
+  if (!modalKey || !cpf || cpf.length !== 11) return null;
+  const serasaLocked = !isHorarioComercial();
+  const map = {
+    cpf: { id: 'cpf', label: 'CPF', path: `/api/v1/search/cpf/${cpf}` },
+    serasa: { id: 'cc-serasa', label: 'Serasa', path: `/api/v1/search/consultcenter/serasa/cpf/${cpf}`, serasaLocked, serasaNote: true },
+    spc: { id: 'cc-spc', label: 'Spc', path: `/api/v1/search/consultcenter/spc/cpf/${cpf}` },
+    receita: { id: 'cc-receita', label: 'Receita', path: `/api/v1/search/consultcenter/receita/cpf/${cpf}` },
+    tse: { id: 'cc-tse', label: 'Tse', path: `/api/v1/search/consultcenter/tse/cpf/${cpf}` },
+    denatran: { id: 'cc-denatran', label: 'Denatran', path: `/api/v1/search/consultcenter/denatran/cpf/${cpf}` },
+    score: { id: 'score', label: 'Score', path: `/api/v1/search/score/cpf/${cpf}` },
+    'foto-cpf': { id: 'foto-cpf', label: 'Foto CPF', path: `/api/v1/search/foto/cpf/${cpf}` },
+    'foto-sp': { id: 'foto-sp', label: 'Foto SP', path: `/api/v1/search/foto/sp/cpf/${cpf}` },
+    email: { id: 'email', label: 'E-mails', path: `/api/v1/search/consultcenter/emails/cpf/${cpf}` },
+    negativacao: { id: 'negativacao', label: 'Negativação', path: `/api/v1/search/consultcenter/negativacao/cpf/${cpf}`, isNegativacao: true },
+  };
+  const ep = map[modalKey];
+  if (!ep || ep.serasaLocked) return null;
+  return ep;
+}
+
+function schedulePrefetch() {
+  clearTimeout(prefetchTimer);
+  prefetchTimer = setTimeout(() => {
+    getAutoEndpoints(getEndpoints()).forEach(ep => prefetchEndpoint(ep));
+  }, PREFETCH_DEBOUNCE_MS);
+}
+
+function scheduleModalPrefetch(modalKey, rawValue) {
+  clearTimeout(modalPrefetchTimer);
+  modalPrefetchTimer = setTimeout(() => {
+    const cpf = (rawValue || '').replace(/\D/g, '');
+    if (cpf.length !== 11) return;
+    if (modalKey === 'cpf') {
+      getAutoEndpoints(getEndpoints()).forEach(ep => prefetchEndpoint(ep));
+      return;
+    }
+    const ep = endpointFromModalKey(modalKey, cpf);
+    if (ep) prefetchEndpoint(ep);
+  }, PREFETCH_DEBOUNCE_MS);
+}
+
+function prefetchEndpoint(ep) {
+  if (!ep || ep.unsupported || ep.serasaLocked) return;
+  const key = getApiKeyForEp(ep);
+  if (!key || getCached(ep.path, key)) return;
+  fetchComTimeout(ep);
+}
+
+let selectedIds=new Set(), allEndpoints=[];
+
+function renderPills(){
+  const c=document.getElementById('pills-container');
+  allEndpoints=getEndpoints();
+  if(!allEndpoints.length){c.innerHTML='<span style="font-size:13px;color:var(--text3)">Preencha um campo para ver as opções</span>';return;}
+  c.innerHTML=allEndpoints.map(ep=>{
+    const active=selectedIds.has(ep.id)?'active':'';
+    const locked=ep.serasaLocked?'disabled':'';
+    const hc=ep.serasaNote?`<span class="hc">H.C.</span>`:'';
+    return `<div class="pill ${active} ${locked}" onclick="togglePill('${ep.id}')">${ep.label}${hc}</div>`;
+  }).join('');
+}
+
+function togglePill(id){
+  const ep=allEndpoints.find(e=>e.id===id);
+  if(!ep||ep.serasaLocked)return;
+  if(selectedIds.has(id))selectedIds.delete(id);else selectedIds.add(id);
+  renderPills();
+}
+
+document.querySelectorAll('.field-input').forEach(inp=>{
+  inp.addEventListener('input',()=>{selectedIds.clear();renderPills();schedulePrefetch();});
+  inp.addEventListener('keydown',e=>{if(e.key==='Enter')executarBusca();});
+});
+
+function maskCpfInput(el) {
+  if (!el) return;
+  el.addEventListener('input', function () {
+    let v = this.value.replace(/\D/g, '').slice(0, 11);
+    if (v.length > 9) v = v.replace(/(\d{3})(\d{3})(\d{3})(\d{0,2})/, '$1.$2.$3-$4');
+    else if (v.length > 6) v = v.replace(/(\d{3})(\d{3})(\d{0,3})/, '$1.$2.$3');
+    else if (v.length > 3) v = v.replace(/(\d{3})(\d{0,3})/, '$1.$2');
+    this.value = v;
+  });
+}
+
+maskCpfInput(document.getElementById('f-cpf'));
+maskCpfInput(document.getElementById('f-email'));
+document.getElementById('f-tel').addEventListener('input',function(){
+  let v=this.value.replace(/\D/g,'').slice(0,11);
+  if(v.length>7)v=v.length===11?v.replace(/(\d{2})(\d{5})(\d{0,4})/,'($1) $2-$3'):v.replace(/(\d{2})(\d{4})(\d{0,4})/,'($1) $2-$3');
+  else if(v.length>2)v=v.replace(/(\d{2})(\d{0,5})/,'($1) $2');
+  this.value=v;
+});
+document.getElementById('f-cep').addEventListener('input',function(){
+  let v=this.value.replace(/\D/g,'').slice(0,8);
+  if(v.length>5)v=v.replace(/(\d{5})(\d{0,3})/,'$1-$2');
+  this.value=v;
+});
+
+function fetchComTimeout(ep){
+  // Cache: main usa 'main' como sufixo; negativação usa a própria chave (pode mudar)
+  const ckSuffix = ep.isNegativacao ? 'n_' + getNegativKey() : 'main';
+  const ck = cacheKey(ep.path, ckSuffix);
+  const cached = responseCache.get(ck);
+  if (cached && Date.now() - cached.ts < CACHE_TTL_MS) return Promise.resolve(cached.data);
+
+  if (inflightRequests.has(ck)) return inflightRequests.get(ck);
+
+  const headers = getHeadersForEp(ep);
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), FETCH_TIMEOUT_MS);
+
+  const promise = fetch(PROXY + ep.path, { headers, signal: ctrl.signal })
+    .then(r => r.json().then(d => {
+      clearTimeout(t);
+      const res = { ep, ok: r.ok, status: r.status, data: d };
+      // Só cacheia respostas OK (erros devem poder ser retentados)
+      if (r.ok) responseCache.set(ck, { ts: Date.now(), data: res });
+      return res;
+    }))
+    .catch(err => {
+      clearTimeout(t);
+      return { ep, ok: false, status: 0, data: { error: err.name === 'AbortError' ? 'Timeout (' + (FETCH_TIMEOUT_MS/1000) + 's)' : err.message } };
+    })
+    .finally(() => { inflightRequests.delete(ck); });
+
+  inflightRequests.set(ck, promise);
+  return promise;
+}
+
+function getSearchMeta(toSearch) {
+  const cfg = typeof currentModalKey !== 'undefined' && currentModalKey ? MODAL_CONFIG[currentModalKey] : null;
+  const icon = cfg ? cfg.icon : '<circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>';
+  let label = toSearch[0] ? toSearch[0].label : 'Consulta';
+  const hasCpf = toSearch.some(e => e.id === 'cpf');
+  if (hasCpf && toSearch.length > 1) {
+    label = 'CPF + ' + (toSearch.length - 1) + ' mais';
+  } else if (toSearch.length > 1) {
+    label += ' + ' + (toSearch.length - 1) + ' mais';
+  }
+  return { icon, label: label.toUpperCase() };
+}
+
+function runSearchBatch(toSearch, meta) {
+  const area = document.getElementById('result-area');
+  const contEl = document.createElement('div');
+  contEl.className = 'status-bar loading';
+  contEl.innerHTML = `<span class="spinner"></span><span id="contador"> Consultando...</span>`;
+  area.prepend(contEl);
+
+  let done = 0;
+  let dossieOpened = false;
+  const allResults = [];
+  const total = toSearch.length;
+  const { icon, label } = meta || getSearchMeta(toSearch);
+
+  if (typeof openDossieLoading === 'function') {
+    openDossieLoading(label, icon);
+    dossieOpened = true;
+  }
+
+  const onOneDone = (res) => {
+    done++;
+    allResults.push(res);
+    const el = document.getElementById('contador');
+    if (el) el.textContent = ` ${done} de ${total} consulta${total !== 1 ? 's' : ''}`;
+
+    const hasData = typeof isSearchSuccess === 'function' ? isSearchSuccess(res) : (res && res.ok);
+    if (hasData) {
+      if (typeof openDossie === 'function' && typeof dossieIsLoading === 'function' && dossieIsLoading()) {
+        openDossie([res], label, icon);
+      } else if (typeof appendDossieResult === 'function') {
+        appendDossieResult(res);
+      } else if (typeof openDossie === 'function') {
+        openDossie([res], label, icon);
+        dossieOpened = true;
+      }
+    }
+
+    if (done >= total) {
+      const successList = allResults.filter(r =>
+        typeof isSearchSuccess === 'function' ? isSearchSuccess(r) : (r && r.ok)
+      );
+      const okCount = successList.length;
+      contEl.className = okCount ? 'status-bar success' : 'status-bar error';
+      contEl.innerHTML = okCount
+        ? `${okCount} de ${total} consulta${okCount !== 1 ? 's' : ''} com dados`
+        : `Nenhum dado (${total} consulta${total !== 1 ? 's' : ''} finalizada${total !== 1 ? 's' : ''})`;
+      if (okCount > 0 && typeof openDossie === 'function') {
+        openDossie(successList, label, icon);
+      } else if (!okCount && allResults.length > 0 && typeof openDossie === 'function') {
+        openDossie(allResults, label, icon);
+      } else if (!okCount && !dossieOpened) {
+        const firstErr = allResults.find(r => r && !(
+          typeof isSearchSuccess === 'function' ? isSearchSuccess(r) : r.ok
+        ));
+        const msg = firstErr && typeof getSearchErrorMessage === 'function'
+          ? getSearchErrorMessage(firstErr)
+          : 'Nenhum dado retornado. Verifique o CPF/dado e tente novamente.';
+        showError(msg);
+        if (typeof closeDossie === 'function') closeDossie();
+      }
+    }
+  };
+
+  toSearch.forEach(ep => {
+    const apiKey = getApiKeyForEp(ep);
+    const cached = getCached(ep.path, apiKey);
+    if (cached) {
+      onOneDone(cached);
+      return;
+    }
+    fetchComTimeout(ep).then(onOneDone);
+  });
+}
+
+async function executarBusca(){
+  allEndpoints=getEndpoints();
+  const blocked=allEndpoints.find(ep=>ep.unsupported);
+  if(blocked){showError(blocked.unsupportedMsg);return;}
+
+  let toSearch=allEndpoints.filter(ep=>selectedIds.has(ep.id)&&!ep.serasaLocked&&!ep.unsupported);
+  if(!toSearch.length) toSearch=getAutoEndpoints(allEndpoints);
+  if(!toSearch.length){showError('Nenhum campo preenchido.');return;}
+
+  const area=document.getElementById('result-area');
+  area.innerHTML='';
+
+  const serasaLocked=allEndpoints.filter(ep=>ep.serasaLocked);
+  if(serasaLocked.length){
+    const w=document.createElement('div');w.className='status-bar warn';
+    w.textContent='Serasa disponível apenas em horário comercial (seg–sex, 8h–18h)';
+    area.appendChild(w);
+  }
+
+  runSearchBatch(toSearch);
+}
+
+function showError(msg){document.getElementById('result-area').innerHTML=`<div class="status-bar error">${msg}</div>`;}
+
+function limparTudo(){
+  document.querySelectorAll('.field-input').forEach(i=>i.value='');
+  selectedIds.clear();renderPills();
+  document.getElementById('result-area').innerHTML='<div class="empty-state"><p>Preencha um campo e clique em buscar</p></div>';
+}
+
+
+function toggleSidebar() {
+  const btn = document.getElementById('menu-btn');
+  const sidebar = document.getElementById('sidebar');
+  const overlay = document.getElementById('sidebar-overlay');
+  const isOpen = sidebar.classList.contains('open');
+  if (isOpen) closeSidebar();
+  else {
+    btn.classList.add('open');
+    sidebar.classList.add('open');
+    overlay.classList.add('open');
+  }
+}
+
+function closeSidebar() {
+  document.getElementById('menu-btn').classList.remove('open');
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('sidebar-overlay').classList.remove('open');
+}
+
+function focusField(id) {
+  const el = document.getElementById(id);
+  if (el) { el.scrollIntoView({behavior:'smooth',block:'center'}); el.focus(); }
+}
+
+function selectQuery(tipo) {
+  document.querySelectorAll('.sidebar-item').forEach(i => i.classList.remove('active'));
+  event && event.currentTarget && event.currentTarget.classList.add('active');
+}
+
+window.scheduleModalPrefetch = scheduleModalPrefetch;
+window.prefetchEndpoint = prefetchEndpoint;
+window.renderPills = renderPills;
+window.executarBusca = executarBusca;
+window.runSearchBatch = runSearchBatch;
