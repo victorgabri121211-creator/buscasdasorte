@@ -4,7 +4,7 @@
 const PROXY = 'https://ancient-glitter-ad86.victorgabri121211.workers.dev';
 const CONSULT_TIPOS = ['serasa','spc','receita','tse','denatran'];
 const FETCH_TIMEOUT_MS = 10000;
-const CACHE_TTL_MS = 10 * 60 * 1000;
+const CACHE_TTL_MS = 60 * 60 * 1000;
 const PREFETCH_DEBOUNCE_MS = 180;
 
 const responseCache = new Map();
@@ -187,33 +187,11 @@ function endpointFromModalKey(modalKey, cpf) {
   return ep;
 }
 
-function schedulePrefetch() {
-  clearTimeout(prefetchTimer);
-  prefetchTimer = setTimeout(() => {
-    getAutoEndpoints(getEndpoints()).forEach(ep => prefetchEndpoint(ep));
-  }, PREFETCH_DEBOUNCE_MS);
-}
-
-function scheduleModalPrefetch(modalKey, rawValue) {
-  clearTimeout(modalPrefetchTimer);
-  modalPrefetchTimer = setTimeout(() => {
-    const cpf = (rawValue || '').replace(/\D/g, '');
-    if (cpf.length !== 11) return;
-    if (modalKey === 'cpf') {
-      getAutoEndpoints(getEndpoints()).forEach(ep => prefetchEndpoint(ep));
-      return;
-    }
-    const ep = endpointFromModalKey(modalKey, cpf);
-    if (ep) prefetchEndpoint(ep);
-  }, PREFETCH_DEBOUNCE_MS);
-}
-
-function prefetchEndpoint(ep) {
-  if (!ep || ep.unsupported || ep.serasaLocked) return;
-  const key = getApiKeyForEp(ep);
-  if (!key || getCached(ep.path, key)) return;
-  fetchComTimeout(ep);
-}
+// Prefetch desativado: a API tem rate limit de 1 req/min por endpoint,
+// chamadas antecipadas esgotam a cota antes do usuário clicar em Buscar.
+function schedulePrefetch() {}
+function scheduleModalPrefetch() {}
+function prefetchEndpoint() {}
 
 let selectedIds=new Set(), allEndpoints=[];
 
