@@ -26,7 +26,13 @@
       },
       body: JSON.stringify(params || {})
     }).then(function (r) {
-      return r.json();
+      return r.json().then(function (data) {
+        if (!r.ok) {
+          console.warn('[DB] ' + fn + ' HTTP ' + r.status + ':', data);
+          return null; // erro HTTP → fallback para localStorage
+        }
+        return data;
+      });
     }).catch(function (e) {
       console.warn('[DB] ' + fn + ':', e.message);
       return null;
