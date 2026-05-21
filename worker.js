@@ -13,7 +13,7 @@
  */
 
 // URL base da API real — ajuste se necessário
-const API_BASE = 'https://api.fr4ud.center';
+const API_BASE = 'https://apis.fr4ud.center';
 
 export default {
   async fetch(request, env) {
