@@ -562,31 +562,60 @@ async function doLogin() {
   const pass = document.getElementById('login-pass').value;
   if (!user || !pass) { showMsg('login-msg','⚠️ Preencha todos os campos','error'); shakeInput('login-user'); return; }
 
-  // Verifica admin (hash SHA-256)
-  const passHash = await _hashPass(pass);
-  if (user === _AU && passHash === _APH) {
-    _saveLock({c:0,l:0});
-    setSession(user); enterApp(user); return;
-  }
+  const btn = document.querySelector('#form-login .btn-primary');
+  if (btn) { btn.disabled = true; btn.textContent = 'Verificando...'; }
 
-  // Verifica usuário comum
-  const found = getUsers().find(u => u.user === user && u.pass === pass);
-  if (found) {
-    _saveLock({c:0,l:0});
-    setSession(user); enterApp(user); return;
-  }
+  try {
+    // Verifica admin (hash SHA-256)
+    const passHash = await _hashPass(pass);
+    if (user === _AU && passHash === _APH) {
+      _saveLock({c:0,l:0});
+      setSession(user);
+      if (window.DB) {
+        showMsg('login-msg', 'Carregando dados...', 'success');
+        await window.DB.syncOnLogin(user);
+      }
+      enterApp(user); return;
+    }
 
-  // Falha — incrementa contador
-  const newCount = (lock.c || 0) + 1;
-  if (newCount >= _MAX_ATTEMPTS) {
-    _saveLock({c:0, l: now + _LOCKOUT_MS});
-    showMsg('login-msg', `⚠️ Muitas tentativas. Bloqueado por 60s`, 'error');
-  } else {
-    _saveLock({c: newCount, l: 0});
-    showMsg('login-msg', `✕ Credenciais inválidas (${newCount}/${_MAX_ATTEMPTS})`, 'error');
+    // Tenta Supabase primeiro
+    if (window.DB && window.DB.isConfigured()) {
+      const res = await window.DB.loginUser(user, pass);
+      if (res && res.ok) {
+        _saveLock({c:0,l:0});
+        setSession(user);
+        await window.DB.syncOnLogin(user);
+        enterApp(user); return;
+      }
+    }
+
+    // Fallback: localStorage (migração / modo offline)
+    const found = getUsers().find(u => u.user === user && u.pass === pass);
+    if (found) {
+      _saveLock({c:0,l:0});
+      setSession(user);
+      // Auto-migra para o Supabase em background
+      if (window.DB && window.DB.isConfigured()) {
+        window.DB.registerUser(user, pass, found.createdByReseller || null).catch(() => {});
+        window.DB.syncOnLogin(user).catch(() => {});
+      }
+      enterApp(user); return;
+    }
+
+    // Falha — incrementa contador
+    const newCount = (lock.c || 0) + 1;
+    if (newCount >= _MAX_ATTEMPTS) {
+      _saveLock({c:0, l: now + _LOCKOUT_MS});
+      showMsg('login-msg', `⚠️ Muitas tentativas. Bloqueado por 60s`, 'error');
+    } else {
+      _saveLock({c: newCount, l: 0});
+      showMsg('login-msg', `✕ Credenciais inválidas (${newCount}/${_MAX_ATTEMPTS})`, 'error');
+    }
+    shakeInput('login-pass');
+    _resetPassField();
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'Entrar'; }
   }
-  shakeInput('login-pass');
-  _resetPassField();
 }
 
 function shakeInput(id) {
@@ -607,7 +636,7 @@ function togglePassVis(id, btn) {
   btn.style.color = isPass ? 'rgba(74,222,128,0.7)' : 'rgba(255,255,255,0.25)';
 }
 
-function doRegister() {
+async function doRegister() {
   const user = document.getElementById('reg-user').value.trim();
   const pass = document.getElementById('reg-pass').value;
   const pass2 = document.getElementById('reg-pass2').value;
@@ -615,11 +644,32 @@ function doRegister() {
   if (pass.length<6) { showMsg('reg-msg','⚠️  Senha deve ter mínimo 6 caracteres','error'); shakeInput('reg-pass'); return; }
   if (pass!==pass2) { showMsg('reg-msg','✕  As senhas não coincidem','error'); shakeInput('reg-pass2'); return; }
   if (user===_AU) { showMsg('reg-msg','✕  Nome de usuário indisponível','error'); return; }
-  const users = getUsers();
-  if (users.find(u=>u.user===user)) { showMsg('reg-msg','Usuário já existe','error'); return; }
-  users.push({ user, pass, createdAt: Date.now() }); saveUsers(users);
-  showMsg('reg-msg','Conta criada com sucesso!','success');
-  setTimeout(()=>switchTab('login'),1500);
+
+  const btn = document.querySelector('#form-register .btn-primary');
+  if (btn) { btn.disabled = true; btn.textContent = 'Criando...'; }
+
+  try {
+    if (window.DB && window.DB.isConfigured()) {
+      const res = await window.DB.registerUser(user, pass);
+      if (!res) {
+        // Supabase indisponível — salva localmente
+        const users = getUsers();
+        if (users.find(u=>u.user===user)) { showMsg('reg-msg','Usuário já existe','error'); return; }
+        users.push({ user, pass, createdAt: Date.now() }); saveUsers(users);
+      } else if (!res.ok) {
+        showMsg('reg-msg','✕  ' + (res.msg || 'Usuário já existe'),'error'); return;
+      }
+    } else {
+      // Supabase não configurado — salva apenas localmente
+      const users = getUsers();
+      if (users.find(u=>u.user===user)) { showMsg('reg-msg','Usuário já existe','error'); return; }
+      users.push({ user, pass, createdAt: Date.now() }); saveUsers(users);
+    }
+    showMsg('reg-msg','Conta criada com sucesso!','success');
+    setTimeout(()=>switchTab('login'),1500);
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'Criar conta'; }
+  }
 }
 
 function doLogout() { clearSession(); location.reload(); }
@@ -644,6 +694,7 @@ document.getElementById('login-user').addEventListener('keydown',e=>{if(e.key===
 
 </script>
 
+<script src="../scripts/db.js"></script>
 <script src="../scripts/clovers.js"></script>
 <script src="../scripts/auth.js"></script>
 <script src="../scripts/api.js"></script>

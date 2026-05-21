@@ -92,6 +92,10 @@ function setResellerEnabled(username, enabled) {
     if (existing) delete map[existing];
   }
   saveResellerAccessMap(map);
+  // Sincroniza com Supabase em background
+  if (typeof DB !== 'undefined' && DB.isConfigured()) {
+    DB.setResellerAccess(key, enabled).catch(function() {});
+  }
   updateAppNavigation();
   if (
     !enabled &&
@@ -500,6 +504,10 @@ function adminAddResellerCredits(reseller, amount) {
       msgEl.className = 'admin-reseller-credits-msg err';
     }
     return;
+  }
+  // Sincroniza com Supabase em background
+  if (typeof DB !== 'undefined' && DB.isConfigured()) {
+    DB.addResellerCredits(reseller, amt).catch(function() {});
   }
   const total = getResellerCredits(reseller);
   if (msgEl) {

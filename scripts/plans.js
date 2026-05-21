@@ -86,14 +86,15 @@
     if (!key || key === PLAN_ADMIN_USER) return false;
     var ms = PLAN_DURATIONS_MS[planId];
     if (!ms) return false;
+    var expiresAt = Date.now() + ms;
+    var period = PLAN_LABELS[planId] || planId;
     var store = getPlansStore();
-    store[key] = {
-      id: planId,
-      period: PLAN_LABELS[planId] || planId,
-      expiresAt: Date.now() + ms,
-      grantedByAdmin: true,
-    };
+    store[key] = { id: planId, period: period, expiresAt: expiresAt, grantedByAdmin: true };
     savePlansStore(store);
+    // Sincroniza com Supabase em background
+    if (typeof global.DB !== 'undefined' && global.DB.isConfigured()) {
+      global.DB.setUserPlan(key, planId, period, expiresAt).catch(function() {});
+    }
     return true;
   }
 
@@ -106,6 +107,10 @@
       if (String(k).trim().toLowerCase() === lower) delete store[k];
     });
     savePlansStore(store);
+    // Sincroniza com Supabase em background
+    if (typeof global.DB !== 'undefined' && global.DB.isConfigured()) {
+      global.DB.clearUserPlan(key).catch(function() {});
+    }
     return true;
   }
 

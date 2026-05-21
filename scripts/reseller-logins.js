@@ -168,6 +168,11 @@ function createResellerLogin(reseller, data) {
   credits[reseller] = Math.max(0, getResellerCredits(reseller) - 1);
   saveResellerCreditsStore(credits);
 
+  // Sincroniza com Supabase em background
+  if (typeof DB !== 'undefined' && DB.isConfigured()) {
+    DB.createResellerLogin(reseller, username, password, days).catch(function() {});
+  }
+
   return {
     ok: true,
     msg: 'Conta criada com sucesso!',
