@@ -3,7 +3,7 @@
 // Veja worker.js para configuração.
 const PROXY = 'https://ancient-glitter-ad86.victorgabri121211.workers.dev';
 const CONSULT_TIPOS = ['serasa','spc','receita','tse','denatran'];
-const FETCH_TIMEOUT_MS = 10000;
+const FETCH_TIMEOUT_MS = 8000;
 const CACHE_TTL_MS = 60 * 60 * 1000;
 const PREFETCH_DEBOUNCE_MS = 180;
 
@@ -135,7 +135,11 @@ function isCpfBasedEp(ep) {
   );
 }
 
-/** Sem pills: todas as consultas possíveis para cada campo preenchido (em paralelo). */
+// Endpoints excluídos do modo automático (disponíveis apenas via pills).
+// Fotos e consultas secundárias são lentas e aumentam o tempo total da busca.
+const AUTO_EXCLUDE_IDS = new Set(['foto-cpf', 'foto-sp', 'foto-pe', 'cc-tse', 'cc-denatran']);
+
+/** Sem pills: consultas principais para cada campo preenchido (em paralelo). */
 function getAutoEndpoints(eps) {
   const v = fieldValues();
   const out = [];
@@ -143,10 +147,11 @@ function getAutoEndpoints(eps) {
 
   eps.forEach(ep => {
     if (ep.serasaLocked || ep.unsupported || seen.has(ep.id)) return;
+    if (AUTO_EXCLUDE_IDS.has(ep.id)) return;
 
     let include = false;
     if (isCpfBasedEp(ep)) include = v.cpf.length === 11;
-    else if (ep.id === 'nome' || ep.id === 'foto-pe') include = !!v.nome;
+    else if (ep.id === 'nome') include = !!v.nome;
     else if (ep.id === 'tel') include = v.tel.length >= 10;
     else if (ep.id === 'cep') include = v.cep.length === 8;
     else if (ep.id === 'placa') include = v.placa.length >= 7;
