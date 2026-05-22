@@ -80,18 +80,17 @@ async function submitPixForm() {
 
     const data = await resp.json();
 
-    // Debug temporário — mostra resposta completa no console e na tela
-    console.log('[MisticPay] resposta:', JSON.stringify(data));
-
-    if (!resp.ok || data.error) {
-      throw new Error(data.error || data.message || 'Erro ao gerar cobrança PIX.');
+    if (!resp.ok) {
+      throw new Error(data.message || data.error || 'Erro ao gerar cobrança PIX.');
     }
 
-    const qrBase64  = data.qrCodeBase64 || data.qrcode  || data.qr_code  || '';
-    const copyPaste = data.copyPaste    || data.brcode   || data.pix      || '';
+    // MisticPay retorna { message, data: { qrCodeBase64, copyPaste, ... } }
+    const payload   = (data.data && typeof data.data === 'object') ? data.data : data;
+    const qrBase64  = payload.qrCodeBase64 || payload.qrcode || payload.qr_code || '';
+    const copyPaste = payload.copyPaste    || payload.brcode  || payload.pix     || '';
 
     if (!qrBase64 && !copyPaste) {
-      throw new Error('DEBUG — campos recebidos: ' + Object.keys(data).join(', '));
+      throw new Error(data.message || 'Erro ao gerar cobrança PIX.');
     }
 
     if (qrBase64) {
@@ -119,8 +118,9 @@ function _pixStartPolling(txId) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ transactionId: txId }),
       });
-      const data   = await resp.json();
-      const status = (data.transactionState || data.status || data.state || '').toUpperCase();
+      const data    = await resp.json();
+      const payload = (data.data && typeof data.data === 'object') ? data.data : data;
+      const status  = (payload.transactionState || payload.status || payload.state || data.transactionState || data.status || '').toUpperCase();
 
       if (status === 'COMPLETO' || status === 'PAID' || status === 'COMPLETED') {
         clearInterval(_pixPollTimer);
