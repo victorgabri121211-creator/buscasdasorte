@@ -238,10 +238,14 @@ function renderAdminClients(filter) {
     btn.classList.toggle('active', btn.getAttribute('data-filter') === currentFilter);
   });
 
+  const searchEl = document.getElementById('admin-clients-search');
+  const searchTerm = searchEl ? searchEl.value.trim().toLowerCase() : '';
+
   const filtered = users.filter(u => {
     const plan = adminGetPlanInfo(u.user);
-    if (currentFilter === 'active') return plan.active;
-    if (currentFilter === 'inactive') return !plan.active;
+    if (currentFilter === 'active' && !plan.active) return false;
+    if (currentFilter === 'inactive' && plan.active) return false;
+    if (searchTerm && !u.user.toLowerCase().includes(searchTerm)) return false;
     return true;
   });
 
@@ -318,7 +322,16 @@ function bindAdminClientFilters() {
   document.querySelectorAll('.admin-filter-btn').forEach(btn => {
     btn.addEventListener('click', () => renderAdminClients(btn.getAttribute('data-filter')));
   });
+  const searchEl = document.getElementById('admin-clients-search');
+  if (searchEl) searchEl.addEventListener('input', () => renderAdminClients());
   bindAdminClientFilters.done = true;
+}
+
+function bindAdminResellerSearch() {
+  if (bindAdminResellerSearch.done) return;
+  const searchEl = document.getElementById('admin-resellers-search');
+  if (searchEl) searchEl.addEventListener('input', () => renderAdminResellers());
+  bindAdminResellerSearch.done = true;
 }
 
 function renderAdminResellers() {
@@ -326,16 +339,29 @@ function renderAdminResellers() {
   const countEl = document.getElementById('admin-resellers-count');
   if (!tableEl) return;
 
-  const users = adminGetUsers();
+  bindAdminResellerSearch();
+
+  const allUsers = adminGetUsers();
   let enabled = 0;
-  users.forEach(u => { if (isResellerEnabled(u.user)) enabled++; });
+  allUsers.forEach(u => { if (isResellerEnabled(u.user)) enabled++; });
 
   if (countEl) {
-    countEl.textContent = enabled + ' de ' + users.length + ' com revenda ativa';
+    countEl.textContent = enabled + ' de ' + allUsers.length + ' com revenda ativa';
+  }
+
+  const searchEl = document.getElementById('admin-resellers-search');
+  const searchTerm = searchEl ? searchEl.value.trim().toLowerCase() : '';
+  const users = searchTerm
+    ? allUsers.filter(u => u.user.toLowerCase().includes(searchTerm))
+    : allUsers;
+
+  if (!allUsers.length) {
+    tableEl.innerHTML = '<p class="admin-empty">Nenhum usuário cadastrado ainda.</p>';
+    return;
   }
 
   if (!users.length) {
-    tableEl.innerHTML = '<p class="admin-empty">Nenhum usuário cadastrado ainda.</p>';
+    tableEl.innerHTML = '<p class="admin-empty">Nenhum resultado para "' + escAdmin(searchTerm) + '".</p>';
     return;
   }
 
@@ -614,6 +640,35 @@ function initAdminShowAppView() {
     }
   };
   window.showAppView._adminViewsPatched = true;
+}
+
+async function adminSyncFromSupabase() {
+  if (typeof DB === 'undefined' || !DB.isConfigured()) return;
+  const btn = document.getElementById('admin-sync-btn');
+  if (btn) {
+    btn.disabled = true;
+    btn.classList.add('loading');
+    btn.querySelector('svg').style.animation = 'adminSyncSpin 0.8s linear infinite';
+  }
+  try {
+    const user = typeof getSession === 'function' ? getSession() : null;
+    await DB.syncOnLogin(user);
+    renderAdminClients();
+    renderAdminResellers();
+    if (typeof renderSalesDashboard === 'function') renderSalesDashboard();
+    if (btn) {
+      btn.classList.remove('loading');
+      btn.classList.add('ok');
+      setTimeout(function () { btn.classList.remove('ok'); }, 2000);
+    }
+  } catch (e) {
+    if (btn) btn.classList.remove('loading');
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.querySelector('svg').style.animation = '';
+    }
+  }
 }
 
 patchEnterAppForAdmin();
