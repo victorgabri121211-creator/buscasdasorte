@@ -935,16 +935,31 @@ window.addEventListener('bds-plans-changed', function () {
   if (root && root.children.length) renderModulesHub();
   if (typeof renderSidebarConsultas === 'function') renderSidebarConsultas();
   updateSidebarUserFooter();
+  if (typeof updateAppNavigation === 'function') updateAppNavigation();
+  const dashView = document.getElementById('view-revendedor-painel');
+  if (dashView && dashView.classList.contains('active') && typeof renderResellerDashboard === 'function') {
+    renderResellerDashboard();
+  }
+  const revendedorView = document.getElementById('view-revendedor');
+  if (revendedorView && revendedorView.classList.contains('active')) {
+    renderResellerPackages();
+  }
 });
 
 window.addEventListener('storage', function (e) {
-  if (e.key !== PLAN_STORE_KEY) return;
+  const watchKeys = [PLAN_STORE_KEY, 'bds_reseller_access', 'bds_reseller_credits', 'bds_reseller_logins'];
+  if (!watchKeys.includes(e.key)) return;
   if (typeof getSession !== 'function' || !getSession()) return;
   refreshClientPlanState();
   const root = document.getElementById('modules-categories');
   if (root && root.children.length) renderModulesHub();
   if (typeof renderSidebarConsultas === 'function') renderSidebarConsultas();
   updateSidebarUserFooter();
+  if (typeof updateAppNavigation === 'function') updateAppNavigation();
+  const dashView = document.getElementById('view-revendedor-painel');
+  if (dashView && dashView.classList.contains('active') && typeof renderResellerDashboard === 'function') {
+    renderResellerDashboard();
+  }
 });
 
 function bootAppAfterScripts() {
