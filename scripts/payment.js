@@ -80,6 +80,9 @@ async function submitPixForm() {
 
     const data = await resp.json();
 
+    // Debug temporário — mostra resposta completa no console e na tela
+    console.log('[MisticPay] resposta:', JSON.stringify(data));
+
     if (!resp.ok || data.error) {
       throw new Error(data.error || data.message || 'Erro ao gerar cobrança PIX.');
     }
@@ -88,7 +91,7 @@ async function submitPixForm() {
     const copyPaste = data.copyPaste    || data.brcode   || data.pix      || '';
 
     if (!qrBase64 && !copyPaste) {
-      throw new Error('API não retornou dados do PIX. Tente novamente.');
+      throw new Error('DEBUG — campos recebidos: ' + Object.keys(data).join(', '));
     }
 
     if (qrBase64) {
