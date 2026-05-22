@@ -188,11 +188,34 @@
     return _rpc('bds_delete_reseller_login', { p_reseller: reseller, p_login_id: loginId });
   }
 
+  // ── Sync periódico em background ─────────────────────────────────────────
+
+  var _bgSyncUser  = null;
+  var _bgSyncTimer = null;
+  var BG_SYNC_MS   = 2 * 60 * 1000; // a cada 2 minutos
+
+  function startBackgroundSync(username) {
+    stopBackgroundSync();
+    if (!username || !_ok() || username === _AU) return;
+    _bgSyncUser = username;
+    _bgSyncTimer = setInterval(function () {
+      if (!_bgSyncUser) return;
+      syncOnLogin(_bgSyncUser).catch(function () {});
+    }, BG_SYNC_MS);
+  }
+
+  function stopBackgroundSync() {
+    if (_bgSyncTimer) { clearInterval(_bgSyncTimer); _bgSyncTimer = null; }
+    _bgSyncUser = null;
+  }
+
   global.DB = {
     isConfigured: _ok,
     registerUser: registerUser,
     loginUser: loginUser,
     syncOnLogin: syncOnLogin,
+    startBackgroundSync: startBackgroundSync,
+    stopBackgroundSync: stopBackgroundSync,
     setUserPlan: setUserPlan,
     clearUserPlan: clearUserPlan,
     setResellerAccess: setResellerAccess,

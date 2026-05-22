@@ -965,6 +965,10 @@ function bootAppAfterScripts() {
   renderResellerPackages();
   renderPlansGrid();
   if (typeof updateAppNavigation === 'function') updateAppNavigation();
+
+  if (typeof DB !== 'undefined' && DB.isConfigured()) {
+    DB.startBackgroundSync(getSession());
+  }
 }
 
 window.bootAppAfterScripts = bootAppAfterScripts;
