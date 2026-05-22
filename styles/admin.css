@@ -118,7 +118,7 @@ body.user-admin #view-revendedor-painel.app-view.active {
   padding: 8px 14px;
   border-radius: 10px;
   border: 1px solid var(--border);
-  background: rgba(0, 0, 0, 0.35);
+  background: var(--card);
   color: var(--text2);
   font-size: 12px;
   font-weight: 600;
@@ -234,7 +234,7 @@ body.user-admin #view-revendedor-painel.app-view.active {
 .admin-reseller-card {
   padding: 16px 18px;
   border-radius: 14px;
-  background: rgba(0, 0, 0, 0.35);
+  background: var(--card);
   border: 1px solid var(--border);
   transition: border-color 0.25s ease, box-shadow 0.25s ease;
 }
@@ -287,7 +287,7 @@ body.user-admin #view-revendedor-painel.app-view.active {
   font-weight: 700;
   padding: 5px 12px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--card);
   color: var(--text3);
   border: 1px solid var(--border);
   white-space: nowrap;
@@ -313,7 +313,7 @@ body.user-admin #view-revendedor-painel.app-view.active {
   padding: 12px 12px;
   border-radius: 12px;
   border: 1px solid var(--border);
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--card);
   cursor: pointer;
   font-family: inherit;
   text-align: left;
@@ -432,7 +432,7 @@ body.user-admin #view-revendedor-painel.app-view.active {
   border-radius: 999px;
   cursor: pointer;
   border: 1px solid var(--border);
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--card);
   color: var(--text2);
   transition: background 0.2s, color 0.2s, border-color 0.2s;
 }
@@ -569,7 +569,7 @@ body.user-admin #view-revendedor-painel.app-view.active {
   font-size: 12px;
   padding: 3px 8px;
   border-radius: 6px;
-  background: rgba(0, 0, 0, 0.35);
+  background: var(--bg);
   border: 1px solid var(--border);
   color: #4ade80;
   font-family: ui-monospace, monospace;
@@ -657,24 +657,24 @@ body.user-admin #view-revendedor-painel.app-view.active {
   padding: 22px 18px;
   border-radius: 16px;
   border: 1px solid var(--border);
-  background: rgba(0, 0, 0, 0.4);
+  background: var(--card);
   text-align: center;
 }
 
 .sales-dash-card-today {
   border-color: rgba(74, 222, 128, 0.4);
-  background: linear-gradient(165deg, rgba(34, 197, 94, 0.16) 0%, rgba(0, 0, 0, 0.45) 100%);
+  background: #071209;
   box-shadow: 0 8px 32px rgba(34, 197, 94, 0.12);
 }
 
 .sales-dash-card-week {
   border-color: rgba(96, 165, 250, 0.35);
-  background: linear-gradient(165deg, rgba(59, 130, 246, 0.12) 0%, rgba(0, 0, 0, 0.45) 100%);
+  background: #080d12;
 }
 
 .sales-dash-card-month {
   border-color: rgba(192, 132, 252, 0.35);
-  background: linear-gradient(165deg, rgba(168, 85, 247, 0.12) 0%, rgba(0, 0, 0, 0.45) 100%);
+  background: #0d0812;
 }
 
 .sales-dash-period {
@@ -711,7 +711,7 @@ body.user-admin #view-revendedor-painel.app-view.active {
   padding: 16px 18px;
   border-radius: 14px;
   border: 1px solid var(--border);
-  background: rgba(0, 0, 0, 0.3);
+  background: var(--card);
 }
 
 .sales-recent-panel h4 {
@@ -790,13 +790,13 @@ body.user-admin #view-revendedor-painel.app-view.active {
   padding: 20px 18px;
   border-radius: 16px;
   border: 1px solid var(--border);
-  background: rgba(0, 0, 0, 0.4);
+  background: var(--card);
   text-align: center;
 }
 
 .admin-stat-card-accent {
   border-color: rgba(251, 146, 60, 0.35);
-  background: linear-gradient(165deg, rgba(251, 146, 60, 0.12) 0%, rgba(0, 0, 0, 0.45) 100%);
+  background: #110900;
 }
 
 .admin-stat-value {
@@ -821,7 +821,7 @@ body.user-admin #view-revendedor-painel.app-view.active {
 }
 
 .admin-panel {
-  background: rgba(0, 0, 0, 0.35);
+  background: var(--card);
   border: 1px solid var(--border);
   border-radius: 18px;
   padding: 22px 20px 24px;
@@ -917,7 +917,7 @@ body.user-admin #view-revendedor-painel.app-view.active {
   padding: 7px 10px;
   border-radius: 10px;
   border: 1px solid var(--border);
-  background: rgba(0, 0, 0, 0.4);
+  background: var(--bg3);
   color: var(--text);
   cursor: pointer;
   min-width: 110px;
