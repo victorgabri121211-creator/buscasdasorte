@@ -8,12 +8,15 @@ const PIX_PLANS = {
 
 let _pixPlan      = null;
 let _pixPollTimer = null;
+let _pixMode      = 'plan'; // 'plan' | 'reseller'
+let _resellerPkg  = null;
 
-// ── Abrir modal ──────────────────────────────────────────────────────────
+// ── Abrir modal (plano cliente) ──────────────────────────────────────────
 function openPixPayment(planId) {
   const plan = PIX_PLANS[planId];
   if (!plan) return;
   _pixPlan = planId;
+  _pixMode = 'plan';
 
   const nameEl = document.getElementById('pix-name');
   const cpfEl  = document.getElementById('pix-cpf');
@@ -24,6 +27,26 @@ function openPixPayment(planId) {
   document.getElementById('pix-plan-label').textContent = 'Plano ' + plan.label;
   document.getElementById('pix-plan-price').textContent  =
     'R$ ' + plan.amount.toFixed(2).replace('.', ',');
+
+  _pixState('form');
+  document.getElementById('pix-overlay').classList.add('open');
+}
+
+// ── Abrir modal (pacote revendedor) ──────────────────────────────────────
+function openResellerPixPayment(pkg) {
+  if (!pkg) return;
+  _resellerPkg = pkg;
+  _pixMode = 'reseller';
+
+  const nameEl = document.getElementById('pix-name');
+  const cpfEl  = document.getElementById('pix-cpf');
+  if (nameEl) nameEl.value = '';
+  if (cpfEl)  cpfEl.value  = '';
+  _pixMsg('');
+
+  document.getElementById('pix-plan-label').textContent = pkg.logins + ' créditos de login';
+  document.getElementById('pix-plan-price').textContent  =
+    'R$ ' + pkg.price.toFixed(2).replace('.', ',');
 
   _pixState('form');
   document.getElementById('pix-overlay').classList.add('open');
@@ -55,14 +78,22 @@ async function submitPixForm() {
   if (!name)          { _pixMsg('Informe seu nome completo.');      return; }
   if (cpf.length !== 11) { _pixMsg('CPF inválido — 11 dígitos.'); return; }
 
-  const plan = PIX_PLANS[_pixPlan];
-  if (!plan) return;
+  let amount, description;
+  if (_pixMode === 'reseller') {
+    if (!_resellerPkg) return;
+    amount      = _resellerPkg.price;
+    description = 'BuscasDasorte - Pacote ' + _resellerPkg.logins + ' logins';
+  } else {
+    const plan = PIX_PLANS[_pixPlan];
+    if (!plan) return;
+    amount      = plan.amount;
+    description = 'BuscasDasorte - Plano ' + plan.label;
+  }
 
   const btn = document.getElementById('pix-submit-btn');
   if (btn) { btn.disabled = true; btn.textContent = 'Gerando…'; }
   _pixMsg('');
 
-  // ID único por transação
   const txId = 'bds' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
 
   try {
@@ -70,11 +101,11 @@ async function submitPixForm() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        amount:          plan.amount,
-        payerName:       name,
-        payerDocument:   cpf,
-        transactionId:   txId,
-        description:     'BuscasDasorte - Plano ' + plan.label,
+        amount,
+        payerName:     name,
+        payerDocument: cpf,
+        transactionId: txId,
+        description,
       }),
     });
 
@@ -136,7 +167,41 @@ function _pixStartPolling(txId) {
 
 // ── Pagamento confirmado ─────────────────────────────────────────────────
 function _pixOnConfirmed() {
-  if (typeof activatePlan === 'function') activatePlan(_pixPlan);
+  const subtitleEl = document.querySelector('#pix-success .pix-subtitle');
+  const actionBtn  = document.getElementById('pix-success-btn');
+
+  if (_pixMode === 'reseller') {
+    const user = typeof getSession === 'function' ? getSession() : null;
+    if (user && typeof addResellerCredits === 'function' && _resellerPkg) {
+      addResellerCredits(user, _resellerPkg.logins);
+    }
+    if (typeof recordSale === 'function' && _resellerPkg) {
+      recordSale({
+        category: 'reseller',
+        productId: String(_resellerPkg.logins),
+        label: _resellerPkg.logins + ' logins',
+        amount: _resellerPkg.price,
+        buyer: user || '—',
+      });
+    }
+    if (subtitleEl) subtitleEl.textContent = (_resellerPkg ? _resellerPkg.logins : '') + ' créditos adicionados. Você já pode criar logins!';
+    if (actionBtn) {
+      actionBtn.textContent = 'Abrir painel';
+      actionBtn.onclick = () => {
+        closePixPayment();
+        if (typeof openResellerPanel === 'function') openResellerPanel();
+      };
+    }
+    if (typeof renderResellerDashboard === 'function') renderResellerDashboard();
+  } else {
+    if (typeof activatePlan === 'function') activatePlan(_pixPlan);
+    if (subtitleEl) subtitleEl.textContent = 'Seu plano foi ativado. Boas consultas!';
+    if (actionBtn) {
+      actionBtn.textContent = 'Acessar módulos';
+      actionBtn.onclick = () => { closePixPayment(); showAppView('modules'); };
+    }
+  }
+
   _pixState('success');
 }
 
@@ -170,7 +235,8 @@ if (_pixCpfEl) {
   _pixCpfEl.addEventListener('keydown', e => { if (e.key === 'Enter') submitPixForm(); });
 }
 
-window.openPixPayment  = openPixPayment;
-window.closePixPayment = closePixPayment;
-window.submitPixForm   = submitPixForm;
-window.pixCopyCode     = pixCopyCode;
+window.openPixPayment         = openPixPayment;
+window.openResellerPixPayment = openResellerPixPayment;
+window.closePixPayment        = closePixPayment;
+window.submitPixForm          = submitPixForm;
+window.pixCopyCode            = pixCopyCode;

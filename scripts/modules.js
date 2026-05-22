@@ -361,27 +361,8 @@ function setUserNavActive(view) {
 }
 
 function buyResellerPackage(pkg) {
-  const ok = confirm(
-    'Comprar pacote ' + pkg.logins + ' logins por R$ ' + formatMoneyBr(pkg.price) + '?\n\n' +
-    'R$ ' + formatMoneyBr(getResellerPerLogin(pkg)) + ' por login'
-  );
-  if (!ok) return;
-  const user = typeof getSession === 'function' ? getSession() : '—';
-  if (typeof recordSale === 'function') {
-    recordSale({
-      category: 'reseller',
-      productId: String(pkg.logins),
-      label: pkg.logins + ' logins',
-      amount: pkg.price,
-      buyer: user,
-    });
-  }
-  if (typeof addResellerCredits === 'function') addResellerCredits(user, pkg.logins);
-  alert('Venda registrada! ' + pkg.logins + ' crédito(s) de login adicionados.');
-  if (typeof renderResellerDashboard === 'function') renderResellerDashboard();
-  if (typeof isAdmin === 'function' && isAdmin()) {
-    if (typeof renderAdminView === 'function') renderAdminView('admin-dashboard');
-    showAppView('admin-dashboard');
+  if (typeof openResellerPixPayment === 'function') {
+    openResellerPixPayment(pkg);
   }
 }
 
