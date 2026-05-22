@@ -192,7 +192,7 @@
 
   var _bgSyncUser  = null;
   var _bgSyncTimer = null;
-  var BG_SYNC_MS   = 2 * 60 * 1000; // a cada 2 minutos
+  var BG_SYNC_MS   = 30 * 1000; // a cada 30 segundos
 
   function startBackgroundSync(username) {
     stopBackgroundSync();
