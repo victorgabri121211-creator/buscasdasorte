@@ -199,9 +199,9 @@ const REVENDER_REF_PER_LOGIN = 6;
 
 const REVENDER_PACKAGES = [
   { logins: 1,  price: 5.5,   tag: 'Crédito avulso', badge: null,          featured: false },
-  { logins: 10, price: 60,    tag: 'Para começar',    badge: null,          featured: false },
-  { logins: 20, price: 119.9, tag: 'Melhor custo',    badge: 'Mais vendido', featured: true  },
-  { logins: 30, price: 150,   tag: 'Máximo volume',   badge: 'Maior lucro',  featured: false },
+  { logins: 10, price: 49.9,  tag: 'Para começar',    badge: null,          featured: false },
+  { logins: 20, price: 99.9,  tag: 'Melhor custo',    badge: 'Mais vendido', featured: true  },
+  { logins: 30, price: 139.9, tag: 'Máximo volume',   badge: 'Maior lucro',  featured: false },
 ];
 
 function formatMoneyBr(value) {
