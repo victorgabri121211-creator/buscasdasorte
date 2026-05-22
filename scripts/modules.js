@@ -845,18 +845,8 @@ function updateStoreActivePlan() {
 }
 
 function buyPlan(plan) {
-  const ok = confirm(
-    'Comprar plano ' + plan.period + ' por R$ ' + formatMoneyBr(plan.price) + '?\n\n' +
-    'Duração: ' + plan.durationLabel + '\n\n' +
-    '(Demonstração: o plano será ativado após confirmar.)'
-  );
-  if (!ok) return;
-  if (activatePlan(plan.id)) {
-    updateStoreActivePlan();
-    alert('Plano ' + plan.period + ' ativado com sucesso! Acesse os módulos agora.');
-    showAppView('modules');
-  } else {
-    alert('Não foi possível ativar o plano. Faça login novamente.');
+  if (typeof openPixPayment === 'function') {
+    openPixPayment(plan.id);
   }
 }
 

@@ -14,6 +14,7 @@
 <link rel="stylesheet" href="../styles/negativ.css"/>
 <link rel="stylesheet" href="../styles/modules.css"/>
 <link rel="stylesheet" href="../styles/admin.css"/>
+<link rel="stylesheet" href="../styles/payment.css"/>
 </head>
 <body>
 
@@ -159,6 +160,61 @@
 
 <!-- MODAL DE CONSULTA -->
 
+<!-- PIX PAYMENT OVERLAY -->
+<div id="pix-overlay" class="pix-overlay" onclick="if(event.target===this)closePixPayment()">
+  <div class="pix-modal" role="dialog" aria-modal="true">
+    <button class="pix-close-btn" type="button" onclick="closePixPayment()" aria-label="Fechar">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+    <!-- Estado 1: formulário -->
+    <div id="pix-form">
+      <div class="pix-modal-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+      </div>
+      <h3 class="pix-modal-title">Finalizar compra</h3>
+      <div class="pix-plan-summary">
+        <span id="pix-plan-label">Plano Diária</span>
+        <strong id="pix-plan-price">R$ 5,00</strong>
+      </div>
+      <div class="pix-field">
+        <label class="pix-label" for="pix-name">Nome completo</label>
+        <input class="pix-input" type="text" id="pix-name" placeholder="Seu nome completo" autocomplete="name"/>
+      </div>
+      <div class="pix-field">
+        <label class="pix-label" for="pix-cpf">CPF</label>
+        <input class="pix-input" type="text" id="pix-cpf" placeholder="000.000.000-00" maxlength="14" inputmode="numeric"/>
+      </div>
+      <p id="pix-msg" class="pix-msg"></p>
+      <button id="pix-submit-btn" class="pix-btn-primary" type="button" onclick="submitPixForm()">Gerar PIX</button>
+    </div>
+    <!-- Estado 2: QR Code -->
+    <div id="pix-qr" hidden>
+      <h3 class="pix-modal-title">Pague via PIX</h3>
+      <p class="pix-subtitle">Escaneie o QR code ou copie o código abaixo</p>
+      <div class="pix-qr-wrap">
+        <img id="pix-qr-img" src="" alt="QR Code PIX" class="pix-qr-img"/>
+      </div>
+      <div class="pix-copypaste-row">
+        <input class="pix-input pix-input-copy" type="text" id="pix-copy-paste" readonly/>
+        <button id="pix-copy-btn" class="pix-btn-copy" type="button" onclick="pixCopyCode()">Copiar</button>
+      </div>
+      <div class="pix-waiting">
+        <span class="spinner"></span>
+        <span>Aguardando pagamento…</span>
+      </div>
+      <p class="pix-hint">O plano é ativado automaticamente após a confirmação do PIX.</p>
+    </div>
+    <!-- Estado 3: Sucesso -->
+    <div id="pix-success" hidden>
+      <div class="pix-success-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+      </div>
+      <h3 class="pix-modal-title">Pagamento confirmado!</h3>
+      <p class="pix-subtitle">Seu plano foi ativado. Boas consultas!</p>
+      <button class="pix-btn-primary" type="button" onclick="closePixPayment();showAppView('modules')">Acessar módulos</button>
+    </div>
+  </div>
+</div>
 
 <!-- Modal: login criado (painel revendedor) -->
 <div class="modal-overlay" id="reseller-login-created-overlay" onclick="if(event.target===this)closeResellerLoginCreatedModal()">
@@ -711,6 +767,7 @@ document.getElementById('login-user').addEventListener('keydown',e=>{if(e.key===
 <script src="../scripts/dossie.js?v=3"></script>
 <script src="../scripts/negativ.js?v=3"></script>
 <script src="../scripts/utils.js?v=3"></script>
+<script src="../scripts/payment.js?v=3"></script>
 <script>
 if (typeof bootAppAfterScripts === 'function') bootAppAfterScripts();
 if (typeof renderPills === 'function') renderPills();
