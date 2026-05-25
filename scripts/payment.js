@@ -1,9 +1,9 @@
 // PIX via MisticPay — credenciais ficam no Cloudflare Worker (env vars)
 
 const PIX_PLANS = {
-  diaria: { label: 'Diária',   amount: 5  },
-  semana: { label: '1 Semana', amount: 20 },
-  mes:    { label: '1 Mês',    amount: 25 },
+  diaria: { label: 'Diária',   amount: 5.5  },
+  semana: { label: '1 Semana', amount: 20.5 },
+  mes:    { label: '1 Mês',    amount: 25.5 },
 };
 
 let _pixPlan      = null;
@@ -153,10 +153,11 @@ function _pixStartPolling(txId) {
       const payload = (data.data && typeof data.data === 'object') ? data.data : data;
       const status  = (payload.transactionState || payload.status || payload.state || data.transactionState || data.status || '').toUpperCase();
 
-      if (status === 'COMPLETO' || status === 'PAID' || status === 'COMPLETED') {
+      if (status === 'APPROVED' || status === 'COMPLETO' || status === 'PAID' ||
+          status === 'COMPLETED' || status === 'PAGO' || status === 'CONCLUIDO') {
         clearInterval(_pixPollTimer);
         _pixOnConfirmed();
-      } else if (status === 'FALHA' || status === 'FAILED') {
+      } else if (status === 'FALHA' || status === 'FAILED' || status === 'REFUSED' || status === 'RECUSADO') {
         clearInterval(_pixPollTimer);
         _pixState('form');
         _pixMsg('Pagamento não aprovado. Tente novamente.');
@@ -194,7 +195,18 @@ function _pixOnConfirmed() {
     }
     if (typeof renderResellerDashboard === 'function') renderResellerDashboard();
   } else {
+    const user = typeof getSession === 'function' ? getSession() : null;
     if (typeof activatePlan === 'function') activatePlan(_pixPlan);
+    const planDef = PIX_PLANS[_pixPlan];
+    if (typeof recordSale === 'function' && planDef) {
+      recordSale({
+        category:  'plan',
+        productId: _pixPlan,
+        label:     'Plano ' + planDef.label,
+        amount:    planDef.amount,
+        buyer:     user || '—',
+      });
+    }
     if (subtitleEl) subtitleEl.textContent = 'Seu plano foi ativado. Boas consultas!';
     if (actionBtn) {
       actionBtn.textContent = 'Acessar módulos';
