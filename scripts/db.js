@@ -111,6 +111,19 @@
         });
       });
       localStorage.setItem('bds_reseller_logins', JSON.stringify(logins));
+
+      const remoteSales = res.sales || [];
+      if (remoteSales.length) {
+        const localSales = _get('bds_sales', []);
+        const localIds = new Set(localSales.map(function (s) { return s.id; }));
+        remoteSales.forEach(function (s) {
+          if (!localIds.has(s.id)) {
+            localSales.push({ id: s.id, txId: s.tx_id, ts: s.ts, category: s.category, productId: s.product_id, label: s.label, amount: s.amount, buyer: s.buyer });
+          }
+        });
+        localSales.sort(function (a, b) { return b.ts - a.ts; });
+        localStorage.setItem('bds_sales', JSON.stringify(localSales));
+      }
     } else {
       const [planRes, accessRes, creditsRes, loginsRes] = await Promise.all([
         _rpc('bds_get_plan', { p_username: username }),
@@ -172,6 +185,21 @@
     return _rpc('bds_admin_add_credits', { p_hash: _APH, p_username: username, p_amount: amount });
   }
 
+  // ── Vendas ────────────────────────────────────────────────────────────────
+
+  function recordSale(sale) {
+    return _rpc('bds_record_sale', {
+      p_id:         sale.id,
+      p_tx_id:      sale.txId || null,
+      p_ts:         sale.ts || Date.now(),
+      p_category:   sale.category || '',
+      p_product_id: sale.productId || '',
+      p_label:      sale.label || '',
+      p_amount:     Number(sale.amount) || 0,
+      p_buyer:      sale.buyer || ''
+    });
+  }
+
   // ── Revendedor: logins ─────────────────────────────────────────────────────
 
   function createResellerLogin(reseller, username, password, days) {
@@ -222,7 +250,8 @@
     addResellerCredits: addResellerCredits,
     createResellerLogin: createResellerLogin,
     deactivateResellerLogin: deactivateResellerLogin,
-    deleteResellerLogin: deleteResellerLogin
+    deleteResellerLogin: deleteResellerLogin,
+    recordSale: recordSale
   };
 
 })(typeof window !== 'undefined' ? window : global);

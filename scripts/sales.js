@@ -19,7 +19,7 @@ function startOfLocalDay(ts) {
 function recordSale(sale) {
   const list = getSalesList();
   if (sale.txId && list.some(s => s.txId === sale.txId)) return; // dedup
-  list.push({
+  const entry = {
     id:        's' + Date.now() + '-' + Math.random().toString(36).slice(2, 8),
     txId:      sale.txId || null,
     ts:        Number(sale.ts) || Date.now(),
@@ -28,8 +28,12 @@ function recordSale(sale) {
     label:     sale.label,
     amount:    Number(sale.amount) || 0,
     buyer:     sale.buyer || '—',
-  });
+  };
+  list.push(entry);
   saveSalesList(list);
+  if (typeof DB !== 'undefined' && DB.isConfigured()) {
+    DB.recordSale(entry).catch(function () {});
+  }
 }
 
 

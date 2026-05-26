@@ -158,6 +158,13 @@ begin
         'password', password, 'days', days, 'created_at', created_at, 'expires_at', expires_at
       ) order by created_at desc), '[]'::jsonb)
       from bds_reseller_logins
+    ),
+    'sales', (
+      select coalesce(jsonb_agg(jsonb_build_object(
+        'id', id, 'tx_id', tx_id, 'ts', ts, 'category', category,
+        'product_id', product_id, 'label', label, 'amount', amount, 'buyer', buyer
+      ) order by ts desc), '[]'::jsonb)
+      from bds_sales
     )
   );
 end; $$;
@@ -266,6 +273,32 @@ begin
   return jsonb_build_object('ok', true, 'msg', 'Cliente removido.');
 end; $$;
 
+-- ── Tabela de vendas ───────────────────────────────────────────────────────
+
+create table if not exists bds_sales (
+  id text primary key,
+  tx_id text,
+  ts bigint,
+  category text,
+  product_id text,
+  label text,
+  amount numeric(10,2),
+  buyer text,
+  created_at bigint default (extract(epoch from now()) * 1000)::bigint
+);
+
+alter table bds_sales enable row level security;
+
+-- Registrar venda (chamado pelo browser do cliente após pagamento aprovado)
+create or replace function bds_record_sale(p_id text, p_tx_id text, p_ts bigint, p_category text, p_product_id text, p_label text, p_amount numeric, p_buyer text)
+returns jsonb language plpgsql security definer as $$
+begin
+  insert into bds_sales(id, tx_id, ts, category, product_id, label, amount, buyer)
+  values(p_id, p_tx_id, p_ts, p_category, p_product_id, p_label, p_amount, p_buyer)
+  on conflict (id) do nothing;
+  return jsonb_build_object('ok', true);
+end; $$;
+
 -- ── Permissões de acesso (anon pode chamar as funções) ─────────────────────
 
 grant execute on function bds_register(text, text, text) to anon;
@@ -280,5 +313,6 @@ grant execute on function bds_admin_clear_plan(text, text) to anon;
 grant execute on function bds_admin_set_reseller(text, text, boolean) to anon;
 grant execute on function bds_admin_add_credits(text, text, integer) to anon;
 grant execute on function bds_create_reseller_login(text, text, text, integer) to anon;
+grant execute on function bds_record_sale(text, text, bigint, text, text, text, numeric, text) to anon;
 grant execute on function bds_deactivate_reseller_login(text, text) to anon;
 grant execute on function bds_delete_reseller_login(text, text) to anon;
