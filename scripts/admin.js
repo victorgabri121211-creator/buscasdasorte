@@ -610,10 +610,9 @@ function patchEnterAppForAdmin() {
   if (typeof window.enterApp !== 'function' || window.enterApp._adminPatched) return;
   const original = window.enterApp;
   window.enterApp = function (user) {
-    original(user);
+    original(user); // já dispara showAppView → renderAdminView via patch abaixo
     updateAppNavigation();
     if (isAdmin()) {
-      renderAdminView('admin-dashboard');
       bindAdminClientFilters();
     } else if (typeof refreshClientPlanState === 'function') {
       refreshClientPlanState();
@@ -649,32 +648,36 @@ function initAdminShowAppView() {
 
 async function adminSyncFromSupabase() {
   if (typeof DB === 'undefined' || !DB.isConfigured()) return;
-  const btn = document.getElementById('admin-sync-btn');
-  if (btn) {
-    btn.disabled = true;
-    btn.classList.add('loading');
-    btn.querySelector('svg').style.animation = 'adminSyncSpin 0.8s linear infinite';
-  }
+  const btns = Array.from(document.querySelectorAll('.admin-sync-btn'));
+  btns.forEach(function(b) {
+    b.disabled = true;
+    var svg = b.querySelector('svg');
+    if (svg) svg.style.animation = 'adminSyncSpin 0.8s linear infinite';
+  });
   try {
     const user = typeof getSession === 'function' ? getSession() : null;
     await DB.syncOnLogin(user);
     renderAdminClients();
     renderAdminResellers();
     if (typeof renderSalesDashboard === 'function') renderSalesDashboard();
-    if (btn) {
-      btn.classList.remove('loading');
-      btn.classList.add('ok');
-      setTimeout(function () { btn.classList.remove('ok'); }, 2000);
-    }
+    btns.forEach(function(b) {
+      b.classList.remove('loading');
+      b.classList.add('ok');
+    });
+    setTimeout(function () {
+      btns.forEach(function(b) { b.classList.remove('ok'); });
+    }, 2000);
   } catch (e) {
-    if (btn) btn.classList.remove('loading');
+    btns.forEach(function(b) { b.classList.remove('loading'); });
   } finally {
-    if (btn) {
-      btn.disabled = false;
-      btn.querySelector('svg').style.animation = '';
-    }
+    btns.forEach(function(b) {
+      b.disabled = false;
+      var svg = b.querySelector('svg');
+      if (svg) svg.style.animation = '';
+    });
   }
 }
+window.adminSyncFromSupabase = adminSyncFromSupabase;
 
 patchEnterAppForAdmin();
 initAdminShowAppView();
