@@ -195,6 +195,11 @@ function renderAdminView(view) {
   if (!isAdmin()) return;
   if (view === 'admin-dashboard' && typeof renderSalesDashboard === 'function') {
     renderSalesDashboard();
+    if (typeof DB !== 'undefined' && DB.isConfigured()) {
+      DB.syncSales().then(function () {
+        renderSalesDashboard();
+      }).catch(function () {});
+    }
   }
   if (view === 'admin-clientes') {
     bindAdminClientFilters();

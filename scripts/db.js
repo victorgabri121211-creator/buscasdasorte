@@ -216,6 +216,29 @@
     return _rpc('bds_delete_reseller_login', { p_reseller: reseller, p_login_id: loginId });
   }
 
+  // ── Sync de vendas (admin) ────────────────────────────────────────────────
+
+  async function syncSales() {
+    if (!_ok()) return null;
+    const res = await _rpc('bds_admin_full_sync', { p_hash: _APH });
+    if (!res || !res.ok) return null;
+    const remoteSales = res.sales || [];
+    const localSales = _get('bds_sales', []);
+    const localIds = new Set(localSales.map(function (s) { return s.id; }));
+    var changed = false;
+    remoteSales.forEach(function (s) {
+      if (!localIds.has(s.id)) {
+        localSales.push({ id: s.id, txId: s.tx_id, ts: s.ts, category: s.category, productId: s.product_id, label: s.label, amount: s.amount, buyer: s.buyer });
+        changed = true;
+      }
+    });
+    if (changed) {
+      localSales.sort(function (a, b) { return b.ts - a.ts; });
+      localStorage.setItem('bds_sales', JSON.stringify(localSales));
+    }
+    return localSales;
+  }
+
   // ── Sync periódico em background ─────────────────────────────────────────
 
   var _bgSyncUser  = null;
@@ -251,7 +274,8 @@
     createResellerLogin: createResellerLogin,
     deactivateResellerLogin: deactivateResellerLogin,
     deleteResellerLogin: deleteResellerLogin,
-    recordSale: recordSale
+    recordSale: recordSale,
+    syncSales: syncSales
   };
 
 })(typeof window !== 'undefined' ? window : global);
