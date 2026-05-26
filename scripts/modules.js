@@ -290,7 +290,7 @@ const MODULE_CATEGORIES = [
     sectionIcon: '<path d="M22 16.92v3a2 2 0 0 1-2.18 2A19.8 19.8 0 0 1 3.1 5.18 2 2 0 0 1 5.09 3h3a2 2 0 0 1 2 1.72c.64 2.12 1.86 3.9 3.5 5.11L9.09 10.9a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c1.21.64 2.59 1 4 .99A2 2 0 0 1 22 16.92z"/>',
     modules: [
       { key: 'tel', title: 'CONSULTA TELEFONE' },
-      { key: 'operadora', title: 'CONSULTA OPERADORA' },
+      { key: 'operadora', title: 'CONSULTA OPERADORA', maintenance: true },
       { key: 'email', title: 'BUSCA POR E-MAIL (CPF)', hc: true },
       { key: 'cep', title: 'CONSULTA CEP' },
     ],
