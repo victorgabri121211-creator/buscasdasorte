@@ -142,6 +142,25 @@ async function submitPixForm() {
 }
 
 // ── Polling de status ─────────────────────────────────────────────────────
+const _PIX_OK  = new Set(['APPROVED','COMPLETO','PAID','COMPLETED','PAGO','CONCLUIDO','CONCLUÍDA','SUCCESS','SUCESSO','DONE','AUTHORIZED','AUTORIZADO']);
+const _PIX_ERR = new Set(['FALHA','FAILED','REFUSED','RECUSADO','REJECTED','CANCELADO','CANCELLED','EXPIRED','EXPIRADO','ERROR']);
+
+function _pixFindStatus(obj, depth) {
+  if (!obj || typeof obj !== 'object' || depth > 4) return '';
+  for (const key of Object.keys(obj)) {
+    const val = obj[key];
+    if (typeof val === 'string' && val.length > 2 && val.length < 30) {
+      const up = val.toUpperCase();
+      if (_PIX_OK.has(up) || _PIX_ERR.has(up)) return up;
+    }
+    if (typeof val === 'object') {
+      const found = _pixFindStatus(val, depth + 1);
+      if (found) return found;
+    }
+  }
+  return '';
+}
+
 function _pixStartPolling(txId) {
   clearInterval(_pixPollTimer);
   _pixPollTimer = setInterval(async () => {
@@ -151,15 +170,15 @@ function _pixStartPolling(txId) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ transactionId: txId }),
       });
-      const data    = await resp.json();
-      const payload = (data.data && typeof data.data === 'object') ? data.data : data;
-      const status  = (payload.transactionState || payload.status || payload.state || data.transactionState || data.status || '').toUpperCase();
+      const data = await resp.json();
+      console.log('[PIX poll]', JSON.stringify(data));
 
-      if (status === 'APPROVED' || status === 'COMPLETO' || status === 'PAID' ||
-          status === 'COMPLETED' || status === 'PAGO' || status === 'CONCLUIDO') {
+      const status = _pixFindStatus(data, 0);
+
+      if (_PIX_OK.has(status)) {
         clearInterval(_pixPollTimer);
         _pixOnConfirmed();
-      } else if (status === 'FALHA' || status === 'FAILED' || status === 'REFUSED' || status === 'RECUSADO') {
+      } else if (_PIX_ERR.has(status)) {
         clearInterval(_pixPollTimer);
         _pixState('form');
         _pixMsg('Pagamento não aprovado. Tente novamente.');
