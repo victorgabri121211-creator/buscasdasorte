@@ -191,36 +191,10 @@ function escAdmin(s) {
     .replace(/"/g, '&quot;');
 }
 
-function bindImportSalesBtn() {
-  const btn = document.getElementById('admin-import-sales-btn');
-  const msg = document.getElementById('admin-import-sales-msg');
-  if (!btn || btn._importBound) return;
-  btn._importBound = true;
-  btn.addEventListener('click', async function () {
-    btn.disabled = true;
-    btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14" style="animation:adminSyncSpin 0.8s linear infinite"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4.16"/></svg> Importando…';
-    if (msg) { msg.textContent = ''; msg.className = 'admin-import-msg'; }
-    try {
-      const r = await importSalesFromMisticPay();
-      if (msg) {
-        msg.textContent = r.imported + ' venda(s) importada(s)' + (r.skipped ? ', ' + r.skipped + ' já existiam' : '') + '.';
-        msg.className = 'admin-import-msg ok';
-      }
-      if (typeof renderSalesDashboard === 'function') renderSalesDashboard();
-    } catch (e) {
-      if (msg) { msg.textContent = 'Erro: ' + e.message; msg.className = 'admin-import-msg err'; }
-    } finally {
-      btn.disabled = false;
-      btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4.16"/></svg> Importar histórico do MisticPay';
-    }
-  });
-}
-
 function renderAdminView(view) {
   if (!isAdmin()) return;
   if (view === 'admin-dashboard' && typeof renderSalesDashboard === 'function') {
     renderSalesDashboard();
-    bindImportSalesBtn();
   }
   if (view === 'admin-clientes') {
     bindAdminClientFilters();

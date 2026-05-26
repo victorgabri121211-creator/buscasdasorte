@@ -423,7 +423,7 @@ function renderResellerDashboard() {
     : (typeof getSession === 'function' ? getSession() : '');
   const stats = typeof getResellerStats === 'function'
     ? getResellerStats(reseller)
-    : { creditsRemaining: 0, creditsUsed: 0, loginsCreated: 0, clientsManaged: 0, clientsActive: 0 };
+    : { creditsRemaining: 0, creditsUsed: 0, loginsCreated: 0, clientsManaged: 0, clientsActive: 0, created24h: 0, created7d: 0, created30d: 0 };
   const logins = typeof getResellerLoginsFor === 'function'
     ? getResellerLoginsFor(reseller)
     : [];
@@ -446,18 +446,35 @@ function renderResellerDashboard() {
         '</div>' +
       '</div>' +
       adminBanner +
+      '<div class="reseller-dash-section-label">Contas criadas</div>' +
       '<div class="reseller-dash-stats">' +
         '<div class="reseller-stat-card">' +
-          '<span class="reseller-stat-label">Créditos disponíveis</span>' +
-          '<strong class="reseller-stat-value">' + stats.creditsRemaining + '</strong>' +
+          '<span class="reseller-stat-label">Últimas 24 horas</span>' +
+          '<strong class="reseller-stat-value">' + (stats.created24h || 0) + '</strong>' +
+          '<span class="reseller-stat-sub">conta' + (stats.created24h !== 1 ? 's' : '') + '</span>' +
         '</div>' +
         '<div class="reseller-stat-card">' +
-          '<span class="reseller-stat-label">Créditos usados</span>' +
-          '<strong class="reseller-stat-value">' + stats.creditsUsed + '</strong>' +
+          '<span class="reseller-stat-label">Últimos 7 dias</span>' +
+          '<strong class="reseller-stat-value">' + (stats.created7d || 0) + '</strong>' +
+          '<span class="reseller-stat-sub">conta' + (stats.created7d !== 1 ? 's' : '') + '</span>' +
         '</div>' +
         '<div class="reseller-stat-card">' +
-          '<span class="reseller-stat-label">Clientes gerenciados</span>' +
-          '<strong class="reseller-stat-value">' + stats.clientsManaged + '</strong>' +
+          '<span class="reseller-stat-label">Últimos 30 dias</span>' +
+          '<strong class="reseller-stat-value">' + (stats.created30d || 0) + '</strong>' +
+          '<span class="reseller-stat-sub">conta' + (stats.created30d !== 1 ? 's' : '') + '</span>' +
+        '</div>' +
+      '</div>' +
+      '<div class="reseller-dash-section-label">Créditos</div>' +
+      '<div class="reseller-dash-stats reseller-dash-stats-credits">' +
+        '<div class="reseller-stat-card">' +
+          '<span class="reseller-stat-label">Gastos</span>' +
+          '<strong class="reseller-stat-value">' + (stats.creditsUsed || 0) + '</strong>' +
+          '<span class="reseller-stat-sub">crédito' + (stats.creditsUsed !== 1 ? 's' : '') + '</span>' +
+        '</div>' +
+        '<div class="reseller-stat-card">' +
+          '<span class="reseller-stat-label">Disponíveis</span>' +
+          '<strong class="reseller-stat-value reseller-stat-value-credits">' + (stats.creditsRemaining || 0) + '</strong>' +
+          '<span class="reseller-stat-sub">crédito' + (stats.creditsRemaining !== 1 ? 's' : '') + '</span>' +
         '</div>' +
         '<div class="reseller-stat-card reseller-stat-card-action">' +
           '<span class="reseller-stat-label">Recarga</span>' +

@@ -196,14 +196,20 @@ function getResellerPanelUser() {
 function getResellerStats(reseller) {
   const logins = getResellerLoginsFor(reseller);
   const remaining = getResellerCredits(reseller);
-  const used = logins.length;
+  const now = Date.now();
+  const h24  = now - RESELLER_DAY_MS;
+  const d7   = now - 7  * RESELLER_DAY_MS;
+  const d30  = now - 30 * RESELLER_DAY_MS;
   const active = logins.filter(l => getDaysRemaining(l.expiresAt) > 0).length;
   return {
     creditsRemaining: remaining,
-    creditsUsed: used,
-    loginsCreated: used,
-    clientsActive: active,
-    clientsManaged: logins.length,
+    creditsUsed:      logins.length,
+    loginsCreated:    logins.length,
+    clientsActive:    active,
+    clientsManaged:   logins.length,
+    created24h: logins.filter(l => (l.createdAt || 0) >= h24).length,
+    created7d:  logins.filter(l => (l.createdAt || 0) >= d7).length,
+    created30d: logins.filter(l => (l.createdAt || 0) >= d30).length,
   };
 }
 

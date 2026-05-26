@@ -32,61 +32,6 @@ function recordSale(sale) {
   saveSalesList(list);
 }
 
-async function importSalesFromMisticPay() {
-  const resp = await fetch(PROXY + '/pix/history', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({}),
-  });
-  if (!resp.ok) throw new Error('Erro HTTP ' + resp.status);
-  const data = await resp.json();
-
-  const APPROVED = new Set(['APPROVED','COMPLETO','PAID','COMPLETED','PAGO','CONCLUIDO']);
-  const txList = Array.isArray(data) ? data
-    : (data.data && Array.isArray(data.data)) ? data.data : [];
-
-  if (!txList.length && data.error) throw new Error(data.error);
-
-  let imported = 0, skipped = 0;
-
-  txList.forEach(tx => {
-    const state = (tx.transactionState || tx.status || tx.state || '').toUpperCase();
-    if (!APPROVED.has(state)) return;
-
-    const txId   = tx.transactionId || tx.id || null;
-    const desc   = String(tx.description || '');
-    const amount = Number(tx.amount) || 0;
-    const buyer  = tx.payerName || tx.payer_name || '—';
-    const ts     = tx.createdAt   ? new Date(tx.createdAt).getTime()
-                 : tx.created_at  ? new Date(tx.created_at).getTime()
-                 : Date.now();
-
-    const existing = getSalesList();
-    if (txId && existing.some(s => s.txId === txId)) { skipped++; return; }
-
-    const dl = desc.toLowerCase();
-    let category, productId, label;
-    if (dl.includes('logins') || dl.includes('pacote')) {
-      category = 'reseller';
-      const m = desc.match(/(\d+)\s*logins?/i);
-      productId = m ? m[1] : '?';
-      label     = (m ? m[1] : '?') + ' logins';
-    } else if (dl.includes('diária') || dl.includes('diaria')) {
-      category = 'plan'; productId = 'diaria'; label = 'Plano Diária';
-    } else if (dl.includes('semana')) {
-      category = 'plan'; productId = 'semana'; label = 'Plano 1 Semana';
-    } else if (dl.includes('mês') || dl.includes('mes')) {
-      category = 'plan'; productId = 'mes'; label = 'Plano 1 Mês';
-    } else {
-      category = 'plan'; productId = 'outro'; label = desc || 'Venda';
-    }
-
-    recordSale({ txId, ts, category, productId, label, amount, buyer });
-    imported++;
-  });
-
-  return { imported, skipped, total: txList.length };
-}
 
 function sumSalesInRange(fromTs, toTs) {
   const sales = getSalesList();
