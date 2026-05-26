@@ -32,6 +32,9 @@ export default {
     if (path === '/pix/status' && request.method === 'POST') {
       return handlePixStatus(request, env);
     }
+    if (path === '/pix/history' && request.method === 'POST') {
+      return handlePixHistory(request, env);
+    }
 
     // ── Proxy para a API de busca ───────────────────────────────────────
     const isNegativacao = path.includes('/negativacao/');
@@ -123,6 +126,24 @@ async function handlePixStatus(request, env) {
     return apiResponse(data, resp.status);
   } catch (err) {
     return apiResponse({ error: 'Erro ao verificar status: ' + err.message }, 502);
+  }
+}
+
+// ── Handler: histórico de transações ────────────────────────────────────
+async function handlePixHistory(request, env) {
+  const ci = env.MISTICPAY_CI || '';
+  const cs = env.MISTICPAY_CS || '';
+  if (!ci || !cs) return apiResponse({ error: 'Credenciais não configuradas.' }, 500);
+
+  try {
+    const resp = await fetch(MISTICPAY_URL + '/transactions', {
+      method: 'GET',
+      headers: { 'ci': ci, 'cs': cs },
+    });
+    const data = await resp.json();
+    return apiResponse(data, resp.status);
+  } catch (err) {
+    return apiResponse({ error: 'Erro ao buscar histórico: ' + err.message }, 502);
   }
 }
 

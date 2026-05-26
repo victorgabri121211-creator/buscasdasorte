@@ -10,6 +10,7 @@ let _pixPlan      = null;
 let _pixPollTimer = null;
 let _pixMode      = 'plan'; // 'plan' | 'reseller'
 let _resellerPkg  = null;
+let _pixTxId      = null;
 
 // ── Abrir modal (plano cliente) ──────────────────────────────────────────
 function openPixPayment(planId) {
@@ -95,6 +96,7 @@ async function submitPixForm() {
   _pixMsg('');
 
   const txId = 'bds' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+  _pixTxId = txId;
 
   try {
     const resp = await fetch(PROXY + '/pix/create', {
@@ -178,11 +180,12 @@ function _pixOnConfirmed() {
     }
     if (typeof recordSale === 'function' && _resellerPkg) {
       recordSale({
-        category: 'reseller',
+        txId:      _pixTxId,
+        category:  'reseller',
         productId: String(_resellerPkg.logins),
-        label: _resellerPkg.logins + ' logins',
-        amount: _resellerPkg.price,
-        buyer: user || '—',
+        label:     _resellerPkg.logins + ' logins',
+        amount:    _resellerPkg.price,
+        buyer:     user || '—',
       });
     }
     if (subtitleEl) subtitleEl.textContent = (_resellerPkg ? _resellerPkg.logins : '') + ' créditos adicionados. Você já pode criar logins!';
@@ -200,6 +203,7 @@ function _pixOnConfirmed() {
     const planDef = PIX_PLANS[_pixPlan];
     if (typeof recordSale === 'function' && planDef) {
       recordSale({
+        txId:      _pixTxId,
         category:  'plan',
         productId: _pixPlan,
         label:     'Plano ' + planDef.label,

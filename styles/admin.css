@@ -1071,6 +1071,21 @@ body.user-admin #view-revendedor-painel.app-view.active {
   font-size: 14px;
 }
 
+.admin-import-wrap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 16px;
+}
+
+.admin-import-msg {
+  font-size: 13px;
+  color: var(--text2);
+}
+.admin-import-msg.ok  { color: #4ade80; }
+.admin-import-msg.err { color: #f87171; }
+
 .sidebar-item-admin {
   color: rgba(192, 132, 252, 0.85);
 }
