@@ -1966,6 +1966,52 @@ body.user-reseller-client #view-loja {
   border-color: rgba(251, 191, 36, 0.25);
 }
 
+.mod-badge.mod-badge-maintenance {
+  background: rgba(60, 60, 60, 0.5);
+  color: #666;
+  border-color: rgba(70, 70, 70, 0.4);
+}
+
+.mod-card.mod-maintenance {
+  opacity: 0.45;
+  border-color: rgba(60, 60, 60, 0.35) !important;
+  filter: grayscale(0.8);
+  cursor: default;
+}
+
+.mod-card.mod-maintenance:hover {
+  transform: none !important;
+  border-color: rgba(70, 70, 70, 0.45) !important;
+  box-shadow: none !important;
+}
+
+.mod-card.mod-maintenance .mod-card-btn {
+  background: linear-gradient(135deg, #2a2a2a, #404040) !important;
+  color: #666 !important;
+  cursor: default;
+  box-shadow: none !important;
+}
+
+.mod-card.mod-maintenance .mod-card-icon {
+  color: #444;
+  filter: none !important;
+}
+
+.mod-card.mod-maintenance .mod-card-title {
+  color: #555;
+}
+
+.topic-item.topic-item-maintenance {
+  opacity: 0.45;
+  filter: grayscale(0.8);
+}
+
+.topic-item-tag.topic-item-tag-maintenance {
+  background: rgba(60, 60, 60, 0.5);
+  color: #666;
+  border-color: rgba(70, 70, 70, 0.4);
+}
+
 .mod-card-icon {
   position: relative;
   z-index: 1;

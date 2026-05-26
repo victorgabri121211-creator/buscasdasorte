@@ -231,8 +231,8 @@ const MODULE_CATEGORIES = [
     modules: [
       { key: 'cpf', title: 'CONSULTA CPF COMPLETA' },
       { key: 'rg', title: 'CONSULTA RG' },
-      { key: 'cnpj', title: 'CONSULTA CNPJ' },
-      { key: 'nis', title: 'CONSULTA NIS/PIS' },
+      { key: 'cnpj', title: 'CONSULTA CNPJ', maintenance: true },
+      { key: 'nis', title: 'CONSULTA NIS/PIS', maintenance: true },
       { key: 'tse', title: 'TÍTULO DE ELEITOR (TSE)', hc: true },
       { key: 'receita', title: 'CONSULTA RECEITA FEDERAL', hc: true },
     ],
@@ -636,8 +636,20 @@ function renderResellerDashboard() {
   }
 }
 
+function isModuleMaintenance(key) {
+  for (var i = 0; i < MODULE_CATEGORIES.length; i++) {
+    var mod = MODULE_CATEGORIES[i].modules.find(function(m) { return m.key === key; });
+    if (mod && mod.maintenance) return true;
+  }
+  return false;
+}
+
 function accessModule(key) {
   if (typeof isAdmin === 'function' && isAdmin()) return;
+  if (isModuleMaintenance(key)) {
+    alert('Este módulo está temporariamente em manutenção.\nVolte em breve.');
+    return;
+  }
   if (!hasActivePlan()) {
     updatePlanBanner();
     if (isResellerClientAccount()) {
@@ -721,7 +733,7 @@ function renderTopicSections(root, opts) {
     cat.modules.forEach(mod => {
       const item = document.createElement('button');
       item.type = 'button';
-      item.className = 'topic-item' + (cat.warn || mod.restricted ? ' topic-item-warn' : '');
+      item.className = 'topic-item' + (cat.warn || mod.restricted ? ' topic-item-warn' : '') + (mod.maintenance ? ' topic-item-maintenance' : '');
       item.setAttribute('role', 'listitem');
 
       const icon = document.createElement('span');
@@ -736,7 +748,12 @@ function renderTopicSections(root, opts) {
       item.appendChild(icon);
       item.appendChild(label);
 
-      if (mod.hc) {
+      if (mod.maintenance) {
+        const tag = document.createElement('span');
+        tag.className = 'topic-item-tag topic-item-tag-maintenance';
+        tag.textContent = 'Manutenção';
+        item.appendChild(tag);
+      } else if (mod.hc) {
         const tag = document.createElement('span');
         tag.className = 'topic-item-tag';
         tag.textContent = 'H.C.';
@@ -937,7 +954,7 @@ function renderModulesHub() {
 
     cat.modules.forEach(mod => {
       const card = document.createElement('article');
-      card.className = 'mod-card' + (cat.warn || mod.restricted ? ' mod-warn' : '');
+      card.className = 'mod-card' + (cat.warn || mod.restricted ? ' mod-warn' : '') + (mod.maintenance ? ' mod-maintenance' : '');
       card.setAttribute('role', 'button');
       card.tabIndex = 0;
 
@@ -945,6 +962,7 @@ function renderModulesHub() {
       let badgeClass = 'mod-badge' + (planActive ? '' : ' mod-badge-locked');
       if (planActive && mod.hc) { badge = 'Horário Comercial'; badgeClass += ' hc'; }
       if (mod.restricted) { badge = 'Acesso Restrito'; badgeClass += ' restricted'; }
+      if (mod.maintenance) { badge = 'Em Manutenção'; badgeClass = 'mod-badge mod-badge-maintenance'; }
 
       card.innerHTML =
         '<span class="' + badgeClass + '">' + badge + '</span>' +
