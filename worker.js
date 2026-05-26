@@ -135,16 +135,34 @@ async function handlePixHistory(request, env) {
   const cs = env.MISTICPAY_CS || '';
   if (!ci || !cs) return apiResponse({ error: 'Credenciais não configuradas.' }, 500);
 
-  try {
-    const resp = await fetch(MISTICPAY_URL + '/transactions', {
-      method: 'GET',
-      headers: { 'ci': ci, 'cs': cs },
-    });
-    const data = await resp.json();
-    return apiResponse(data, resp.status);
-  } catch (err) {
-    return apiResponse({ error: 'Erro ao buscar histórico: ' + err.message }, 502);
+  const headers = { 'ci': ci, 'cs': cs, 'Content-Type': 'application/json' };
+
+  // Tenta as variações de endpoint até uma retornar 2xx
+  const attempts = [
+    { url: MISTICPAY_URL + '/transactions/list',    method: 'POST', body: '{}' },
+    { url: MISTICPAY_URL + '/transactions/history', method: 'POST', body: '{}' },
+    { url: MISTICPAY_URL + '/transactions',         method: 'POST', body: '{}' },
+    { url: MISTICPAY_URL + '/transactions',         method: 'GET',  body: null },
+  ];
+
+  let lastStatus = 530;
+  let lastData   = { error: 'Endpoint de histórico não encontrado na MisticPay.' };
+
+  for (const att of attempts) {
+    try {
+      const opts = { method: att.method, headers };
+      if (att.body) opts.body = att.body;
+      const resp = await fetch(att.url, opts);
+      const data = await resp.json().catch(() => ({}));
+      if (resp.status >= 200 && resp.status < 300) {
+        return apiResponse(data, 200);
+      }
+      lastStatus = resp.status;
+      lastData   = data;
+    } catch (_) { /* tenta o próximo */ }
   }
+
+  return apiResponse(lastData, lastStatus);
 }
 
 // ── Helpers ─────────────────────────────────────────────────────────────
