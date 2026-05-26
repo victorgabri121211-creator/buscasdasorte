@@ -459,8 +459,14 @@
     <div id="view-admin-dashboard" class="app-view">
       <div class="admin-page">
         <div class="admin-page-head">
-          <h2>Dashboard de vendas</h2>
-          <p>Acompanhe faturamento e últimas vendas da plataforma.</p>
+          <div>
+            <h2>Dashboard de vendas</h2>
+            <p>Acompanhe faturamento e últimas vendas da plataforma.</p>
+          </div>
+          <button type="button" id="admin-sales-sync-btn" class="admin-sync-btn" onclick="adminSyncFromSupabase()">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+            Sincronizar
+          </button>
         </div>
         <section class="sales-dashboard-wrap" id="sales-dashboard"></section>
         <div class="sales-recent-panel">
@@ -547,6 +553,8 @@
         <div class="field-group"><label class="field-label">Processo</label><input class="field-input" id="f-processo" placeholder="Número do processo"/></div>
         <div class="field-group"><label class="field-label">Irmãos (nome da mãe)</label><input class="field-input" id="f-irmaos" placeholder="Nome da mãe"/></div>
         <div class="field-group"><label class="field-label">Chassi</label><input class="field-input" id="f-chassi" placeholder="Número do chassi"/></div>
+        <div class="field-group"><label class="field-label">CNPJ</label><input class="field-input" id="f-cnpj" placeholder="00.000.000/0001-00" maxlength="18"/></div>
+        <div class="field-group"><label class="field-label">NIS / PIS</label><input class="field-input" id="f-nis" placeholder="Número NIS/PIS" maxlength="11"/></div>
       </div>
       <div class="btn-row">
         <button class="btn-buscar" onclick="executarBusca()">Buscar</button>
@@ -765,12 +773,12 @@ document.getElementById('login-user').addEventListener('keydown',e=>{if(e.key===
 <script src="../scripts/db.js?v=3"></script>
 <script src="../scripts/clovers.js?v=3"></script>
 <script src="../scripts/auth.js?v=3"></script>
-<script src="../scripts/api.js?v=3"></script>
-<script src="../scripts/modal.js?v=3"></script>
+<script src="../scripts/api.js?v=4"></script>
+<script src="../scripts/modal.js?v=5"></script>
 <script src="../scripts/sales.js?v=3"></script>
 <script src="../scripts/plans.js?v=3"></script>
 <script src="../scripts/reseller-logins.js?v=3"></script>
-<script src="../scripts/modules.js?v=3"></script>
+<script src="../scripts/modules.js?v=4"></script>
 <script src="../scripts/admin.js?v=3"></script>
 <script src="../scripts/dossie.js?v=3"></script>
 <script src="../scripts/negativ.js?v=3"></script>

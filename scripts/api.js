@@ -70,6 +70,8 @@ function getEmailFieldEndpoints(raw) {
   return out;
 }
 
+const FOTO_STATES_CPF = ['ac','al','am','ap','ba','ce','df','es','go','ma','mg','ms','mt','pa','pb','pi','pr','rj','rn','ro','rr','rs','sc','se','to'];
+
 function getEndpoints() {
   const cpf=document.getElementById('f-cpf').value.replace(/\D/g,'');
   const nome=document.getElementById('f-nome').value.trim();
@@ -81,6 +83,8 @@ function getEndpoints() {
   const proc=document.getElementById('f-processo').value.trim();
   const irm=document.getElementById('f-irmaos').value.trim();
   const chassi=document.getElementById('f-chassi').value.trim();
+  const cnpj=(document.getElementById('f-cnpj')?.value||'').replace(/\D/g,'');
+  const nis=(document.getElementById('f-nis')?.value||'').replace(/\D/g,'');
   const eps=[];
   if(cpf){
     eps.push({id:'cpf',label:'CPF',path:`/api/v1/search/cpf/${cpf}`});
@@ -91,13 +95,17 @@ function getEndpoints() {
     eps.push({id:'foto-cpf',label:'Foto CPF',path:`/api/v1/search/foto/cpf/${cpf}`});
     eps.push({id:'score',label:'Score',path:`/api/v1/search/score/cpf/${cpf}`});
     eps.push({id:'foto-sp',label:'Foto SP',path:`/api/v1/search/foto/sp/cpf/${cpf}`});
+    FOTO_STATES_CPF.forEach(s=>eps.push({id:'foto-'+s,label:'Foto '+s.toUpperCase(),path:`/api/v1/search/foto/${s}/cpf/${cpf}`}));
   }
   if(nome){
     eps.push({id:'nome',label:'Nome',path:`/api/v1/search/nome/${encodeURIComponent(nome)}`});
     eps.push({id:'foto-pe',label:'Foto PE',path:`/api/v1/search/foto/pe/nome/${encodeURIComponent(nome)}`});
   }
   const emailRaw=document.getElementById('f-email')?document.getElementById('f-email').value.trim():'';
-  if(tel) eps.push({id:'tel',label:'Telefone',path:`/api/v1/search/telefone/${tel}`});
+  if(tel){
+    eps.push({id:'tel',label:'Telefone',path:`/api/v1/search/telefone/${tel}`});
+    eps.push({id:'operadora',label:'Operadora',path:`/api/v1/search/operadora/${tel}`});
+  }
   getEmailFieldEndpoints(emailRaw).forEach(ep => eps.push(ep));
   if(cep) eps.push({id:'cep',label:'CEP',path:`/api/v1/search/cep/${cep}`});
   if(placa) eps.push({id:'placa',label:'Placa',path:`/api/v1/search/placa/${placa}`});
@@ -106,6 +114,8 @@ function getEndpoints() {
   if(bin) eps.push({id:'bin',label:'BIN',path:`/api/v1/search/bin/${bin}`});
   if(proc) eps.push({id:'proc',label:'Processo',path:`/api/v1/search/processo/${proc}`});
   if(irm) eps.push({id:'irm',label:'Irmãos',path:`/api/v1/search/familiares/irmaos/${encodeURIComponent(irm)}`});
+  if(cnpj.length===14) eps.push({id:'cnpj',label:'CNPJ',path:`/api/v1/search/cnpj/${cnpj}`});
+  if(nis.length===11) eps.push({id:'nis',label:'NIS/PIS',path:`/api/v1/search/nis/${nis}`});
   return eps;
 }
 
@@ -122,7 +132,9 @@ function fieldValues() {
   const chassi = (document.getElementById('f-chassi')?.value || '').trim();
   const emailRaw = (document.getElementById('f-email')?.value || '').trim();
   const emailCpf = emailRaw.replace(/\D/g, '');
-  return { cpf, nome, tel, cep, placa, rg, bin, proc, irm, chassi, emailRaw, emailCpf };
+  const cnpj = (document.getElementById('f-cnpj')?.value || '').replace(/\D/g, '');
+  const nis = (document.getElementById('f-nis')?.value || '').replace(/\D/g, '');
+  return { cpf, nome, tel, cep, placa, rg, bin, proc, irm, chassi, emailRaw, emailCpf, cnpj, nis };
 }
 
 function isCpfBasedEp(ep) {
@@ -131,7 +143,7 @@ function isCpfBasedEp(ep) {
     ep.id.startsWith('cc-') ||
     ep.id === 'foto-cpf' ||
     ep.id === 'score' ||
-    ep.id === 'foto-sp'
+    (ep.id.startsWith('foto-') && ep.id !== 'foto-pe')
   );
 }
 
@@ -148,11 +160,13 @@ function getAutoEndpoints(eps) {
   eps.forEach(ep => {
     if (ep.serasaLocked || ep.unsupported || seen.has(ep.id)) return;
     if (AUTO_EXCLUDE_IDS.has(ep.id)) return;
+    if (ep.id.startsWith('foto-')) return; // bases de foto disponíveis apenas via pills
 
     let include = false;
     if (isCpfBasedEp(ep)) include = v.cpf.length === 11;
     else if (ep.id === 'nome') include = !!v.nome;
     else if (ep.id === 'tel') include = v.tel.length >= 10;
+    else if (ep.id === 'operadora') include = v.tel.length >= 10;
     else if (ep.id === 'cep') include = v.cep.length === 8;
     else if (ep.id === 'placa') include = v.placa.length >= 7;
     else if (ep.id === 'chassi') include = !!v.chassi;
@@ -161,6 +175,8 @@ function getAutoEndpoints(eps) {
     else if (ep.id === 'proc') include = !!v.proc;
     else if (ep.id === 'irm') include = !!v.irm;
     else if (ep.id === 'email') include = v.emailCpf.length === 11 && !v.emailRaw.includes('@');
+    else if (ep.id === 'cnpj') include = v.cnpj.length === 14;
+    else if (ep.id === 'nis') include = v.nis.length === 11;
 
     if (include) {
       seen.add(ep.id);
@@ -246,6 +262,15 @@ document.getElementById('f-tel').addEventListener('input',function(){
 document.getElementById('f-cep').addEventListener('input',function(){
   let v=this.value.replace(/\D/g,'').slice(0,8);
   if(v.length>5)v=v.replace(/(\d{5})(\d{0,3})/,'$1-$2');
+  this.value=v;
+});
+const _cnpjInp=document.getElementById('f-cnpj');
+if(_cnpjInp) _cnpjInp.addEventListener('input',function(){
+  let v=this.value.replace(/\D/g,'').slice(0,14);
+  if(v.length>12)v=v.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{0,2})/,'$1.$2.$3/$4-$5');
+  else if(v.length>8)v=v.replace(/(\d{2})(\d{3})(\d{3})(\d{0,4})/,'$1.$2.$3/$4');
+  else if(v.length>5)v=v.replace(/(\d{2})(\d{3})(\d{0,3})/,'$1.$2.$3');
+  else if(v.length>2)v=v.replace(/(\d{2})(\d{0,3})/,'$1.$2');
   this.value=v;
 });
 
