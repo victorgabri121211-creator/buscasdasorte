@@ -121,7 +121,7 @@ function resellerSavePlansStore(store) {
   else localStorage.setItem(RESELLER_PLANS_KEY, JSON.stringify(store));
 }
 
-function createResellerLogin(reseller, data) {
+async function createResellerLogin(reseller, data) {
   const username = (data.username || '').trim();
   let password = (data.password || '').trim();
   const days = parseInt(data.days, 10);
@@ -136,6 +136,21 @@ function createResellerLogin(reseller, data) {
 
   const users = resellerGetUsers();
   if (users.find(u => u.user === username)) return { ok: false, msg: 'Usuário já existe.' };
+
+  // Tenta Supabase primeiro para garantir que o cliente consiga logar de qualquer dispositivo
+  if (typeof DB !== 'undefined' && DB.isConfigured()) {
+    let res = null;
+    try {
+      res = await DB.createResellerLogin(reseller, username, password, days);
+    } catch (e) {
+      res = null; // erro de rede — cai no fallback local
+    }
+    if (res && !res.ok) {
+      // Supabase recusou (créditos insuficientes no servidor, usuário já existe, etc.)
+      return { ok: false, msg: res.msg || 'Erro ao criar conta no servidor.' };
+    }
+    // res === null → erro de rede → cria localmente (modo offline)
+  }
 
   const expiresAt = Date.now() + days * RESELLER_DAY_MS;
   users.push({ user: username, pass: password, createdAt: Date.now(), createdByReseller: reseller });
@@ -167,11 +182,6 @@ function createResellerLogin(reseller, data) {
   const credits = getResellerCreditsStore();
   credits[reseller] = Math.max(0, getResellerCredits(reseller) - 1);
   saveResellerCreditsStore(credits);
-
-  // Sincroniza com Supabase em background
-  if (typeof DB !== 'undefined' && DB.isConfigured()) {
-    DB.createResellerLogin(reseller, username, password, days).catch(function() {});
-  }
 
   return {
     ok: true,

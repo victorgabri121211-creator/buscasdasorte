@@ -481,11 +481,11 @@ function openAdminResellerCreditsModal(reseller) {
   }
 
   if (!form._creditsBound) {
-    form.addEventListener('submit', e => {
+    form.addEventListener('submit', async e => {
       e.preventDefault();
       if (!_adminCreditsReseller) return;
       const amt = parseInt(document.getElementById('admin-reseller-credits-amount').value, 10);
-      adminAddResellerCredits(_adminCreditsReseller, amt);
+      await adminAddResellerCredits(_adminCreditsReseller, amt);
     });
     document.querySelectorAll('#admin-reseller-credits-quick .admin-credits-quick-btn').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -510,8 +510,9 @@ function closeAdminResellerCreditsModal() {
   _adminCreditsReseller = null;
 }
 
-function adminAddResellerCredits(reseller, amount) {
+async function adminAddResellerCredits(reseller, amount) {
   const msgEl = document.getElementById('admin-reseller-credits-msg');
+  const submitBtn = document.querySelector('#admin-reseller-credits-form button[type="submit"]');
   const amt = Math.floor(Number(amount));
   if (!reseller) return;
   if (!amt || amt < 1 || amt > 9999) {
@@ -528,28 +529,45 @@ function adminAddResellerCredits(reseller, amount) {
     }
     return;
   }
-  const ok = addResellerCredits(reseller, amt);
-  if (!ok) {
-    if (msgEl) {
-      msgEl.textContent = 'Não foi possível adicionar os créditos.';
-      msgEl.className = 'admin-reseller-credits-msg err';
+
+  if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Salvando...'; }
+  if (msgEl) { msgEl.textContent = ''; msgEl.className = 'admin-reseller-credits-msg'; }
+
+  try {
+    // Salva no Supabase primeiro para garantir sincronização
+    if (typeof DB !== 'undefined' && DB.isConfigured()) {
+      const res = await DB.addResellerCredits(reseller, amt).catch(function() { return null; });
+      if (res && !res.ok) {
+        if (msgEl) {
+          msgEl.textContent = 'Erro ao salvar no servidor: ' + (res.msg || 'tente novamente.');
+          msgEl.className = 'admin-reseller-credits-msg err';
+        }
+        return;
+      }
     }
-    return;
+
+    const ok = addResellerCredits(reseller, amt);
+    if (!ok) {
+      if (msgEl) {
+        msgEl.textContent = 'Não foi possível adicionar os créditos.';
+        msgEl.className = 'admin-reseller-credits-msg err';
+      }
+      return;
+    }
+
+    const total = getResellerCredits(reseller);
+    if (msgEl) {
+      msgEl.textContent = '+' + amt + ' crédito' + (amt === 1 ? '' : 's') + ' adicionado' + (amt === 1 ? '' : 's') + '. Novo saldo: ' + total + '.';
+      msgEl.className = 'admin-reseller-credits-msg ok';
+    }
+    const currentEl = document.getElementById('admin-reseller-credits-current');
+    if (currentEl) {
+      currentEl.textContent = 'Saldo atual: ' + total + ' crédito' + (total === 1 ? '' : 's') + ' disponíve' + (total === 1 ? 'l' : 'is');
+    }
+    renderAdminResellers();
+  } finally {
+    if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Adicionar créditos'; }
   }
-  // Sincroniza com Supabase em background
-  if (typeof DB !== 'undefined' && DB.isConfigured()) {
-    DB.addResellerCredits(reseller, amt).catch(function() {});
-  }
-  const total = getResellerCredits(reseller);
-  if (msgEl) {
-    msgEl.textContent = '+' + amt + ' crédito' + (amt === 1 ? '' : 's') + ' adicionado' + (amt === 1 ? '' : 's') + '. Novo saldo: ' + total + '.';
-    msgEl.className = 'admin-reseller-credits-msg ok';
-  }
-  const currentEl = document.getElementById('admin-reseller-credits-current');
-  if (currentEl) {
-    currentEl.textContent = 'Saldo atual: ' + total + ' crédito' + (total === 1 ? '' : 's') + ' disponíve' + (total === 1 ? 'l' : 'is');
-  }
-  renderAdminResellers();
 }
 
 window.openAdminResellerCreditsModal = openAdminResellerCreditsModal;

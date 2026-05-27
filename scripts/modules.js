@@ -582,30 +582,37 @@ function renderResellerDashboard() {
   if (!readOnly) {
     const form = document.getElementById('reseller-create-form');
     if (form) {
-      form.addEventListener('submit', e => {
+      form.addEventListener('submit', async e => {
         e.preventDefault();
         const msgEl = document.getElementById('reseller-form-msg');
-        const days = document.getElementById('reseller-new-days').value;
-        const result = createResellerLogin(reseller, {
-          username: document.getElementById('reseller-new-user').value,
-          password: document.getElementById('reseller-new-pass').value,
-          days: days,
-        });
-        if (msgEl) {
-          msgEl.textContent = result.msg;
-          msgEl.className = 'reseller-form-msg ' + (result.ok ? 'ok' : 'err');
-        }
-        if (result.ok) {
-          if (typeof showResellerLoginCreatedModal === 'function') {
-            showResellerLoginCreatedModal({
-              username: result.username,
-              password: result.password,
-              days: result.days,
-            });
+        const submitBtn = form.querySelector('button[type="submit"]');
+        if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Criando...'; }
+        if (msgEl) { msgEl.textContent = 'Aguarde...'; msgEl.className = 'reseller-form-msg'; }
+        try {
+          const days = document.getElementById('reseller-new-days').value;
+          const result = await createResellerLogin(reseller, {
+            username: document.getElementById('reseller-new-user').value,
+            password: document.getElementById('reseller-new-pass').value,
+            days: days,
+          });
+          if (msgEl) {
+            msgEl.textContent = result.msg;
+            msgEl.className = 'reseller-form-msg ' + (result.ok ? 'ok' : 'err');
           }
-          document.getElementById('reseller-new-user').value = '';
-          document.getElementById('reseller-new-pass').value = '';
-          renderResellerDashboard();
+          if (result.ok) {
+            if (typeof showResellerLoginCreatedModal === 'function') {
+              showResellerLoginCreatedModal({
+                username: result.username,
+                password: result.password,
+                days: result.days,
+              });
+            }
+            document.getElementById('reseller-new-user').value = '';
+            document.getElementById('reseller-new-pass').value = '';
+            renderResellerDashboard();
+          }
+        } finally {
+          if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = '⚡ Gerar conta'; }
         }
       });
     }
