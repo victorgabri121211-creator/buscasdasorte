@@ -458,21 +458,7 @@
 
     <div id="view-admin-dashboard" class="app-view">
       <div class="admin-page">
-        <div class="admin-page-head">
-          <div>
-            <h2>Dashboard de vendas</h2>
-            <p>Acompanhe faturamento e últimas vendas da plataforma.</p>
-          </div>
-          <button type="button" id="admin-sales-sync-btn" class="admin-sync-btn" onclick="adminSyncFromSupabase()">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
-            Sincronizar
-          </button>
-        </div>
-        <section class="sales-dashboard-wrap" id="sales-dashboard"></section>
-        <div class="sales-recent-panel">
-          <h4>Últimas vendas</h4>
-          <div id="sales-recent"></div>
-        </div>
+        <section id="sales-dashboard"></section>
       </div>
     </div>
 
