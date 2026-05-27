@@ -116,10 +116,13 @@
       if (remoteSales.length) {
         const localSales = _get('bds_sales', []);
         const localIds = new Set(localSales.map(function (s) { return s.id; }));
+        const localTxIds = new Set(localSales.filter(function (s) { return s.txId; }).map(function (s) { return s.txId; }));
         remoteSales.forEach(function (s) {
-          if (!localIds.has(s.id)) {
-            localSales.push({ id: s.id, txId: s.tx_id, ts: s.ts, category: s.category, productId: s.product_id, label: s.label, amount: s.amount, buyer: s.buyer });
-          }
+          if (_isSaleDup(localSales, localIds, localTxIds, s)) return;
+          const txId = s.tx_id || null;
+          localSales.push({ id: s.id, txId: txId, ts: s.ts, category: s.category, productId: s.product_id, label: s.label, amount: s.amount, buyer: s.buyer });
+          localIds.add(s.id);
+          if (txId) localTxIds.add(txId);
         });
         localSales.sort(function (a, b) { return b.ts - a.ts; });
         localStorage.setItem('bds_sales', JSON.stringify(localSales));
@@ -216,6 +219,21 @@
     return _rpc('bds_delete_reseller_login', { p_reseller: reseller, p_login_id: loginId });
   }
 
+  function _isSaleDup(localSales, localIds, localTxIds, s) {
+    const txId = s.tx_id || null;
+    if (localIds.has(s.id)) return true;
+    if (txId && localTxIds.has(txId)) return true;
+    if (!txId) {
+      // Records synced from Supabase sometimes have no txId; detect by amount+buyer+productId within 10s
+      for (var i = 0; i < localSales.length; i++) {
+        var l = localSales[i];
+        if (l.amount === s.amount && l.buyer === s.buyer && l.productId === s.product_id &&
+            Math.abs(l.ts - s.ts) < 10000) return true;
+      }
+    }
+    return false;
+  }
+
   // ── Sync de vendas (admin) ────────────────────────────────────────────────
 
   async function syncSales() {
@@ -225,12 +243,15 @@
     const remoteSales = res.sales || [];
     const localSales = _get('bds_sales', []);
     const localIds = new Set(localSales.map(function (s) { return s.id; }));
+    const localTxIds = new Set(localSales.filter(function (s) { return s.txId; }).map(function (s) { return s.txId; }));
     var changed = false;
     remoteSales.forEach(function (s) {
-      if (!localIds.has(s.id)) {
-        localSales.push({ id: s.id, txId: s.tx_id, ts: s.ts, category: s.category, productId: s.product_id, label: s.label, amount: s.amount, buyer: s.buyer });
-        changed = true;
-      }
+      if (_isSaleDup(localSales, localIds, localTxIds, s)) return;
+      const txId = s.tx_id || null;
+      localSales.push({ id: s.id, txId: txId, ts: s.ts, category: s.category, productId: s.product_id, label: s.label, amount: s.amount, buyer: s.buyer });
+      localIds.add(s.id);
+      if (txId) localTxIds.add(txId);
+      changed = true;
     });
     if (changed) {
       localSales.sort(function (a, b) { return b.ts - a.ts; });

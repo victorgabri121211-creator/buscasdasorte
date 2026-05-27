@@ -707,8 +707,12 @@ window.updateAppNavigation = updateAppNavigation;
   const app = document.getElementById('app');
   if (!app || app.style.display !== 'block') return;
   if (isAdmin()) {
-    renderAdminView('admin-dashboard');
-    if (typeof showAppView === 'function') showAppView('admin-dashboard');
+    // showAppView (patched by initAdminShowAppView) already calls renderAdminView internally
+    if (typeof showAppView === 'function') {
+      showAppView('admin-dashboard');
+    } else {
+      renderAdminView('admin-dashboard');
+    }
     return;
   }
   if (typeof showAppView === 'function') {

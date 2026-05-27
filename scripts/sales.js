@@ -16,6 +16,51 @@ function startOfLocalDay(ts) {
   return d.getTime();
 }
 
+function deduplicateSalesList() {
+  const list = getSalesList();
+  if (!list.length) return;
+
+  const seenIds = new Set();
+  const seenTxIds = new Set();
+
+  // Sort so records with txId are evaluated first (preferred)
+  const sorted = list.slice().sort(function (a, b) {
+    if (a.txId && !b.txId) return -1;
+    if (!a.txId && b.txId) return 1;
+    return 0;
+  });
+
+  // Pass 1: dedup by id and txId
+  const pass1 = [];
+  sorted.forEach(function (s) {
+    if (seenIds.has(s.id)) return;
+    seenIds.add(s.id);
+    if (s.txId) {
+      if (seenTxIds.has(s.txId)) return;
+      seenTxIds.add(s.txId);
+    }
+    pass1.push(s);
+  });
+
+  // Pass 2: remove txId-less records that match a txId record on amount+buyer+productId within 10s
+  const final = pass1.filter(function (s) {
+    if (s.txId) return true;
+    return !pass1.some(function (other) {
+      return other.txId &&
+        other.amount === s.amount &&
+        other.buyer === s.buyer &&
+        other.productId === s.productId &&
+        Math.abs(other.ts - s.ts) < 10000;
+    });
+  });
+
+  if (final.length !== list.length) {
+    saveSalesList(final);
+  }
+}
+
+deduplicateSalesList();
+
 function recordSale(sale) {
   const list = getSalesList();
   if (sale.txId && list.some(s => s.txId === sale.txId)) return; // dedup
