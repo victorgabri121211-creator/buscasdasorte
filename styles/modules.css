@@ -452,7 +452,7 @@ body.user-reseller-client #view-loja {
 }
 
 .reseller-pricing-lead strong {
-  color: #fb923c;
+  color: #4ade80;
   font-weight: 700;
 }
 
@@ -471,8 +471,10 @@ body.user-reseller-client #view-loja {
   gap: 0;
   padding: 18px 14px 16px;
   border-radius: 16px;
-  border: 1px solid rgba(251, 146, 60, 0.22);
-  background: var(--card);
+  border: 1px solid rgba(74, 222, 128, 0.18);
+  background: rgba(2, 14, 7, 0.72);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
   cursor: pointer;
   transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
   text-align: center;
@@ -481,14 +483,14 @@ body.user-reseller-client #view-loja {
 
 .reseller-package-card:hover {
   transform: translateY(-4px);
-  border-color: rgba(251, 146, 60, 0.45);
-  box-shadow: 0 12px 40px rgba(251, 146, 60, 0.2);
+  border-color: rgba(74, 222, 128, 0.45);
+  box-shadow: 0 12px 40px rgba(34, 197, 94, 0.18);
 }
 
 .reseller-package-card-featured {
-  border-color: rgba(251, 146, 60, 0.55);
-  background: #130a02;
-  box-shadow: 0 0 0 1px rgba(251, 146, 60, 0.35), 0 16px 48px rgba(251, 146, 60, 0.15);
+  border-color: rgba(74, 222, 128, 0.5);
+  background: rgba(2, 18, 9, 0.85);
+  box-shadow: 0 0 0 1px rgba(74, 222, 128, 0.28), 0 16px 48px rgba(34, 197, 94, 0.15);
   transform: scale(1.03);
   z-index: 1;
 }
@@ -509,9 +511,9 @@ body.user-reseller-client #view-loja {
   letter-spacing: 0.06em;
   padding: 5px 12px;
   border-radius: 999px;
-  background: linear-gradient(135deg, #ea580c, #fb923c);
-  color: #1a0a00;
-  box-shadow: 0 4px 16px rgba(251, 146, 60, 0.45);
+  background: linear-gradient(135deg, #15803d, #4ade80);
+  color: #021a0b;
+  box-shadow: 0 4px 16px rgba(34, 197, 94, 0.45);
   white-space: nowrap;
 }
 
@@ -520,7 +522,7 @@ body.user-reseller-client #view-loja {
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.1em;
-  color: rgba(251, 146, 60, 0.75);
+  color: rgba(74, 222, 128, 0.7);
   margin-bottom: 6px;
   margin-top: 4px;
 }
@@ -546,7 +548,7 @@ body.user-reseller-client #view-loja {
 .reseller-package-price {
   font-size: 34px;
   font-weight: 800;
-  color: #fb923c;
+  color: #4ade80;
   letter-spacing: -1px;
   line-height: 1;
   margin-bottom: 4px;
@@ -596,7 +598,7 @@ body.user-reseller-client #view-loja {
   content: '✓';
   position: absolute;
   left: 0;
-  color: #fb923c;
+  color: #4ade80;
   font-weight: 700;
   font-size: 10px;
 }
@@ -615,8 +617,8 @@ body.user-reseller-client #view-loja {
   margin-top: 14px;
   padding: 12px 16px;
   border-radius: 12px;
-  background: rgba(251, 146, 60, 0.06);
-  border: 1px solid rgba(251, 146, 60, 0.15);
+  background: rgba(34, 197, 94, 0.06);
+  border: 1px solid rgba(74, 222, 128, 0.15);
 }
 
 .reseller-trust-bar span {
@@ -634,8 +636,10 @@ body.user-reseller-client #view-loja {
   margin-top: 28px;
   padding: 22px 24px;
   border-radius: var(--radius);
-  background: var(--card);
-  border: 1px solid rgba(251, 146, 60, 0.28);
+  background: rgba(2, 14, 7, 0.72);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(74, 222, 128, 0.22);
 }
 
 .reseller-panel-entry-text h3 {
@@ -729,8 +733,10 @@ body.user-reseller-client #view-loja {
 .reseller-stat-card {
   padding: 18px 16px;
   border-radius: 14px;
-  background: var(--card);
-  border: 1px solid rgba(251, 146, 60, 0.18);
+  background: rgba(2, 14, 7, 0.72);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(74, 222, 128, 0.15);
 }
 
 .reseller-stat-label {
@@ -747,7 +753,7 @@ body.user-reseller-client #view-loja {
   display: block;
   font-size: 36px;
   font-weight: 800;
-  color: #fb923c;
+  color: #4ade80;
   line-height: 1;
   margin-bottom: 4px;
 }
@@ -788,8 +794,10 @@ body.user-reseller-client #view-loja {
 .reseller-dash-aside {
   padding: 20px;
   border-radius: var(--radius);
-  background: var(--card);
-  border: 1px solid rgba(251, 146, 60, 0.2);
+  background: rgba(2, 14, 7, 0.72);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(74, 222, 128, 0.18);
 }
 
 .reseller-dash-aside h3 {
@@ -815,9 +823,9 @@ body.user-reseller-client #view-loja {
   text-transform: uppercase;
   letter-spacing: 0.04em;
   cursor: pointer;
-  color: #fff;
-  background: linear-gradient(135deg, #ea580c, #fb923c);
-  box-shadow: 0 8px 24px rgba(251, 146, 60, 0.25);
+  color: #021a0b;
+  background: linear-gradient(135deg, #15803d, #22c55e, #4ade80);
+  box-shadow: 0 8px 24px rgba(34, 197, 94, 0.28);
 }
 
 .reseller-dash-submit:hover {
@@ -833,8 +841,10 @@ body.user-reseller-client #view-loja {
 .reseller-dash-main {
   padding: 20px;
   border-radius: var(--radius);
-  background: var(--card);
-  border: 1px solid rgba(251, 146, 60, 0.2);
+  background: rgba(2, 14, 7, 0.72);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(74, 222, 128, 0.18);
   min-height: 280px;
 }
 
@@ -848,7 +858,7 @@ body.user-reseller-client #view-loja {
 .reseller-dash-count {
   font-size: 12px;
   font-weight: 700;
-  color: #fb923c;
+  color: #4ade80;
   margin-left: 8px;
 }
 
@@ -931,8 +941,10 @@ body.user-reseller-client #view-loja {
   margin-top: 28px;
   padding: 24px;
   border-radius: var(--radius);
-  background: var(--card);
-  border: 1px solid rgba(251, 146, 60, 0.2);
+  background: rgba(2, 14, 7, 0.72);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(74, 222, 128, 0.18);
 }
 
 .reseller-manage-head {
@@ -955,9 +967,9 @@ body.user-reseller-client #view-loja {
   font-weight: 700;
   padding: 6px 14px;
   border-radius: 999px;
-  background: rgba(251, 146, 60, 0.15);
-  color: #fb923c;
-  border: 1px solid rgba(251, 146, 60, 0.35);
+  background: rgba(34, 197, 94, 0.12);
+  color: #4ade80;
+  border: 1px solid rgba(74, 222, 128, 0.32);
 }
 
 .reseller-manage-hint {
@@ -1197,7 +1209,7 @@ body.user-reseller-client #view-loja {
 .reseller-my-logins {
   margin-top: 28px;
   padding-top: 22px;
-  border-top: 1px solid rgba(251, 146, 60, 0.15);
+  border-top: 1px solid rgba(74, 222, 128, 0.15);
 }
 
 .reseller-my-logins h4 {
@@ -1295,8 +1307,8 @@ body.user-reseller-client #view-loja {
     transform: none;
     margin-top: 14px;
     box-shadow:
-      0 0 0 1px rgba(251, 146, 60, 0.45),
-      0 12px 40px rgba(251, 146, 60, 0.22);
+      0 0 0 1px rgba(74, 222, 128, 0.4),
+      0 12px 40px rgba(34, 197, 94, 0.18);
   }
 
   .reseller-package-card-featured:hover {
@@ -1484,6 +1496,10 @@ body.user-reseller-client #view-loja {
   width: 6px;
   height: 6px;
   border-radius: 50%;
+  background: #4ade80;
+}
+
+.service-page-orange .service-info-card li::before {
   background: #fb923c;
 }
 
