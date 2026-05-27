@@ -198,34 +198,48 @@
     </div>
 
     <div id="view-loja" class="app-view">
-      <div class="service-page service-page-green">
-        <button type="button" class="view-search-back" onclick="showAppView('modules')">← Voltar aos módulos</button>
-        <div class="service-page-header">
-          <div class="service-page-icon">
-            <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><line x1="9" y1="22" x2="9" y2="12"/><line x1="15" y1="22" x2="15" y2="12"/></svg>
+      <div class="admin-page">
+        <div class="sdash-wrap">
+
+          <div class="sdash-header">
+            <div class="sdash-header-left">
+              <div class="sdash-header-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+              </div>
+              <div>
+                <h3 class="sdash-title">Loja de Planos</h3>
+                <p class="sdash-sub">Assine um plano e libere o acesso a todos os módulos de consulta</p>
+              </div>
+            </div>
+            <button type="button" class="view-search-back" onclick="showAppView('modules')">← Voltar</button>
           </div>
-          <div>
-            <h2>Loja de Planos</h2>
-            <p>Assine um plano e libere o acesso a todos os módulos de consulta.</p>
+
+          <div id="store-active-plan" class="store-active-plan loja-active-plan" hidden></div>
+
+          <div class="sdash-recent">
+            <div class="sdash-recent-head">
+              <span class="sdash-recent-title">Escolha seu plano</span>
+              <span class="sdash-recent-badge loja-badge-green">Consultas liberadas</span>
+            </div>
+            <div class="store-plans-body">
+              <div id="plans-grid" class="store-plans-grid" role="list"></div>
+              <div class="store-trust-bar">
+                <span>✓ Ativação imediata</span>
+                <span>✓ Todos os módulos incluídos</span>
+                <span>✓ Suporte na plataforma</span>
+              </div>
+            </div>
           </div>
-        </div>
-        <div id="store-active-plan" class="store-active-plan" hidden></div>
-        <div class="store-pricing-block">
-          <p class="store-pricing-lead">Consultas liberadas — <strong>escolha o plano e compre na hora</strong></p>
-          <div id="plans-grid" class="store-plans-grid" role="list"></div>
-          <div class="store-trust-bar">
-            <span>✓ Ativação imediata</span>
-            <span>✓ Todos os módulos incluídos</span>
-            <span>✓ Suporte na plataforma</span>
+
+          <div class="service-info-card service-info-card-green loja-info-card">
+            <h3>Como funciona</h3>
+            <ul>
+              <li>Clique em <strong>Comprar agora</strong> no plano desejado</li>
+              <li>Seu acesso é liberado assim que o plano for ativado</li>
+              <li>Quanto maior o período, melhor o custo-benefício para você</li>
+            </ul>
           </div>
-        </div>
-        <div class="service-info-card service-info-card-green">
-          <h3>Como funciona</h3>
-          <ul>
-            <li>Clique em <strong>Comprar agora</strong> no plano desejado</li>
-            <li>Seu acesso é liberado assim que o plano for ativado</li>
-            <li>Quanto maior o período, melhor o custo-benefício para você</li>
-          </ul>
+
         </div>
       </div>
     </div>
