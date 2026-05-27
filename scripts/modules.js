@@ -464,105 +464,135 @@ function renderResellerDashboard() {
       '<div class="reseller-dash-admin-banner">Visualizando painel de <strong>' + reseller + '</strong></div>';
   }
 
+  const credLow = stats.creditsRemaining <= 3;
+
   root.innerHTML =
     '<div class="reseller-dash">' +
+
+      // ── Cabeçalho ──────────────────────────────────────────────────────────
       '<div class="reseller-dash-head">' +
         '<button type="button" class="view-search-back" id="reseller-dash-back">← Voltar</button>' +
-        '<div>' +
+        '<div class="reseller-dash-head-info">' +
           '<h2>Painel do Revendedor</h2>' +
-          '<p>Créditos, logins criados e clientes ativos.</p>' +
+          (isAdminView ? '<p>Visualizando como <strong>' + reseller + '</strong></p>' : '<p>Olá, <strong>' + reseller + '</strong> — gerencie seus clientes abaixo.</p>') +
         '</div>' +
       '</div>' +
-      adminBanner +
-      '<div class="reseller-dash-section-label">Contas criadas</div>' +
-      '<div class="reseller-dash-stats">' +
-        '<div class="reseller-stat-card">' +
-          '<span class="reseller-stat-label">Últimas 24 horas</span>' +
-          '<strong class="reseller-stat-value">' + (stats.created24h || 0) + '</strong>' +
-          '<span class="reseller-stat-sub">conta' + (stats.created24h !== 1 ? 's' : '') + '</span>' +
+
+      // ── 3 stat cards ───────────────────────────────────────────────────────
+      '<div class="rdash-stats">' +
+        '<div class="rdash-stat rdash-stat--credits' + (credLow ? ' rdash-stat--low' : '') + '">' +
+          '<div class="rdash-stat-icon">' +
+            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>' +
+          '</div>' +
+          '<div class="rdash-stat-body">' +
+            '<span class="rdash-stat-label">Créditos disponíveis</span>' +
+            '<strong class="rdash-stat-val">' + (stats.creditsRemaining || 0) + '</strong>' +
+            '<span class="rdash-stat-hint">' + (credLow ? '⚠ Saldo baixo' : (stats.creditsUsed || 0) + ' usados') + '</span>' +
+          '</div>' +
+          (!readOnly ? '<button type="button" class="rdash-buy-btn" id="reseller-dash-buy">+ Comprar</button>' : '') +
         '</div>' +
-        '<div class="reseller-stat-card">' +
-          '<span class="reseller-stat-label">Últimos 7 dias</span>' +
-          '<strong class="reseller-stat-value">' + (stats.created7d || 0) + '</strong>' +
-          '<span class="reseller-stat-sub">conta' + (stats.created7d !== 1 ? 's' : '') + '</span>' +
+        '<div class="rdash-stat">' +
+          '<div class="rdash-stat-icon rdash-stat-icon--green">' +
+            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>' +
+          '</div>' +
+          '<div class="rdash-stat-body">' +
+            '<span class="rdash-stat-label">Clientes ativos</span>' +
+            '<strong class="rdash-stat-val rdash-stat-val--green">' + (stats.clientsActive || 0) + '</strong>' +
+            '<span class="rdash-stat-hint">' + (stats.clientsManaged || 0) + ' no total</span>' +
+          '</div>' +
         '</div>' +
-        '<div class="reseller-stat-card">' +
-          '<span class="reseller-stat-label">Últimos 30 dias</span>' +
-          '<strong class="reseller-stat-value">' + (stats.created30d || 0) + '</strong>' +
-          '<span class="reseller-stat-sub">conta' + (stats.created30d !== 1 ? 's' : '') + '</span>' +
+        '<div class="rdash-stat">' +
+          '<div class="rdash-stat-icon rdash-stat-icon--dim">' +
+            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>' +
+          '</div>' +
+          '<div class="rdash-stat-body">' +
+            '<span class="rdash-stat-label">Criados hoje / 7d</span>' +
+            '<strong class="rdash-stat-val rdash-stat-val--dim">' + (stats.created24h || 0) + '</strong>' +
+            '<span class="rdash-stat-hint">' + (stats.created7d || 0) + ' nos últimos 7 dias</span>' +
+          '</div>' +
         '</div>' +
       '</div>' +
-      '<div class="reseller-dash-section-label">Créditos</div>' +
-      '<div class="reseller-dash-stats reseller-dash-stats-credits">' +
-        '<div class="reseller-stat-card">' +
-          '<span class="reseller-stat-label">Gastos</span>' +
-          '<strong class="reseller-stat-value">' + (stats.creditsUsed || 0) + '</strong>' +
-          '<span class="reseller-stat-sub">crédito' + (stats.creditsUsed !== 1 ? 's' : '') + '</span>' +
-        '</div>' +
-        '<div class="reseller-stat-card">' +
-          '<span class="reseller-stat-label">Disponíveis</span>' +
-          '<strong class="reseller-stat-value reseller-stat-value-credits">' + (stats.creditsRemaining || 0) + '</strong>' +
-          '<span class="reseller-stat-sub">crédito' + (stats.creditsRemaining !== 1 ? 's' : '') + '</span>' +
-        '</div>' +
-        '<div class="reseller-stat-card reseller-stat-card-action">' +
-          '<span class="reseller-stat-label">Recarga</span>' +
-          '<button type="button" class="reseller-stat-link" id="reseller-dash-buy">Comprar créditos</button>' +
-        '</div>' +
-      '</div>' +
-      '<div class="reseller-dash-layout">' +
-        '<aside class="reseller-dash-aside">' +
-          '<h3>Gerar novo acesso</h3>' +
-          (readOnly
-            ? '<p class="reseller-dash-readonly">Somente o revendedor pode criar logins aqui.</p>'
-            : '<form class="reseller-dash-form" id="reseller-create-form">' +
-                '<div class="field-group"><label class="field-label">Login do cliente</label>' +
-                  '<input class="field-input" id="reseller-new-user" placeholder="Ex: joaocliente123" autocomplete="off"/></div>' +
-                '<div class="field-group"><label class="field-label">Senha de acesso</label>' +
-                  '<input class="field-input" id="reseller-new-pass" type="text" placeholder="Em branco = aleatória" autocomplete="off"/></div>' +
-                '<div class="field-group"><label class="field-label">Duração</label>' +
-                  '<select class="field-input" id="reseller-new-days">' +
-                    '<option value="1">1 dia</option>' +
-                    '<option value="7">7 dias</option>' +
-                    '<option value="30" selected>30 dias</option>' +
-                  '</select></div>' +
-                '<button type="submit" class="reseller-dash-submit">⚡ Gerar conta</button>' +
+
+      // ── Formulário novo acesso ─────────────────────────────────────────────
+      (!readOnly
+        ? '<div class="rdash-form-card">' +
+            '<div class="rdash-form-header">' +
+              '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>' +
+              '<span>Criar novo acesso</span>' +
+            '</div>' +
+            '<form class="rdash-form-grid" id="reseller-create-form">' +
+              '<div class="field-group">' +
+                '<label class="field-label">Login do cliente</label>' +
+                '<input class="field-input" id="reseller-new-user" placeholder="Ex: joaocliente123" autocomplete="off"/>' +
+              '</div>' +
+              '<div class="field-group">' +
+                '<label class="field-label">Senha <span class="rdash-form-hint">(vazio = aleatória)</span></label>' +
+                '<input class="field-input" id="reseller-new-pass" type="text" placeholder="Deixe vazio para gerar" autocomplete="off"/>' +
+              '</div>' +
+              '<div class="field-group">' +
+                '<label class="field-label">Duração</label>' +
+                '<select class="field-input" id="reseller-new-days">' +
+                  '<option value="1">1 dia</option>' +
+                  '<option value="7">7 dias</option>' +
+                  '<option value="15">15 dias</option>' +
+                  '<option value="30" selected>30 dias</option>' +
+                '</select>' +
+              '</div>' +
+              '<div class="rdash-form-action">' +
+                '<button type="submit" class="rdash-submit-btn">⚡ Gerar acesso</button>' +
                 '<p class="reseller-form-msg" id="reseller-form-msg"></p>' +
-              '</form>') +
-        '</aside>' +
-        '<section class="reseller-dash-main">' +
-          '<h3>Seus clientes ativos <span class="reseller-dash-count">' + stats.clientsManaged + '</span></h3>' +
-          '<div id="reseller-dash-clients-table"></div>' +
-        '</section>' +
+              '</div>' +
+            '</form>' +
+          '</div>'
+        : '<div class="rdash-readonly-notice">Somente o revendedor pode criar acessos aqui.</div>') +
+
+      // ── Tabela de clientes ─────────────────────────────────────────────────
+      '<div class="rdash-clients-card">' +
+        '<div class="rdash-clients-header">' +
+          '<span>Clientes</span>' +
+          '<span class="rdash-clients-count">' + (stats.clientsManaged || 0) + ' total</span>' +
+        '</div>' +
+        '<div id="reseller-dash-clients-table"></div>' +
       '</div>' +
+
     '</div>';
 
   const tableWrap = document.getElementById('reseller-dash-clients-table');
   if (!logins.length) {
-    tableWrap.innerHTML = '<p class="reseller-empty-logins">Nenhum cliente criado ainda.</p>';
+    tableWrap.innerHTML =
+      '<div class="rdash-empty">' +
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="32" height="32"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>' +
+        '<p>Nenhum cliente ainda.<br>Use o formulário acima para criar o primeiro acesso.</p>' +
+      '</div>';
   } else {
     let rows = '';
     logins.forEach(item => {
       const left = typeof getDaysRemaining === 'function' ? getDaysRemaining(item.expiresAt) : 0;
       const active = left > 0;
+      const urgency = left <= 2 ? 'rdash-row--urgent' : left <= 7 ? 'rdash-row--warning' : '';
+      const barPct = Math.min(100, Math.round((left / (item.days || 30)) * 100));
+      const barColor = left <= 2 ? '#f87171' : left <= 7 ? '#fbbf24' : '#4ade80';
       rows +=
-        '<tr>' +
-          '<td><span class="reseller-client-name">' + item.username + '</span></td>' +
-          '<td><span class="reseller-days-left">' + left + ' dia' + (left === 1 ? '' : 's') + '</span></td>' +
-          '<td><span class="reseller-client-status' + (active ? ' on' : '') + '">' + (active ? 'Ativo' : 'Expirado') + '</span></td>' +
-          '<td class="reseller-client-actions">' +
-            '<button type="button" class="reseller-icon-btn" data-action="info" data-id="' + item.id + '" title="Ver login e senha">👁</button>' +
-            (readOnly ? '' :
-              '<button type="button" class="reseller-icon-btn" data-action="block" data-id="' + item.id + '" title="Desativar">⊘</button>' +
-              '<button type="button" class="reseller-icon-btn danger" data-action="delete" data-id="' + item.id + '" title="Excluir">🗑</button>') +
-          '</td>' +
-        '</tr>';
+        '<div class="rdash-client-row ' + (active ? '' : 'rdash-row--expired') + ' ' + urgency + '">' +
+          '<div class="rdash-row-main">' +
+            '<div class="rdash-row-identity">' +
+              '<span class="rdash-row-name">' + item.username + '</span>' +
+              '<span class="rdash-row-pass">' + item.password + '</span>' +
+            '</div>' +
+            '<div class="rdash-row-days">' +
+              '<span class="rdash-row-days-val" style="color:' + barColor + '">' + left + 'd</span>' +
+              '<div class="rdash-days-bar"><div class="rdash-days-fill" style="width:' + barPct + '%;background:' + barColor + '"></div></div>' +
+            '</div>' +
+            '<span class="rdash-row-status ' + (active ? 'on' : '') + '">' + (active ? 'Ativo' : 'Expirado') + '</span>' +
+            '<div class="rdash-row-actions">' +
+              (readOnly ? '' :
+                '<button type="button" class="rdash-act-btn rdash-act-block" data-action="block" data-id="' + item.id + '" title="Desativar acesso">⊘</button>' +
+                '<button type="button" class="rdash-act-btn rdash-act-del" data-action="delete" data-id="' + item.id + '" title="Excluir cliente">🗑</button>') +
+            '</div>' +
+          '</div>' +
+        '</div>';
     });
-    tableWrap.innerHTML =
-      '<div class="reseller-table-wrap">' +
-        '<table class="reseller-table reseller-dash-table">' +
-          '<thead><tr><th>Usuário</th><th>Dias restantes</th><th>Status</th><th>Ações</th></tr></thead>' +
-          '<tbody>' + rows + '</tbody>' +
-        '</table></div>';
+    tableWrap.innerHTML = '<div class="rdash-client-list">' + rows + '</div>';
   }
 
   const backBtn = document.getElementById('reseller-dash-back');
@@ -619,17 +649,11 @@ function renderResellerDashboard() {
   }
 
   if (tableWrap) {
-    tableWrap.querySelectorAll('.reseller-icon-btn').forEach(btn => {
+    tableWrap.querySelectorAll('[data-action]').forEach(btn => {
       btn.addEventListener('click', () => {
         const id = btn.getAttribute('data-id');
         const action = btn.getAttribute('data-action');
-        if (!id) return;
-        const item = logins.find(l => l.id === id);
-        if (action === 'info' && item) {
-          alert('Usuário: ' + item.username + '\nSenha: ' + item.password + '\nPlano: ' + item.days + ' dias');
-          return;
-        }
-        if (readOnly) return;
+        if (!id || readOnly) return;
         if (action === 'block') {
           if (!confirm('Desativar este cliente agora?')) return;
           deactivateResellerClient(reseller, id);
