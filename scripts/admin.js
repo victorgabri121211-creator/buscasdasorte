@@ -202,7 +202,6 @@ function renderAdminView(view) {
     }
   }
   if (view === 'admin-clientes') {
-    bindAdminClientFilters();
     renderAdminClients();
   }
   if (view === 'admin-revendedores') renderAdminResellers();
@@ -214,37 +213,20 @@ function renderAdminDashboard() {
 }
 
 function renderAdminClients(filter) {
-  const tableEl = document.getElementById('admin-clients-table');
-  const countsEl = document.getElementById('admin-clients-counts');
-  if (!tableEl) return;
+  const root = document.getElementById('admin-clients-root');
+  if (!root) return;
+
+  const hadSearchFocus = root.querySelector('.admin-clients-search-input') === document.activeElement;
+  const currentFilter = filter || root.getAttribute('data-filter') || 'all';
+  root.setAttribute('data-filter', currentFilter);
+  const searchTerm = root.getAttribute('data-search') || '';
 
   const users = adminGetUsers();
-  const now = Date.now();
-  let active = 0;
-  let inactive = 0;
-
+  let active = 0, inactive = 0;
   users.forEach(u => {
     const plan = adminGetPlanInfo(u.user);
-    if (plan.active) active++;
-    else inactive++;
+    if (plan.active) active++; else inactive++;
   });
-
-  if (countsEl) {
-    countsEl.innerHTML =
-      '<span class="admin-count-pill active">' + active + ' ativos</span>' +
-      '<span class="admin-count-pill inactive">' + inactive + ' inativos</span>' +
-      '<span class="admin-count-pill total">' + users.length + ' total</span>';
-  }
-
-  const currentFilter = filter || tableEl.getAttribute('data-filter') || 'all';
-  tableEl.setAttribute('data-filter', currentFilter);
-
-  document.querySelectorAll('.admin-filter-btn').forEach(btn => {
-    btn.classList.toggle('active', btn.getAttribute('data-filter') === currentFilter);
-  });
-
-  const searchEl = document.getElementById('admin-clients-search');
-  const searchTerm = searchEl ? searchEl.value.trim().toLowerCase() : '';
 
   const filtered = users.filter(u => {
     const plan = adminGetPlanInfo(u.user);
@@ -254,16 +236,11 @@ function renderAdminClients(filter) {
     return true;
   });
 
-  if (!filtered.length) {
-    tableEl.innerHTML = '<p class="admin-empty">Nenhum cliente neste filtro.</p>';
-    return;
-  }
-
   let rows = '';
   filtered.forEach(u => {
     const plan = adminGetPlanInfo(u.user);
-    const active = typeof window.getActivePlanForUser === 'function' ? window.getActivePlanForUser(u.user) : null;
-    const currentPlanId = active ? active.id : null;
+    const activePlan = typeof window.getActivePlanForUser === 'function' ? window.getActivePlanForUser(u.user) : null;
+    const currentPlanId = activePlan ? activePlan.id : null;
     const expText = plan.expires
       ? plan.expires.toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })
       : '—';
@@ -278,22 +255,67 @@ function renderAdminClients(filter) {
         '<td class="admin-plan-actions">' +
           adminBuildPlanSelect(u.user, currentPlanId) +
           '<button type="button" class="admin-plan-on-btn" data-username="' + escAdmin(u.user) + '">Ligar</button>' +
-          (plan.active
-            ? '<button type="button" class="admin-plan-off-btn" data-username="' + escAdmin(u.user) + '">Desligar</button>'
-            : '') +
+          (plan.active ? '<button type="button" class="admin-plan-off-btn" data-username="' + escAdmin(u.user) + '">Desligar</button>' : '') +
         '</td>' +
       '</tr>';
   });
 
-  tableEl.innerHTML =
-    '<div class="admin-table-wrap">' +
-      '<table class="admin-table admin-table-clients">' +
-        '<thead><tr><th>Cliente</th><th>Plano</th><th>Validade</th><th>Cadastro</th><th>Gerenciar</th></tr></thead>' +
-        '<tbody>' + rows + '</tbody>' +
-      '</table>' +
+  const tableHtml = filtered.length
+    ? '<div class="admin-table-wrap"><table class="admin-table admin-table-clients"><thead><tr><th>Cliente</th><th>Plano</th><th>Validade</th><th>Cadastro</th><th>Gerenciar</th></tr></thead><tbody>' + rows + '</tbody></table></div>'
+    : '<p class="admin-empty">Nenhum cliente neste filtro.</p>';
+
+  function fBtn(f, label) {
+    return '<button type="button" class="admin-filter-btn' + (currentFilter === f ? ' active' : '') + '" data-filter="' + f + '">' + label + '</button>';
+  }
+
+  root.innerHTML =
+    '<div class="sdash-wrap">' +
+      '<div class="sdash-header">' +
+        '<div class="sdash-header-left">' +
+          '<div class="sdash-header-icon sdash-icon-blue">' +
+            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>' +
+          '</div>' +
+          '<div>' +
+            '<h3 class="sdash-title">Clientes</h3>' +
+            '<p class="sdash-sub">Planos ativos e inativos de todos os usuários</p>' +
+          '</div>' +
+        '</div>' +
+        '<button type="button" class="admin-sync-btn" onclick="adminSyncFromSupabase()">' +
+          '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>' +
+          'Sincronizar' +
+        '</button>' +
+      '</div>' +
+      '<div class="aclients-toolbar">' +
+        '<div class="aclients-stats">' +
+          '<span class="admin-count-pill active">' + active + ' ativos</span>' +
+          '<span class="admin-count-pill inactive">' + inactive + ' inativos</span>' +
+          '<span class="admin-count-pill total">' + users.length + ' total</span>' +
+        '</div>' +
+        '<div class="aclients-controls">' +
+          '<div class="admin-filter-bar">' + fBtn('all', 'Todos') + fBtn('active', 'Ativos') + fBtn('inactive', 'Inativos') + '</div>' +
+          '<div class="admin-search-wrap aclients-search">' +
+            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>' +
+            '<input class="admin-search-input admin-clients-search-input" type="text" placeholder="Buscar usuário..." value="' + escAdmin(searchTerm) + '" autocomplete="off"/>' +
+          '</div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="admin-panel aclients-table-panel">' + tableHtml + '</div>' +
     '</div>';
 
-  bindAdminClientPlanActions(tableEl, currentFilter);
+  root.querySelectorAll('.admin-filter-btn').forEach(btn => {
+    btn.addEventListener('click', () => renderAdminClients(btn.getAttribute('data-filter')));
+  });
+
+  const searchEl = root.querySelector('.admin-clients-search-input');
+  if (searchEl) {
+    searchEl.addEventListener('input', () => {
+      root.setAttribute('data-search', searchEl.value.trim().toLowerCase());
+      renderAdminClients(root.getAttribute('data-filter'));
+    });
+    if (hadSearchFocus) searchEl.focus();
+  }
+
+  bindAdminClientPlanActions(root.querySelector('.aclients-table-panel'), currentFilter);
 }
 
 function bindAdminClientPlanActions(tableEl, filter) {
@@ -322,126 +344,105 @@ function bindAdminClientPlanActions(tableEl, filter) {
   });
 }
 
-function bindAdminClientFilters() {
-  if (bindAdminClientFilters.done) return;
-  document.querySelectorAll('.admin-filter-btn').forEach(btn => {
-    btn.addEventListener('click', () => renderAdminClients(btn.getAttribute('data-filter')));
-  });
-  const searchEl = document.getElementById('admin-clients-search');
-  if (searchEl) searchEl.addEventListener('input', () => renderAdminClients());
-  bindAdminClientFilters.done = true;
-}
-
-function bindAdminResellerSearch() {
-  if (bindAdminResellerSearch.done) return;
-  const searchEl = document.getElementById('admin-resellers-search');
-  if (searchEl) searchEl.addEventListener('input', () => renderAdminResellers());
-  bindAdminResellerSearch.done = true;
-}
-
 function renderAdminResellers() {
-  const tableEl = document.getElementById('admin-resellers-table');
-  const countEl = document.getElementById('admin-resellers-count');
-  if (!tableEl) return;
+  const root = document.getElementById('admin-resellers-root');
+  if (!root) return;
 
-  bindAdminResellerSearch();
+  const hadSearchFocus = root.querySelector('.admin-resellers-search-input') === document.activeElement;
+  const searchTerm = root.getAttribute('data-search') || '';
 
   const allUsers = adminGetUsers();
   let enabled = 0;
   allUsers.forEach(u => { if (isResellerEnabled(u.user)) enabled++; });
 
-  if (countEl) {
-    countEl.textContent = enabled + ' de ' + allUsers.length + ' com revenda ativa';
-  }
-
-  const searchEl = document.getElementById('admin-resellers-search');
-  const searchTerm = searchEl ? searchEl.value.trim().toLowerCase() : '';
   const users = searchTerm
     ? allUsers.filter(u => u.user.toLowerCase().includes(searchTerm))
     : allUsers;
 
+  let listHtml = '';
   if (!allUsers.length) {
-    tableEl.innerHTML = '<p class="admin-empty">Nenhum usuário cadastrado ainda.</p>';
-    return;
-  }
-
-  if (!users.length) {
-    tableEl.innerHTML = '<p class="admin-empty">Nenhum resultado para "' + escAdmin(searchTerm) + '".</p>';
-    return;
-  }
-
-  let cards = '';
-  users.forEach(u => {
-    const on = isResellerEnabled(u.user);
-    const credits = typeof getResellerCredits === 'function' ? getResellerCredits(u.user) : 0;
-    const loginsCount = typeof getResellerLoginsFor === 'function'
-      ? getResellerLoginsFor(u.user).length
-      : 0;
-    const userEsc = escAdmin(u.user);
-
-    cards +=
-      '<article class="admin-reseller-card' + (on ? ' is-active' : '') + '">' +
-        '<div class="admin-reseller-card-top">' +
-          '<div class="admin-reseller-card-identity">' +
-            '<h4 class="admin-reseller-card-name">' + userEsc + '</h4>' +
-            '<p class="admin-reseller-card-meta">' +
-              '<span class="admin-reseller-meta-item">' +
-                '<strong>' + credits + '</strong> crédito' + (credits === 1 ? '' : 's') +
-              '</span>' +
-              '<span class="admin-reseller-meta-sep">·</span>' +
-              '<span class="admin-reseller-meta-item">' +
-                loginsCount + ' login' + (loginsCount === 1 ? '' : 's') + ' criado' + (loginsCount === 1 ? '' : 's') +
-              '</span>' +
-            '</p>' +
+    listHtml = '<p class="admin-empty">Nenhum usuário cadastrado ainda.</p>';
+  } else if (!users.length) {
+    listHtml = '<p class="admin-empty">Nenhum resultado para "' + escAdmin(searchTerm) + '".</p>';
+  } else {
+    let cards = '';
+    users.forEach(u => {
+      const on = isResellerEnabled(u.user);
+      const credits = typeof getResellerCredits === 'function' ? getResellerCredits(u.user) : 0;
+      const loginsCount = typeof getResellerLoginsFor === 'function' ? getResellerLoginsFor(u.user).length : 0;
+      const userEsc = escAdmin(u.user);
+      cards +=
+        '<article class="admin-reseller-card' + (on ? ' is-active' : '') + '">' +
+          '<div class="admin-reseller-card-top">' +
+            '<div class="admin-reseller-card-identity">' +
+              '<h4 class="admin-reseller-card-name">' + userEsc + '</h4>' +
+              '<p class="admin-reseller-card-meta">' +
+                '<span class="admin-reseller-meta-item"><strong>' + credits + '</strong> crédito' + (credits === 1 ? '' : 's') + '</span>' +
+                '<span class="admin-reseller-meta-sep">·</span>' +
+                '<span class="admin-reseller-meta-item">' + loginsCount + ' login' + (loginsCount === 1 ? '' : 's') + ' criado' + (loginsCount === 1 ? '' : 's') + '</span>' +
+              '</p>' +
+            '</div>' +
+            '<span class="admin-reseller-pill' + (on ? ' on' : '') + '">' + (on ? 'Revenda ativa' : 'Inativo') + '</span>' +
           '</div>' +
-          '<span class="admin-reseller-pill' + (on ? ' on' : '') + '">' +
-            (on ? 'Revenda ativa' : 'Inativo') +
-          '</span>' +
-        '</div>' +
-        '<div class="admin-reseller-card-actions">' +
-          '<button type="button" class="admin-reseller-act admin-reseller-act-primary"' +
-            ' data-username="' + userEsc + '" data-reseller-action="credits">' +
-            '<span class="admin-reseller-act-title">Adicionar créditos</span>' +
-            '<span class="admin-reseller-act-desc">Saldo para criar logins</span>' +
-          '</button>' +
-          '<button type="button" class="admin-reseller-act"' +
-            ' data-username="' + userEsc + '" data-reseller-action="logins">' +
-            '<span class="admin-reseller-act-title">Ver logins</span>' +
-            '<span class="admin-reseller-act-desc">Contas já geradas</span>' +
-          '</button>' +
-          '<button type="button" class="admin-reseller-act"' +
-            ' data-username="' + userEsc + '" data-reseller-action="panel">' +
-            '<span class="admin-reseller-act-title">Abrir painel</span>' +
-            '<span class="admin-reseller-act-desc">Visualizar como revendedor</span>' +
-          '</button>' +
-          '<button type="button" class="admin-reseller-act admin-reseller-act-toggle' + (on ? ' is-on' : '') + '"' +
-            ' data-username="' + userEsc + '" data-reseller-action="toggle" data-enabled="' + (on ? 'true' : 'false') + '">' +
-            '<span class="admin-reseller-act-title">' + (on ? 'Desativar revenda' : 'Ativar revenda') + '</span>' +
-            '<span class="admin-reseller-act-desc">' + (on ? 'Remove menu Revendedor' : 'Libera área de revenda') + '</span>' +
-          '</button>' +
-        '</div>' +
-      '</article>';
-  });
+          '<div class="admin-reseller-card-actions">' +
+            '<button type="button" class="admin-reseller-act admin-reseller-act-primary" data-username="' + userEsc + '" data-reseller-action="credits">' +
+              '<span class="admin-reseller-act-title">Adicionar créditos</span><span class="admin-reseller-act-desc">Saldo para criar logins</span>' +
+            '</button>' +
+            '<button type="button" class="admin-reseller-act" data-username="' + userEsc + '" data-reseller-action="logins">' +
+              '<span class="admin-reseller-act-title">Ver logins</span><span class="admin-reseller-act-desc">Contas já geradas</span>' +
+            '</button>' +
+            '<button type="button" class="admin-reseller-act" data-username="' + userEsc + '" data-reseller-action="panel">' +
+              '<span class="admin-reseller-act-title">Abrir painel</span><span class="admin-reseller-act-desc">Visualizar como revendedor</span>' +
+            '</button>' +
+            '<button type="button" class="admin-reseller-act admin-reseller-act-toggle' + (on ? ' is-on' : '') + '" data-username="' + userEsc + '" data-reseller-action="toggle" data-enabled="' + (on ? 'true' : 'false') + '">' +
+              '<span class="admin-reseller-act-title">' + (on ? 'Desativar revenda' : 'Ativar revenda') + '</span>' +
+              '<span class="admin-reseller-act-desc">' + (on ? 'Remove menu Revendedor' : 'Libera área de revenda') + '</span>' +
+            '</button>' +
+          '</div>' +
+        '</article>';
+    });
+    listHtml = '<div class="admin-reseller-list">' + cards + '</div>';
+  }
 
-  tableEl.innerHTML =
-    '<div class="admin-resellers-legend">' +
-      '<div class="admin-resellers-legend-item">' +
-        '<span class="admin-resellers-legend-dot"></span>' +
-        '<span><strong>Créditos</strong> — cada unidade permite gerar 1 login de cliente.</span>' +
+  root.innerHTML =
+    '<div class="sdash-wrap">' +
+      '<div class="sdash-header">' +
+        '<div class="sdash-header-left">' +
+          '<div class="sdash-header-icon sdash-icon-orange">' +
+            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>' +
+          '</div>' +
+          '<div>' +
+            '<h3 class="sdash-title">Revendedores</h3>' +
+            '<p class="sdash-sub">Habilite quem pode revender logins na plataforma</p>' +
+          '</div>' +
+        '</div>' +
+        '<span class="aresellers-count-badge">' + enabled + ' de ' + allUsers.length + ' ativos</span>' +
       '</div>' +
-      '<div class="admin-resellers-legend-item">' +
-        '<span class="admin-resellers-legend-dot"></span>' +
-        '<span><strong>Revenda ativa</strong> — o usuário vê o menu Revendedor ao entrar.</span>' +
+      '<div class="admin-resellers-legend">' +
+        '<div class="admin-resellers-legend-item"><span class="admin-resellers-legend-dot"></span><span><strong>Créditos</strong> — cada unidade permite gerar 1 login de cliente.</span></div>' +
+        '<div class="admin-resellers-legend-item"><span class="admin-resellers-legend-dot"></span><span><strong>Revenda ativa</strong> — o usuário vê o menu Revendedor ao entrar.</span></div>' +
       '</div>' +
-    '</div>' +
-    '<div class="admin-reseller-list">' + cards + '</div>';
+      '<div class="admin-search-wrap">' +
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>' +
+        '<input class="admin-search-input admin-resellers-search-input" type="text" placeholder="Buscar revendedor..." value="' + escAdmin(searchTerm) + '" autocomplete="off"/>' +
+      '</div>' +
+      listHtml +
+    '</div>';
 
-  tableEl.querySelectorAll('[data-reseller-action]').forEach(btn => {
+  const searchEl = root.querySelector('.admin-resellers-search-input');
+  if (searchEl) {
+    searchEl.addEventListener('input', () => {
+      root.setAttribute('data-search', searchEl.value.trim().toLowerCase());
+      renderAdminResellers();
+    });
+    if (hadSearchFocus) searchEl.focus();
+  }
+
+  root.querySelectorAll('[data-reseller-action]').forEach(btn => {
     btn.addEventListener('click', () => {
       const username = btn.getAttribute('data-username');
       const action = btn.getAttribute('data-reseller-action');
       if (!username || !action) return;
-
       if (action === 'credits') {
         openAdminResellerCreditsModal(username);
       } else if (action === 'logins') {

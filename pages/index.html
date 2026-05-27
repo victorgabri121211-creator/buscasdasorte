@@ -464,52 +464,13 @@
 
     <div id="view-admin-clientes" class="app-view">
       <div class="admin-page">
-        <div class="admin-page-head">
-          <h2>Clientes</h2>
-          <p>Planos ativos e inativos de todos os usuários.</p>
-        </div>
-        <div class="admin-panel">
-          <div class="admin-panel-head">
-            <div id="admin-clients-counts" class="admin-clients-counts"></div>
-            <div class="admin-filter-bar">
-              <button type="button" class="admin-filter-btn active" data-filter="all">Todos</button>
-              <button type="button" class="admin-filter-btn" data-filter="active">Ativos</button>
-              <button type="button" class="admin-filter-btn" data-filter="inactive">Inativos</button>
-              <button type="button" id="admin-sync-btn" class="admin-sync-btn" onclick="adminSyncFromSupabase()">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
-                Sincronizar
-              </button>
-            </div>
-          </div>
-          <div class="admin-search-wrap">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-            <input id="admin-clients-search" class="admin-search-input" type="text" placeholder="Buscar usuário..." autocomplete="off"/>
-          </div>
-          <div id="admin-clients-table"></div>
-        </div>
+        <section id="admin-clients-root"></section>
       </div>
     </div>
 
     <div id="view-admin-revendedores" class="app-view">
       <div class="admin-page">
-        <div class="admin-page-head">
-          <h2>Revendedores</h2>
-          <p>Habilite quem pode acessar a Área do Revendedor e revender logins.</p>
-        </div>
-        <div class="admin-panel admin-panel-resellers">
-          <div class="admin-panel-head admin-panel-head-resellers">
-            <div>
-              <h3>Permissões de revenda</h3>
-              <p class="admin-resellers-intro">Controle quem pode revender, quantos logins cada um pode criar e o que já foi gerado.</p>
-            </div>
-            <span class="admin-panel-hint" id="admin-resellers-count"></span>
-          </div>
-          <div class="admin-search-wrap">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-            <input id="admin-resellers-search" class="admin-search-input" type="text" placeholder="Buscar revendedor..." autocomplete="off"/>
-          </div>
-          <div id="admin-resellers-table"></div>
-        </div>
+        <section id="admin-resellers-root"></section>
       </div>
     </div>
 
