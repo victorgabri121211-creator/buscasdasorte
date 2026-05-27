@@ -446,120 +446,23 @@ function renderResellerDashboard() {
   const root = document.getElementById('reseller-dashboard-root');
   if (!root) return;
 
+  const esc = typeof escAdmin === 'function' ? escAdmin : (s) => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+
   const reseller = typeof getResellerPanelUser === 'function'
     ? getResellerPanelUser()
     : (typeof getSession === 'function' ? getSession() : '');
   const stats = typeof getResellerStats === 'function'
     ? getResellerStats(reseller)
-    : { creditsRemaining: 0, creditsUsed: 0, loginsCreated: 0, clientsManaged: 0, clientsActive: 0, created24h: 0, created7d: 0, created30d: 0 };
-  const logins = typeof getResellerLoginsFor === 'function'
-    ? getResellerLoginsFor(reseller)
-    : [];
+    : { creditsRemaining: 0, creditsUsed: 0, clientsManaged: 0, clientsActive: 0, created24h: 0, created7d: 0 };
+  const logins = typeof getResellerLoginsFor === 'function' ? getResellerLoginsFor(reseller) : [];
   const isAdminView = typeof isAdmin === 'function' && isAdmin() && window._resellerPanelUser;
   const readOnly = isAdminView;
-
-  let adminBanner = '';
-  if (isAdminView) {
-    adminBanner =
-      '<div class="reseller-dash-admin-banner">Visualizando painel de <strong>' + reseller + '</strong></div>';
-  }
-
   const credLow = stats.creditsRemaining <= 3;
 
-  root.innerHTML =
-    '<div class="reseller-dash">' +
-
-      // ── Cabeçalho ──────────────────────────────────────────────────────────
-      '<div class="reseller-dash-head">' +
-        '<button type="button" class="view-search-back" id="reseller-dash-back">← Voltar</button>' +
-        '<div class="reseller-dash-head-info">' +
-          '<h2>Painel do Revendedor</h2>' +
-          (isAdminView ? '<p>Visualizando como <strong>' + reseller + '</strong></p>' : '<p>Olá, <strong>' + reseller + '</strong> — gerencie seus clientes abaixo.</p>') +
-        '</div>' +
-      '</div>' +
-
-      // ── 3 stat cards ───────────────────────────────────────────────────────
-      '<div class="rdash-stats">' +
-        '<div class="rdash-stat rdash-stat--credits' + (credLow ? ' rdash-stat--low' : '') + '">' +
-          '<div class="rdash-stat-icon">' +
-            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>' +
-          '</div>' +
-          '<div class="rdash-stat-body">' +
-            '<span class="rdash-stat-label">Créditos disponíveis</span>' +
-            '<strong class="rdash-stat-val">' + (stats.creditsRemaining || 0) + '</strong>' +
-            '<span class="rdash-stat-hint">' + (credLow ? '⚠ Saldo baixo' : (stats.creditsUsed || 0) + ' usados') + '</span>' +
-          '</div>' +
-          (!readOnly ? '<button type="button" class="rdash-buy-btn" id="reseller-dash-buy">+ Comprar</button>' : '') +
-        '</div>' +
-        '<div class="rdash-stat">' +
-          '<div class="rdash-stat-icon rdash-stat-icon--green">' +
-            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>' +
-          '</div>' +
-          '<div class="rdash-stat-body">' +
-            '<span class="rdash-stat-label">Clientes ativos</span>' +
-            '<strong class="rdash-stat-val rdash-stat-val--green">' + (stats.clientsActive || 0) + '</strong>' +
-            '<span class="rdash-stat-hint">' + (stats.clientsManaged || 0) + ' no total</span>' +
-          '</div>' +
-        '</div>' +
-        '<div class="rdash-stat">' +
-          '<div class="rdash-stat-icon rdash-stat-icon--dim">' +
-            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>' +
-          '</div>' +
-          '<div class="rdash-stat-body">' +
-            '<span class="rdash-stat-label">Criados hoje / 7d</span>' +
-            '<strong class="rdash-stat-val rdash-stat-val--dim">' + (stats.created24h || 0) + '</strong>' +
-            '<span class="rdash-stat-hint">' + (stats.created7d || 0) + ' nos últimos 7 dias</span>' +
-          '</div>' +
-        '</div>' +
-      '</div>' +
-
-      // ── Formulário novo acesso ─────────────────────────────────────────────
-      (!readOnly
-        ? '<div class="rdash-form-card">' +
-            '<div class="rdash-form-header">' +
-              '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>' +
-              '<span>Criar novo acesso</span>' +
-            '</div>' +
-            '<form class="rdash-form-grid" id="reseller-create-form">' +
-              '<div class="field-group">' +
-                '<label class="field-label">Login do cliente</label>' +
-                '<input class="field-input" id="reseller-new-user" placeholder="Ex: joaocliente123" autocomplete="off"/>' +
-              '</div>' +
-              '<div class="field-group">' +
-                '<label class="field-label">Senha <span class="rdash-form-hint">(vazio = aleatória)</span></label>' +
-                '<input class="field-input" id="reseller-new-pass" type="text" placeholder="Deixe vazio para gerar" autocomplete="off"/>' +
-              '</div>' +
-              '<div class="field-group">' +
-                '<label class="field-label">Duração</label>' +
-                '<select class="field-input" id="reseller-new-days">' +
-                  '<option value="1">1 dia</option>' +
-                  '<option value="7">7 dias</option>' +
-                  '<option value="15">15 dias</option>' +
-                  '<option value="30" selected>30 dias</option>' +
-                '</select>' +
-              '</div>' +
-              '<div class="rdash-form-action">' +
-                '<button type="submit" class="rdash-submit-btn">⚡ Gerar acesso</button>' +
-                '<p class="reseller-form-msg" id="reseller-form-msg"></p>' +
-              '</div>' +
-            '</form>' +
-          '</div>'
-        : '<div class="rdash-readonly-notice">Somente o revendedor pode criar acessos aqui.</div>') +
-
-      // ── Tabela de clientes ─────────────────────────────────────────────────
-      '<div class="rdash-clients-card">' +
-        '<div class="rdash-clients-header">' +
-          '<span>Clientes</span>' +
-          '<span class="rdash-clients-count">' + (stats.clientsManaged || 0) + ' total</span>' +
-        '</div>' +
-        '<div id="reseller-dash-clients-table"></div>' +
-      '</div>' +
-
-    '</div>';
-
-  const tableWrap = document.getElementById('reseller-dash-clients-table');
+  // Build client rows
+  let clientsBodyHtml = '';
   if (!logins.length) {
-    tableWrap.innerHTML =
+    clientsBodyHtml =
       '<div class="rdash-empty">' +
         '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="32" height="32"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>' +
         '<p>Nenhum cliente ainda.<br>Use o formulário acima para criar o primeiro acesso.</p>' +
@@ -576,8 +479,8 @@ function renderResellerDashboard() {
         '<div class="rdash-client-row ' + (active ? '' : 'rdash-row--expired') + ' ' + urgency + '">' +
           '<div class="rdash-row-main">' +
             '<div class="rdash-row-identity">' +
-              '<span class="rdash-row-name">' + item.username + '</span>' +
-              '<span class="rdash-row-pass">' + item.password + '</span>' +
+              '<span class="rdash-row-name">' + esc(item.username) + '</span>' +
+              '<span class="rdash-row-pass">' + esc(item.password) + '</span>' +
             '</div>' +
             '<div class="rdash-row-days">' +
               '<span class="rdash-row-days-val" style="color:' + barColor + '">' + left + 'd</span>' +
@@ -586,14 +489,96 @@ function renderResellerDashboard() {
             '<span class="rdash-row-status ' + (active ? 'on' : '') + '">' + (active ? 'Ativo' : 'Expirado') + '</span>' +
             '<div class="rdash-row-actions">' +
               (readOnly ? '' :
-                '<button type="button" class="rdash-act-btn rdash-act-block" data-action="block" data-id="' + item.id + '" title="Desativar acesso">⊘</button>' +
-                '<button type="button" class="rdash-act-btn rdash-act-del" data-action="delete" data-id="' + item.id + '" title="Excluir cliente">🗑</button>') +
+                '<button type="button" class="rdash-act-btn rdash-act-block" data-action="block" data-id="' + esc(item.id) + '" title="Desativar">⊘</button>' +
+                '<button type="button" class="rdash-act-btn rdash-act-del" data-action="delete" data-id="' + esc(item.id) + '" title="Excluir">🗑</button>') +
             '</div>' +
           '</div>' +
         '</div>';
     });
-    tableWrap.innerHTML = '<div class="rdash-client-list">' + rows + '</div>';
+    clientsBodyHtml = '<div class="rdash-client-list">' + rows + '</div>';
   }
+
+  const formHtml = readOnly
+    ? '<div class="rdash-readonly-notice">Somente o revendedor pode criar acessos aqui.</div>'
+    : '<div class="rdash-form-card">' +
+        '<div class="rdash-form-header">' +
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>' +
+          'Criar novo acesso' +
+        '</div>' +
+        '<form class="rdash-form-grid" id="reseller-create-form">' +
+          '<div class="field-group"><label class="field-label">Login do cliente</label><input class="field-input" id="reseller-new-user" placeholder="Ex: joaocliente123" autocomplete="off"/></div>' +
+          '<div class="field-group"><label class="field-label">Senha <span class="rdash-form-hint">(vazio = aleatória)</span></label><input class="field-input" id="reseller-new-pass" type="text" placeholder="Deixe vazio para gerar" autocomplete="off"/></div>' +
+          '<div class="field-group"><label class="field-label">Duração</label><select class="field-input" id="reseller-new-days"><option value="1">1 dia</option><option value="7">7 dias</option><option value="15">15 dias</option><option value="30" selected>30 dias</option></select></div>' +
+          '<div class="rdash-form-action"><button type="submit" class="rdash-submit-btn">⚡ Gerar acesso</button><p class="reseller-form-msg" id="reseller-form-msg"></p></div>' +
+        '</form>' +
+      '</div>';
+
+  root.innerHTML =
+    '<div class="rdash-wrap">' +
+
+      (isAdminView
+        ? '<div class="rdash-admin-banner"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg> Visualizando painel de <strong>' + esc(reseller) + '</strong></div>'
+        : '') +
+
+      '<div class="sdash-header">' +
+        '<div class="sdash-header-left">' +
+          '<div class="sdash-header-icon sdash-icon-orange">' +
+            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>' +
+          '</div>' +
+          '<div>' +
+            '<h3 class="sdash-title">Painel do Revendedor</h3>' +
+            '<p class="sdash-sub">' + (isAdminView ? 'Visualizando como <strong style="color:#fb923c">' + esc(reseller) + '</strong>' : 'Olá, <strong style="color:#4ade80">' + esc(reseller) + '</strong>') + '</p>' +
+          '</div>' +
+        '</div>' +
+        '<div class="rdash-header-right">' +
+          (!readOnly
+            ? '<button type="button" class="rdash-buy-btn-top" id="reseller-dash-buy">' +
+                '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="12" height="12"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>' +
+                'Comprar créditos' +
+              '</button>'
+            : '') +
+          '<button type="button" class="view-search-back" id="reseller-dash-back">← Voltar</button>' +
+        '</div>' +
+      '</div>' +
+
+      '<div class="rdash-kpis">' +
+        '<div class="rdash-kpi rdash-kpi-credits' + (credLow ? ' rdash-kpi--low' : '') + '">' +
+          '<div class="rdash-kpi-top">' +
+            '<div class="rdash-kpi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg></div>' +
+            '<span class="rdash-kpi-label">Créditos</span>' +
+          '</div>' +
+          '<div class="rdash-kpi-amount">' + (stats.creditsRemaining || 0) + '</div>' +
+          '<div class="rdash-kpi-meta">' + (credLow ? '⚠ Saldo baixo' : (stats.creditsUsed || 0) + ' usados') + '</div>' +
+        '</div>' +
+        '<div class="rdash-kpi rdash-kpi-clients">' +
+          '<div class="rdash-kpi-top">' +
+            '<div class="rdash-kpi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>' +
+            '<span class="rdash-kpi-label">Clientes ativos</span>' +
+          '</div>' +
+          '<div class="rdash-kpi-amount">' + (stats.clientsActive || 0) + '</div>' +
+          '<div class="rdash-kpi-meta">' + (stats.clientsManaged || 0) + ' no total</div>' +
+        '</div>' +
+        '<div class="rdash-kpi rdash-kpi-activity">' +
+          '<div class="rdash-kpi-top">' +
+            '<div class="rdash-kpi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>' +
+            '<span class="rdash-kpi-label">Criados hoje</span>' +
+          '</div>' +
+          '<div class="rdash-kpi-amount">' + (stats.created24h || 0) + '</div>' +
+          '<div class="rdash-kpi-meta">' + (stats.created7d || 0) + ' nos últimos 7 dias</div>' +
+        '</div>' +
+      '</div>' +
+
+      formHtml +
+
+      '<div class="sdash-recent">' +
+        '<div class="sdash-recent-head">' +
+          '<span class="sdash-recent-title">Clientes</span>' +
+          (logins.length ? '<span class="sdash-recent-badge">' + logins.length + '</span>' : '') +
+        '</div>' +
+        clientsBodyHtml +
+      '</div>' +
+
+    '</div>';
 
   const backBtn = document.getElementById('reseller-dash-back');
   if (backBtn) backBtn.addEventListener('click', closeResellerPanelView);
@@ -601,10 +586,7 @@ function renderResellerDashboard() {
   const buyBtn = document.getElementById('reseller-dash-buy');
   if (buyBtn) {
     buyBtn.addEventListener('click', () => {
-      if (isAdminView) {
-        alert('O revendedor deve comprar créditos na Área do Revendedor.');
-        return;
-      }
+      if (isAdminView) { alert('O revendedor deve comprar créditos na Área do Revendedor.'); return; }
       showAppView('revendedor');
     });
   }
@@ -631,40 +613,34 @@ function renderResellerDashboard() {
           }
           if (result.ok) {
             if (typeof showResellerLoginCreatedModal === 'function') {
-              showResellerLoginCreatedModal({
-                username: result.username,
-                password: result.password,
-                days: result.days,
-              });
+              showResellerLoginCreatedModal({ username: result.username, password: result.password, days: result.days });
             }
             document.getElementById('reseller-new-user').value = '';
             document.getElementById('reseller-new-pass').value = '';
             renderResellerDashboard();
           }
         } finally {
-          if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = '⚡ Gerar conta'; }
+          if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = '⚡ Gerar acesso'; }
         }
       });
     }
   }
 
-  if (tableWrap) {
-    tableWrap.querySelectorAll('[data-action]').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const id = btn.getAttribute('data-id');
-        const action = btn.getAttribute('data-action');
-        if (!id || readOnly) return;
-        if (action === 'block') {
-          if (!confirm('Desativar este cliente agora?')) return;
-          deactivateResellerClient(reseller, id);
-        } else if (action === 'delete') {
-          if (!confirm('Excluir este cliente permanentemente?')) return;
-          deleteResellerClient(reseller, id);
-        }
-        renderResellerDashboard();
-      });
+  root.querySelectorAll('[data-action]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id = btn.getAttribute('data-id');
+      const action = btn.getAttribute('data-action');
+      if (!id || readOnly) return;
+      if (action === 'block') {
+        if (!confirm('Desativar este cliente agora?')) return;
+        deactivateResellerClient(reseller, id);
+      } else if (action === 'delete') {
+        if (!confirm('Excluir este cliente permanentemente?')) return;
+        deleteResellerClient(reseller, id);
+      }
+      renderResellerDashboard();
     });
-  }
+  });
 }
 
 function isModuleMaintenance(key) {
