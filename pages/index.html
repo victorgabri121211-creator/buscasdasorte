@@ -473,6 +473,13 @@
     <div id="view-admin-dashboard" class="app-view">
       <div class="admin-page">
         <section id="sales-dashboard"></section>
+        <div class="sales-recent-panel">
+          <div class="sales-tabs-bar">
+            <button class="sales-tab-btn active" data-tab="recent" onclick="switchSalesTab('recent')">Últimas vendas</button>
+            <button class="sales-tab-btn" data-tab="all" onclick="switchSalesTab('all')">Todas as vendas</button>
+          </div>
+          <div id="sales-recent"></div>
+        </div>
       </div>
     </div>
 

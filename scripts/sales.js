@@ -1,9 +1,18 @@
 // Registro e dashboard de vendas (planos + revenda)
 const SALES_STORE_KEY = 'bds_sales';
 const DAY_MS = 24 * 60 * 60 * 1000;
+var _salesTab = 'recent';
 
 function getSalesList() {
-  try { return JSON.parse(localStorage.getItem(SALES_STORE_KEY)) || []; } catch { return []; }
+  try {
+    const raw = JSON.parse(localStorage.getItem(SALES_STORE_KEY)) || [];
+    const seen = new Set();
+    return raw.filter(function(s) {
+      if (seen.has(s.id)) return false;
+      seen.add(s.id);
+      return true;
+    });
+  } catch { return []; }
 }
 
 function saveSalesList(list) {
@@ -156,12 +165,46 @@ function _sdashFeed(list) {
   return html;
 }
 
+function renderSalesPanel() {
+  var recentEl = document.getElementById('sales-recent');
+  if (!recentEl) return;
+
+  var allSales = getSalesList().slice().sort(function(a, b) { return b.ts - a.ts; });
+  var list = _salesTab === 'all' ? allSales : allSales.slice(0, 8);
+
+  if (!list.length) {
+    recentEl.innerHTML = '<p class="sales-recent-empty">Nenhuma venda registrada ainda.</p>';
+    return;
+  }
+
+  var rows = '';
+  list.forEach(function(s) {
+    var cat = s.category === 'reseller' ? 'Revenda' : 'Plano';
+    rows +=
+      '<li class="sales-recent-item">' +
+        '<span class="sales-recent-cat">' + cat + '</span>' +
+        '<span class="sales-recent-label">' + escSale(s.label) + '</span>' +
+        '<span class="sales-recent-buyer">' + escSale(s.buyer) + '</span>' +
+        '<span class="sales-recent-amount">' + formatSaleMoney(s.amount) + '</span>' +
+        '<span class="sales-recent-time">' + new Date(s.ts).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) + '</span>' +
+      '</li>';
+  });
+  recentEl.innerHTML = '<ul class="sales-recent-list">' + rows + '</ul>';
+}
+
+window.switchSalesTab = function(tab) {
+  _salesTab = tab;
+  document.querySelectorAll('.sales-tab-btn').forEach(function(btn) {
+    btn.classList.toggle('active', btn.getAttribute('data-tab') === tab);
+  });
+  renderSalesPanel();
+};
+
 function renderSalesDashboard() {
   const root = document.getElementById('sales-dashboard');
   if (!root) return;
 
   const stats = getSalesDashboardStats();
-  const recent = getSalesList().slice().sort((a, b) => b.ts - a.ts).slice(0, 8);
 
   root.innerHTML =
     '<div class="sdash-wrap">' +
@@ -191,17 +234,9 @@ function renderSalesDashboard() {
         '<rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>') +
     '</div>' +
 
-    '<div class="sdash-recent">' +
-      '<div class="sdash-recent-head">' +
-        '<span class="sdash-recent-title">Últimas vendas</span>' +
-        (recent.length ? '<span class="sdash-recent-badge">' + recent.length + '</span>' : '') +
-      '</div>' +
-      (recent.length
-        ? '<div class="sdash-feed">' + _sdashFeed(recent) + '</div>'
-        : '<p class="sdash-empty">Nenhuma venda registrada ainda.</p>') +
-    '</div>' +
-
     '</div>';
+
+  renderSalesPanel();
 }
 
 function escSale(s) {
