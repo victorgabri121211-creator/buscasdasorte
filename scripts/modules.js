@@ -177,7 +177,7 @@ function updatePlanBanner() {
           '<svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>' +
         '</div>' +
         '<div class="plan-active-info">' +
-          '<div class="plan-active-title">Plano ativo: ' + (plan.period || plan.id) + '</div>' +
+          '<div class="plan-active-title">Plano ativo: ' + (plan.period || plan.id) + expiryBadge + '</div>' +
           '<div class="plan-active-sub">Válido até ' + exp.toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) + '</div>' +
           resellerNote +
           '<div class="plan-countdown" id="plan-countdown-display">' +
