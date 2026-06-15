@@ -183,6 +183,105 @@ function formatAdminDate(ts) {
   return new Date(ts).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
 }
 
+function getExpiringPlansCount(hoursAhead) {
+  hoursAhead = hoursAhead || 24;
+  const users = adminGetUsers();
+  const cutoff = Date.now() + hoursAhead * 3600 * 1000;
+  return users.filter(u => {
+    const plan = adminGetPlanInfo(u.user);
+    if (!plan.active || !plan.expires) return false;
+    return plan.expires.getTime() <= cutoff;
+  }).length;
+}
+
+function adminExportClientsCSV() {
+  const users = adminGetUsers();
+  const rows = [['Usuário', 'Plano', 'Validade', 'Cadastro']];
+  users.forEach(u => {
+    const plan = adminGetPlanInfo(u.user);
+    rows.push([
+      u.user,
+      plan.active ? plan.label : 'Inativo',
+      plan.expires ? plan.expires.toLocaleString('pt-BR') : '—',
+      u.createdAt ? new Date(u.createdAt).toLocaleString('pt-BR') : '—',
+    ]);
+  });
+  const csv = rows.map(r => r.map(c => '"' + String(c).replace(/"/g, '""') + '"').join(',')).join('\r\n');
+  const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'clientes_buscasdasorte.csv';
+  a.click();
+  if (typeof showToast === 'function') showToast('CSV exportado com sucesso');
+}
+
+let _adminResetTarget = null;
+function adminOpenResetModal(username) {
+  _adminResetTarget = username;
+  let overlay = document.getElementById('admin-reset-overlay');
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.id = 'admin-reset-overlay';
+    overlay.className = 'admin-reset-overlay';
+    overlay.innerHTML =
+      '<div class="admin-reset-box">' +
+        '<div class="admin-reset-title">Redefinir senha</div>' +
+        '<div class="admin-reset-sub" id="admin-reset-sub"></div>' +
+        '<input class="admin-reset-input" id="admin-reset-input" type="text" placeholder="Nova senha (mín. 6 caracteres)" autocomplete="new-password"/>' +
+        '<div class="admin-reset-actions">' +
+          '<button class="admin-reset-confirm" id="admin-reset-confirm-btn">Salvar senha</button>' +
+          '<button class="admin-reset-cancel" onclick="adminCloseResetModal()">Cancelar</button>' +
+        '</div>' +
+        '<div class="admin-reset-msg" id="admin-reset-msg"></div>' +
+      '</div>';
+    document.body.appendChild(overlay);
+    document.getElementById('admin-reset-confirm-btn').addEventListener('click', adminConfirmReset);
+    overlay.addEventListener('click', e => { if (e.target === overlay) adminCloseResetModal(); });
+  }
+  document.getElementById('admin-reset-sub').textContent = 'Usuário: ' + username;
+  document.getElementById('admin-reset-input').value = '';
+  document.getElementById('admin-reset-msg').textContent = '';
+  document.getElementById('admin-reset-msg').className = 'admin-reset-msg';
+  overlay.classList.add('open');
+  setTimeout(() => document.getElementById('admin-reset-input').focus(), 80);
+}
+
+function adminCloseResetModal() {
+  const overlay = document.getElementById('admin-reset-overlay');
+  if (overlay) overlay.classList.remove('open');
+  _adminResetTarget = null;
+}
+
+function adminConfirmReset() {
+  const msgEl = document.getElementById('admin-reset-msg');
+  const input = document.getElementById('admin-reset-input');
+  const newPass = input ? input.value.trim() : '';
+  if (!_adminResetTarget || !newPass) {
+    if (msgEl) { msgEl.textContent = 'Informe a nova senha.'; msgEl.className = 'admin-reset-msg err'; }
+    return;
+  }
+  if (newPass.length < 6) {
+    if (msgEl) { msgEl.textContent = 'Senha deve ter mínimo 6 caracteres.'; msgEl.className = 'admin-reset-msg err'; }
+    return;
+  }
+  const usersKey = USERS_STORE_KEY;
+  let users = [];
+  try { users = JSON.parse(localStorage.getItem(usersKey)) || []; } catch { users = []; }
+  const idx = users.findIndex(u => u.user === _adminResetTarget);
+  if (idx === -1) {
+    if (msgEl) { msgEl.textContent = 'Usuário não encontrado.'; msgEl.className = 'admin-reset-msg err'; }
+    return;
+  }
+  users[idx].pass = newPass;
+  localStorage.setItem(usersKey, JSON.stringify(users));
+  if (msgEl) { msgEl.textContent = 'Senha atualizada com sucesso!'; msgEl.className = 'admin-reset-msg ok'; }
+  if (typeof showToast === 'function') showToast('Senha de ' + _adminResetTarget + ' atualizada');
+  setTimeout(adminCloseResetModal, 1400);
+}
+window.adminOpenResetModal = adminOpenResetModal;
+window.adminCloseResetModal = adminCloseResetModal;
+window.adminExportClientsCSV = adminExportClientsCSV;
+
 function escAdmin(s) {
   return String(s)
     .replace(/&/g, '&amp;')
@@ -228,6 +327,8 @@ function renderAdminClients(filter) {
     if (plan.active) active++; else inactive++;
   });
 
+  const expiring = getExpiringPlansCount(24);
+
   const filtered = users.filter(u => {
     const plan = adminGetPlanInfo(u.user);
     if (currentFilter === 'active' && !plan.active) return false;
@@ -235,6 +336,19 @@ function renderAdminClients(filter) {
     if (searchTerm && !u.user.toLowerCase().includes(searchTerm)) return false;
     return true;
   });
+
+  const now24h = Date.now() + 24 * 3600 * 1000;
+
+  const bulkBar =
+    '<div class="admin-bulk-bar" id="admin-bulk-bar">' +
+      '<span class="admin-bulk-count" id="admin-bulk-count">0 selecionados</span>' +
+      '<div class="admin-bulk-sep"></div>' +
+      '<select class="admin-bulk-select" id="admin-bulk-plan-select">' +
+        ADMIN_PLAN_OPTIONS.map(p => '<option value="' + p.id + '">' + escAdmin(p.period) + '</option>').join('') +
+      '</select>' +
+      '<button type="button" class="admin-bulk-btn" id="admin-bulk-on-btn">Ativar selecionados</button>' +
+      '<button type="button" class="admin-bulk-btn danger" id="admin-bulk-off-btn">Desativar selecionados</button>' +
+    '</div>';
 
   let rows = '';
   filtered.forEach(u => {
@@ -244,24 +358,33 @@ function renderAdminClients(filter) {
     const expText = plan.expires
       ? plan.expires.toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })
       : '—';
+    const isExpiring = plan.active && plan.expires && plan.expires.getTime() <= now24h;
+    const expiringTag = isExpiring ? '<span class="admin-expiring-row-badge">24h</span>' : '';
     rows +=
-      '<tr>' +
+      '<tr class="' + (isExpiring ? 'admin-row-expiring' : '') + '">' +
+        '<td><input type="checkbox" class="admin-cb admin-row-cb" data-username="' + escAdmin(u.user) + '"/></td>' +
         '<td><span class="admin-user-name">' + escAdmin(u.user) + '</span></td>' +
         '<td><span class="admin-plan-pill' + (plan.active ? ' active' : '') + '">' +
           (plan.active ? escAdmin(plan.label) : 'Inativo') +
-        '</span></td>' +
+        '</span>' + expiringTag + '</td>' +
         '<td class="admin-cell-muted">' + escAdmin(expText) + '</td>' +
         '<td class="admin-cell-muted">' + escAdmin(formatAdminDate(u.createdAt)) + '</td>' +
         '<td class="admin-plan-actions">' +
           adminBuildPlanSelect(u.user, currentPlanId) +
           '<button type="button" class="admin-plan-on-btn" data-username="' + escAdmin(u.user) + '">Ligar</button>' +
-          (plan.active ? '<button type="button" class="admin-plan-off-btn" data-username="' + escAdmin(u.user) + '">Desligar</button>' : '') +
+          (plan.active
+            ? '<button type="button" class="admin-plan-off-btn" data-username="' + escAdmin(u.user) + '">Desligar</button>'
+            : '') +
+          '<button type="button" class="admin-reset-btn" data-username="' + escAdmin(u.user) + '">Reset senha</button>' +
         '</td>' +
       '</tr>';
   });
 
   const tableHtml = filtered.length
-    ? '<div class="admin-table-wrap"><table class="admin-table admin-table-clients"><thead><tr><th>Cliente</th><th>Plano</th><th>Validade</th><th>Cadastro</th><th>Gerenciar</th></tr></thead><tbody>' + rows + '</tbody></table></div>'
+    ? '<div class="admin-table-wrap"><table class="admin-table admin-table-clients"><thead><tr>' +
+        '<th><input type="checkbox" class="admin-cb" id="admin-cb-all" title="Selecionar todos"/></th>' +
+        '<th>Cliente</th><th>Plano</th><th>Validade</th><th>Cadastro</th><th>Gerenciar</th>' +
+      '</tr></thead><tbody>' + rows + '</tbody></table></div>'
     : '<p class="admin-empty">Nenhum cliente neste filtro.</p>';
 
   function fBtn(f, label) {
@@ -290,6 +413,7 @@ function renderAdminClients(filter) {
           '<span class="admin-count-pill active">' + active + ' ativos</span>' +
           '<span class="admin-count-pill inactive">' + inactive + ' inativos</span>' +
           '<span class="admin-count-pill total">' + users.length + ' total</span>' +
+          (expiring > 0 ? '<span class="admin-expiring-badge">⚠ ' + expiring + ' expira' + (expiring === 1 ? '' : 'm') + ' em 24h</span>' : '') +
         '</div>' +
         '<div class="aclients-controls">' +
           '<div class="admin-filter-bar">' + fBtn('all', 'Todos') + fBtn('active', 'Ativos') + fBtn('inactive', 'Inativos') + '</div>' +
@@ -297,8 +421,13 @@ function renderAdminClients(filter) {
             '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>' +
             '<input class="admin-search-input admin-clients-search-input" type="text" placeholder="Buscar usuário..." value="' + escAdmin(searchTerm) + '" autocomplete="off"/>' +
           '</div>' +
+          '<button type="button" class="admin-export-btn" onclick="adminExportClientsCSV()">' +
+            '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>' +
+            'Exportar CSV' +
+          '</button>' +
         '</div>' +
       '</div>' +
+      bulkBar +
       '<div class="admin-panel aclients-table-panel">' + tableHtml + '</div>' +
     '</div>';
 
@@ -315,7 +444,45 @@ function renderAdminClients(filter) {
     if (hadSearchFocus) searchEl.focus();
   }
 
-  bindAdminClientPlanActions(root.querySelector('.aclients-table-panel'), currentFilter);
+  const tablePanel = root.querySelector('.aclients-table-panel');
+
+  const cbAll = document.getElementById('admin-cb-all');
+  if (cbAll) {
+    cbAll.addEventListener('change', () => {
+      root.querySelectorAll('.admin-row-cb').forEach(cb => { cb.checked = cbAll.checked; });
+      updateAdminBulkBar(root);
+    });
+  }
+  root.querySelectorAll('.admin-row-cb').forEach(cb => {
+    cb.addEventListener('change', () => updateAdminBulkBar(root));
+  });
+
+  root.querySelectorAll('.admin-reset-btn').forEach(btn => {
+    btn.addEventListener('click', () => adminOpenResetModal(btn.getAttribute('data-username')));
+  });
+
+  const bulkOnBtn = document.getElementById('admin-bulk-on-btn');
+  const bulkOffBtn = document.getElementById('admin-bulk-off-btn');
+  if (bulkOnBtn) {
+    bulkOnBtn.addEventListener('click', () => {
+      const planId = document.getElementById('admin-bulk-plan-select').value;
+      const selected = getAdminSelectedUsernames(root);
+      selected.forEach(u => adminActivateUserPlan(u, planId));
+      if (typeof refreshClientPlanState === 'function') refreshClientPlanState();
+      if (typeof showToast === 'function') showToast(selected.length + ' plano(s) ativado(s)');
+      renderAdminClients(filter);
+    });
+  }
+  if (bulkOffBtn) {
+    bulkOffBtn.addEventListener('click', () => {
+      const selected = getAdminSelectedUsernames(root);
+      selected.forEach(u => adminDeactivateUserPlan(u));
+      if (typeof showToast === 'function') showToast(selected.length + ' plano(s) desativado(s)');
+      renderAdminClients(filter);
+    });
+  }
+
+  bindAdminClientPlanActions(tablePanel, currentFilter);
 }
 
 function bindAdminClientPlanActions(tableEl, filter) {
@@ -342,6 +509,24 @@ function bindAdminClientPlanActions(tableEl, filter) {
       renderAdminClients(filter);
     });
   });
+}
+
+function getAdminSelectedUsernames(root) {
+  const selected = [];
+  root.querySelectorAll('.admin-row-cb:checked').forEach(cb => {
+    const u = cb.getAttribute('data-username');
+    if (u) selected.push(u);
+  });
+  return selected;
+}
+
+function updateAdminBulkBar(root) {
+  const bar = document.getElementById('admin-bulk-bar');
+  const countEl = document.getElementById('admin-bulk-count');
+  const selected = getAdminSelectedUsernames(root);
+  if (!bar) return;
+  bar.classList.toggle('visible', selected.length > 0);
+  if (countEl) countEl.textContent = selected.length + ' selecionado' + (selected.length === 1 ? '' : 's');
 }
 
 function renderAdminResellers() {
@@ -670,24 +855,27 @@ async function adminSyncFromSupabase() {
   const btns = Array.from(document.querySelectorAll('.admin-sync-btn'));
   btns.forEach(function(b) {
     b.disabled = true;
+    b.classList.remove('ok', 'error');
     var svg = b.querySelector('svg');
     if (svg) svg.style.animation = 'adminSyncSpin 0.8s linear infinite';
   });
   try {
     const user = typeof getSession === 'function' ? getSession() : null;
-    await DB.syncOnLogin(user);
+    const syncOk = await DB.syncOnLogin(user);
     renderAdminClients();
     renderAdminResellers();
     if (typeof renderSalesDashboard === 'function') renderSalesDashboard();
-    btns.forEach(function(b) {
-      b.classList.remove('loading');
-      b.classList.add('ok');
-    });
-    setTimeout(function () {
-      btns.forEach(function(b) { b.classList.remove('ok'); });
-    }, 2000);
+    if (syncOk === false) {
+      btns.forEach(function(b) { b.classList.add('error'); });
+      setTimeout(function () { btns.forEach(function(b) { b.classList.remove('error'); }); }, 3000);
+    } else {
+      btns.forEach(function(b) { b.classList.add('ok'); });
+      setTimeout(function () { btns.forEach(function(b) { b.classList.remove('ok'); }); }, 2000);
+    }
   } catch (e) {
-    btns.forEach(function(b) { b.classList.remove('loading'); });
+    console.error('[Admin] Erro na sincronização:', e);
+    btns.forEach(function(b) { b.classList.add('error'); });
+    setTimeout(function () { btns.forEach(function(b) { b.classList.remove('error'); }); }, 3000);
   } finally {
     btns.forEach(function(b) {
       b.disabled = false;

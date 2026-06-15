@@ -200,6 +200,43 @@ window.switchSalesTab = function(tab) {
   renderSalesPanel();
 };
 
+function getSalesLast7Days() {
+  const sales = getSalesList();
+  const days = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    d.setDate(d.getDate() - i);
+    const start = d.getTime();
+    const end = start + DAY_MS - 1;
+    const label = d.toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', '');
+    const total = sales.filter(s => s.ts >= start && s.ts <= end).reduce((acc, s) => acc + s.amount, 0);
+    days.push({ label, total, isToday: i === 0 });
+  }
+  return days;
+}
+
+function renderSalesChart() {
+  const chartWrap = document.getElementById('sales-chart-wrap');
+  if (!chartWrap) return;
+  const days = getSalesLast7Days();
+  const max = Math.max(...days.map(d => d.total), 1);
+  const bars = days.map(d => {
+    const pct = Math.round((d.total / max) * 100);
+    const height = Math.max(pct, 3);
+    return (
+      '<div class="sales-chart-col">' +
+        '<div class="sales-chart-val">' + (d.total > 0 ? 'R$' + Math.round(d.total) : '') + '</div>' +
+        '<div class="sales-chart-bar' + (d.isToday ? ' today' : '') + '" style="height:' + height + '%"></div>' +
+        '<div class="sales-chart-label">' + escSale(d.label) + '</div>' +
+      '</div>'
+    );
+  }).join('');
+  chartWrap.innerHTML =
+    '<div class="sales-chart-title">Receita últimos 7 dias</div>' +
+    '<div class="sales-chart-bars">' + bars + '</div>';
+}
+
 function renderSalesDashboard() {
   const root = document.getElementById('sales-dashboard');
   if (!root) return;
@@ -234,8 +271,11 @@ function renderSalesDashboard() {
         '<rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>') +
     '</div>' +
 
+    '<div class="sales-chart-wrap" id="sales-chart-wrap"></div>' +
+
     '</div>';
 
+  renderSalesChart();
   renderSalesPanel();
 }
 

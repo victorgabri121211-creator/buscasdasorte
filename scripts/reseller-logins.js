@@ -52,6 +52,7 @@ function addResellerCredits(reseller, amount) {
   const storeKey = findResellerCreditsKey(store, key) || key;
   store[storeKey] = getResellerCredits(storeKey) + amt;
   saveResellerCreditsStore(store);
+  addResellerCreditHistory(key, +amt, 'Créditos adicionados pelo admin');
   return true;
 }
 
@@ -242,6 +243,64 @@ function deactivateResellerClient(reseller, loginId) {
   return { ok: true, msg: 'Cliente desativado.' };
 }
 
+function renewResellerClient(reseller, loginId, days) {
+  days = parseInt(days, 10);
+  if (!days || days < 1 || days > 365) return { ok: false, msg: 'Informe dias válidos.' };
+  if (getResellerCredits(reseller) < 1) return { ok: false, msg: 'Sem créditos. Compre um pacote.' };
+
+  const store = getResellerLoginsStore();
+  const list = store[reseller];
+  if (!Array.isArray(list)) return { ok: false, msg: 'Login não encontrado.' };
+  const item = list.find(l => l.id === loginId);
+  if (!item) return { ok: false, msg: 'Login não encontrado.' };
+
+  const now = Date.now();
+  const base = Math.max(item.expiresAt || now, now);
+  const newExpires = base + days * RESELLER_DAY_MS;
+  item.expiresAt = newExpires;
+  item.days = (item.days || 0) + days;
+  saveResellerLoginsStore(store);
+
+  const plans = resellerGetPlansStore();
+  const planKey = String(item.username).trim();
+  if (plans[planKey]) {
+    const planBase = Math.max(plans[planKey].expiresAt || now, now);
+    plans[planKey].expiresAt = planBase + days * RESELLER_DAY_MS;
+    plans[planKey].days = (plans[planKey].days || 0) + days;
+    resellerSavePlansStore(plans);
+  }
+
+  const credits = getResellerCreditsStore();
+  credits[reseller] = Math.max(0, getResellerCredits(reseller) - 1);
+  saveResellerCreditsStore(credits);
+
+  addResellerCreditHistory(reseller, -1, 'Renovação: ' + item.username + ' (+' + days + 'd)');
+
+  if (typeof window.dispatchEvent === 'function') {
+    window.dispatchEvent(new CustomEvent('bds-plans-changed'));
+  }
+  return { ok: true, msg: 'Cliente renovado por +' + days + ' dia' + (days === 1 ? '' : 's') + '.' };
+}
+
+const RESELLER_CREDIT_HISTORY_KEY = 'bds_reseller_credit_history';
+
+function getResellerCreditHistory(reseller) {
+  try {
+    const store = JSON.parse(localStorage.getItem(RESELLER_CREDIT_HISTORY_KEY)) || {};
+    return Array.isArray(store[reseller]) ? store[reseller] : [];
+  } catch { return []; }
+}
+
+function addResellerCreditHistory(reseller, amount, label) {
+  try {
+    const store = JSON.parse(localStorage.getItem(RESELLER_CREDIT_HISTORY_KEY)) || {};
+    if (!Array.isArray(store[reseller])) store[reseller] = [];
+    store[reseller].unshift({ ts: Date.now(), amount: amount, label: label });
+    if (store[reseller].length > 50) store[reseller] = store[reseller].slice(0, 50);
+    localStorage.setItem(RESELLER_CREDIT_HISTORY_KEY, JSON.stringify(store));
+  } catch {}
+}
+
 function deleteResellerClient(reseller, loginId) {
   const store = getResellerLoginsStore();
   const list = store[reseller];
@@ -343,3 +402,6 @@ window.closeResellerLoginCreatedModal = closeResellerLoginCreatedModal;
 window.copyResellerLoginCreated = copyResellerLoginCreated;
 window.isResellerClientUser = isResellerClientUser;
 window.isResellerClientSession = isResellerClientSession;
+window.renewResellerClient = renewResellerClient;
+window.getResellerCreditHistory = getResellerCreditHistory;
+window.addResellerCreditHistory = addResellerCreditHistory;

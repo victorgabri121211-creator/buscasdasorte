@@ -520,6 +520,7 @@ function renderResellerDashboard() {
       const left = typeof getDaysRemaining === 'function' ? getDaysRemaining(item.expiresAt) : 0;
       const active = left > 0;
       const urgency = left <= 2 ? 'rdash-row--urgent' : left <= 7 ? 'rdash-row--warning' : '';
+      const expiring = active && left <= 3;
       const barPct = Math.min(100, Math.round((left / (item.days || 30)) * 100));
       const barColor = left <= 2 ? '#f87171' : left <= 7 ? '#fbbf24' : '#4ade80';
       rows +=
@@ -527,6 +528,7 @@ function renderResellerDashboard() {
           '<div class="rdash-row-main">' +
             '<div class="rdash-row-identity">' +
               '<span class="rdash-row-name">' + esc(item.username) + '</span>' +
+              (expiring ? '<span class="reseller-expiring-badge">Expira em breve</span>' : '') +
               '<span class="rdash-row-pass">' + esc(item.password) + '</span>' +
             '</div>' +
             '<div class="rdash-row-days">' +
@@ -535,7 +537,9 @@ function renderResellerDashboard() {
             '</div>' +
             '<span class="rdash-row-status ' + (active ? 'on' : '') + '">' + (active ? 'Ativo' : 'Expirado') + '</span>' +
             '<div class="rdash-row-actions">' +
+              '<button type="button" class="reseller-icon-btn" data-action="info" data-id="' + esc(item.id) + '" title="Ver credenciais">👁</button>' +
               (readOnly ? '' :
+                '<button type="button" class="reseller-icon-btn" data-action="renew" data-id="' + esc(item.id) + '" title="Renovar">🔄</button>' +
                 '<button type="button" class="rdash-act-btn rdash-act-block" data-action="block" data-id="' + esc(item.id) + '" title="Desativar">⊘</button>' +
                 '<button type="button" class="rdash-act-btn rdash-act-del" data-action="delete" data-id="' + esc(item.id) + '" title="Excluir">🗑</button>') +
             '</div>' +
@@ -677,6 +681,9 @@ function renderResellerDashboard() {
     btn.addEventListener('click', () => {
       const id = btn.getAttribute('data-id');
       const action = btn.getAttribute('data-action');
+      const item = logins.find(l => l.id === id);
+      if (action === 'info' && item) { openResellerCredsModal(item); return; }
+      if (action === 'renew' && item && !readOnly) { openResellerRenewModal(reseller, item, () => renderResellerDashboard()); return; }
       if (!id || readOnly) return;
       if (action === 'block') {
         if (!confirm('Desativar este cliente agora?')) return;
@@ -688,6 +695,130 @@ function renderResellerDashboard() {
       renderResellerDashboard();
     });
   });
+}
+
+function openResellerCredsModal(item) {
+  let overlay = document.getElementById('reseller-creds-overlay');
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.id = 'reseller-creds-overlay';
+    overlay.className = 'reseller-creds-overlay';
+    overlay.innerHTML =
+      '<div class="reseller-creds-box">' +
+        '<div class="reseller-creds-title">Credenciais do cliente</div>' +
+        '<div class="reseller-creds-field">' +
+          '<div class="reseller-creds-label">Usuário</div>' +
+          '<div class="reseller-creds-value-row">' +
+            '<div class="reseller-creds-value" id="rc-username"></div>' +
+            '<button class="reseller-creds-copy" data-copy="rc-username">Copiar</button>' +
+          '</div>' +
+        '</div>' +
+        '<div class="reseller-creds-field">' +
+          '<div class="reseller-creds-label">Senha</div>' +
+          '<div class="reseller-creds-value-row">' +
+            '<div class="reseller-creds-value" id="rc-password"></div>' +
+            '<button class="reseller-creds-copy" data-copy="rc-password">Copiar</button>' +
+          '</div>' +
+        '</div>' +
+        '<div class="reseller-creds-field">' +
+          '<div class="reseller-creds-label">Dias contratados</div>' +
+          '<div class="reseller-creds-value" id="rc-days"></div>' +
+        '</div>' +
+        '<button class="reseller-creds-copy-all" id="rc-copy-all">Copiar tudo</button>' +
+        '<button class="reseller-creds-close" onclick="document.getElementById(\'reseller-creds-overlay\').classList.remove(\'open\')">Fechar</button>' +
+      '</div>';
+    document.body.appendChild(overlay);
+    overlay.addEventListener('click', e => { if (e.target === overlay) overlay.classList.remove('open'); });
+    overlay.querySelectorAll('.reseller-creds-copy[data-copy]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const val = document.getElementById(btn.getAttribute('data-copy'))?.textContent || '';
+        navigator.clipboard.writeText(val).then(() => {
+          const prev = btn.textContent; btn.textContent = '✓ Copiado';
+          setTimeout(() => { btn.textContent = prev; }, 1500);
+        });
+      });
+    });
+    document.getElementById('rc-copy-all').addEventListener('click', () => {
+      const u = document.getElementById('rc-username')?.textContent || '';
+      const p = document.getElementById('rc-password')?.textContent || '';
+      const d = document.getElementById('rc-days')?.textContent || '';
+      const text = 'Usuário: ' + u + '\nSenha: ' + p + '\nDias: ' + d;
+      navigator.clipboard.writeText(text).then(() => {
+        const btn = document.getElementById('rc-copy-all');
+        const prev = btn.textContent; btn.textContent = '✓ Tudo copiado!';
+        setTimeout(() => { btn.textContent = prev; }, 1500);
+        if (typeof showToast === 'function') showToast('Credenciais copiadas');
+      });
+    });
+  }
+  document.getElementById('rc-username').textContent = item.username || '';
+  document.getElementById('rc-password').textContent = item.password || '';
+  document.getElementById('rc-days').textContent = (item.days || '—') + (item.days ? (item.days === 1 ? ' dia' : ' dias') : '');
+  overlay.classList.add('open');
+}
+
+let _renewReseller = null, _renewItem = null, _renewCb = null, _renewDays = 1;
+function openResellerRenewModal(reseller, item, cb) {
+  _renewReseller = reseller; _renewItem = item; _renewCb = cb; _renewDays = 1;
+  const credits = typeof getResellerCredits === 'function' ? getResellerCredits(reseller) : 0;
+  let overlay = document.getElementById('reseller-renew-overlay');
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.id = 'reseller-renew-overlay';
+    overlay.className = 'reseller-renew-overlay';
+    overlay.innerHTML =
+      '<div class="reseller-renew-box">' +
+        '<div class="reseller-renew-title" id="rr-title">Renovar cliente</div>' +
+        '<div class="reseller-renew-sub" id="rr-sub"></div>' +
+        '<div class="reseller-renew-days-row">' +
+          [1,7,15,30].map(d =>
+            '<button class="reseller-renew-day-btn' + (d === 1 ? ' selected' : '') + '" data-days="' + d + '">' + d + ' dia' + (d > 1 ? 's' : '') + '</button>'
+          ).join('') +
+        '</div>' +
+        '<div class="reseller-renew-cost" id="rr-cost"></div>' +
+        '<button class="reseller-renew-confirm" id="rr-confirm">Renovar (1 crédito)</button>' +
+        '<button class="reseller-renew-cancel" id="rr-cancel">Cancelar</button>' +
+        '<div class="reseller-renew-msg" id="rr-msg"></div>' +
+      '</div>';
+    document.body.appendChild(overlay);
+    overlay.addEventListener('click', e => { if (e.target === overlay) overlay.classList.remove('open'); });
+    overlay.querySelectorAll('.reseller-renew-day-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        overlay.querySelectorAll('.reseller-renew-day-btn').forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+        _renewDays = parseInt(btn.getAttribute('data-days'), 10);
+        updateRenewCost();
+      });
+    });
+    document.getElementById('rr-cancel').addEventListener('click', () => overlay.classList.remove('open'));
+    document.getElementById('rr-confirm').addEventListener('click', () => {
+      const msgEl = document.getElementById('rr-msg');
+      if (!_renewReseller || !_renewItem) return;
+      const result = typeof renewResellerClient === 'function'
+        ? renewResellerClient(_renewReseller, _renewItem.id, _renewDays)
+        : { ok: false, msg: 'Função indisponível.' };
+      if (msgEl) { msgEl.textContent = result.msg; msgEl.className = 'reseller-renew-msg ' + (result.ok ? 'ok' : 'err'); }
+      if (result.ok) {
+        if (typeof showToast === 'function') showToast(result.msg);
+        setTimeout(() => {
+          overlay.classList.remove('open');
+          if (typeof _renewCb === 'function') _renewCb();
+        }, 1000);
+      }
+    });
+  }
+  function updateRenewCost() {
+    const costEl = document.getElementById('rr-cost');
+    const newCr = credits - 1;
+    if (costEl) costEl.textContent = 'Custo: 1 crédito — Saldo atual: ' + credits + ' → ' + (newCr >= 0 ? newCr : 0) + ' após renovação';
+  }
+  document.getElementById('rr-title').textContent = 'Renovar: ' + item.username;
+  document.getElementById('rr-sub').textContent = 'Selecione quantos dias adicionar ao plano do cliente.';
+  document.getElementById('rr-msg').textContent = '';
+  overlay.querySelectorAll('.reseller-renew-day-btn').forEach(b => b.classList.toggle('selected', parseInt(b.getAttribute('data-days')) === 1));
+  _renewDays = 1;
+  updateRenewCost();
+  overlay.classList.add('open');
 }
 
 function isModuleMaintenance(key) {
