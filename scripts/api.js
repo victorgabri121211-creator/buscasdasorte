@@ -3,7 +3,7 @@
 // Veja worker.js para configuração.
 const PROXY = 'https://ancient-glitter-ad86.victorgabri121211.workers.dev';
 const CONSULT_TIPOS = ['serasa','spc','receita','tse','denatran'];
-const FETCH_TIMEOUT_MS = 8000;
+const FETCH_TIMEOUT_MS = 20000;
 const CACHE_TTL_MS = 60 * 60 * 1000;
 const PREFETCH_DEBOUNCE_MS = 180;
 
@@ -366,6 +366,14 @@ function runSearchBatch(toSearch, meta) {
   contEl.innerHTML = `<span class="spinner"></span><span id="contador"> Consultando...</span>`;
   area.prepend(contEl);
 
+  const _msgs = [' Buscando dados...', ' Aguardando resposta...', ' Processando, quase lá...'];
+  let _mi = 0;
+  const _msgTimer = setInterval(() => {
+    _mi++;
+    const el = document.getElementById('contador');
+    if (el) el.textContent = _msgs[Math.min(_mi - 1, _msgs.length - 1)];
+  }, 5000);
+
   let done = 0;
   let dossieOpened = false;
   const allResults = [];
@@ -378,6 +386,7 @@ function runSearchBatch(toSearch, meta) {
   }
 
   const finalize = () => {
+    clearInterval(_msgTimer);
     try {
       const successList = allResults.filter(r =>
         typeof isSearchSuccess === 'function' ? isSearchSuccess(r) : (r && r.ok)
