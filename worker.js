@@ -11,7 +11,7 @@
  *  4. Salve e faça o Deploy
  */
 
-const API_BASE      = 'https://apis.fr4ud.center';
+const API_BASE      = 'https://painel.fr4ud.center';
 const MISTICPAY_URL = 'https://api.misticpay.com/api';
 
 export default {
