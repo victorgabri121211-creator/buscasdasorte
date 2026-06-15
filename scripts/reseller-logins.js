@@ -273,7 +273,7 @@ function closeResellerPanelView() {
 
 function openResellerPanel() {
   if (typeof canAccessRevendedor === 'function' && !canAccessRevendedor()) {
-    alert('Revenda não habilitada para sua conta. Peça ao administrador.');
+    if (typeof showToast === 'function') showToast('Revenda não habilitada para sua conta. Peça ao administrador.', 'warn');
     return;
   }
   window._resellerPanelUser = null;
@@ -330,9 +330,11 @@ function copyResellerLoginCreated() {
         btn.textContent = 'Copiado!';
         setTimeout(() => { btn.textContent = prev; }, 2000);
       }
-    }).catch(() => alert(text));
+    }).catch(() => {
+      if (typeof showToast === 'function') showToast('Erro ao copiar. Copie manualmente:\n' + text, 'warn', 6000);
+    });
   } else {
-    alert(text);
+    if (typeof showToast === 'function') showToast('Copie manualmente: ' + text, 'info', 8000);
   }
 }
 

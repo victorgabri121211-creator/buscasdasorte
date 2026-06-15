@@ -128,15 +128,26 @@ function updatePlanBanner() {
   if (activeBanner) {
     if (plan && plan.id !== 'admin') {
       const exp = new Date(plan.expiresAt);
+      const msLeft = plan.expiresAt - Date.now();
+      const hLeft  = Math.ceil(msLeft / 3600000);
       const resellerNote = resellerClient && plan.id === 'reseller'
         ? '<p class="modules-plan-reseller-note">Acesso fornecido pelo seu revendedor</p>'
         : '';
+
+      let expiryBadge = '';
+      if (msLeft < 2 * 3600000) {
+        expiryBadge = '<span class="plan-expiry-badge plan-expiry-badge--urgent">Expira em ' + hLeft + 'h</span>';
+      } else if (msLeft < 48 * 3600000) {
+        expiryBadge = '<span class="plan-expiry-badge plan-expiry-badge--warn">Expira em ' + hLeft + 'h</span>';
+      }
+
       activeBanner.hidden = false;
       activeBanner.style.display = '';
       activeBanner.innerHTML =
         '<div class="modules-plan-active-inner">' +
           '<span class="modules-plan-active-icon">✓</span>' +
           '<div><strong>Plano ativo: ' + (plan.period || plan.id) + '</strong>' +
+          expiryBadge +
           '<p>Válido até ' + exp.toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) + '</p>' +
           resellerNote +
         '</div>';
@@ -586,7 +597,7 @@ function renderResellerDashboard() {
   const buyBtn = document.getElementById('reseller-dash-buy');
   if (buyBtn) {
     buyBtn.addEventListener('click', () => {
-      if (isAdminView) { alert('O revendedor deve comprar créditos na Área do Revendedor.'); return; }
+      if (isAdminView) { if (typeof showToast === 'function') showToast('O revendedor deve comprar créditos na Área do Revendedor.', 'info'); return; }
       showAppView('revendedor');
     });
   }
@@ -654,25 +665,22 @@ function isModuleMaintenance(key) {
 function accessModule(key) {
   if (typeof isAdmin === 'function' && isAdmin()) return;
   if (isModuleMaintenance(key)) {
-    alert('Este módulo está temporariamente em manutenção.\nVolte em breve.');
+    if (typeof showToast === 'function') showToast('Este módulo está temporariamente em manutenção. Volte em breve.', 'warn');
     return;
   }
   if (!hasActivePlan()) {
     updatePlanBanner();
     if (isResellerClientAccount()) {
-      alert(
-        'Seu acesso não está ativo.\n\nEsta conta foi criada por um revendedor. ' +
-        'Entre em contato com quem forneceu seu login para renovar os dias de puxada.'
-      );
+      if (typeof showToast === 'function') {
+        showToast('Seu acesso não está ativo. Entre em contato com seu revendedor para renovar.', 'warn', 5000);
+      }
       return;
     }
-    const goShop = confirm(
-      'Você ainda não possui um plano ativo.\n\nDeseja ir para a Loja de Planos e realizar a compra?'
-    );
-    if (goShop) {
-      renderPlansGrid();
-      showAppView('loja');
+    if (typeof showToast === 'function') {
+      showToast('Nenhum plano ativo. Acesse a Loja de Planos para realizar a compra.', 'info', 4000);
     }
+    renderPlansGrid();
+    showAppView('loja');
     return;
   }
   if (typeof openModal === 'function') openModal(key);
@@ -737,7 +745,10 @@ function renderTopicSections(root, opts) {
     list.className = 'topic-list';
     list.setAttribute('role', 'list');
 
-    cat.modules.forEach(mod => {
+    const activeTopicMods = cat.modules.filter(mod => !mod.maintenance);
+    const maintenanceTopicMods = cat.modules.filter(mod => mod.maintenance);
+
+    function buildTopicItem(mod) {
       const item = document.createElement('button');
       item.type = 'button';
       item.className = 'topic-item' + (cat.warn || mod.restricted ? ' topic-item-warn' : '') + (mod.maintenance ? ' topic-item-maintenance' : '');
@@ -775,8 +786,36 @@ function renderTopicSections(root, opts) {
       }
 
       item.addEventListener('click', () => openConsultModule(mod.key, fromSidebar));
-      list.appendChild(item);
-    });
+      return item;
+    }
+
+    activeTopicMods.forEach(mod => list.appendChild(buildTopicItem(mod)));
+
+    if (maintenanceTopicMods.length > 0) {
+      const collapseWrap = document.createElement('div');
+      collapseWrap.className = 'maintenance-collapse';
+
+      const toggle = document.createElement('button');
+      toggle.type = 'button';
+      toggle.className = 'maintenance-collapse-toggle';
+      toggle.innerHTML =
+        '<svg class="maintenance-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>' +
+        'Em manutenção (' + maintenanceTopicMods.length + ')';
+
+      const body = document.createElement('div');
+      body.className = 'maintenance-collapse-body';
+
+      maintenanceTopicMods.forEach(mod => body.appendChild(buildTopicItem(mod)));
+
+      toggle.addEventListener('click', function () {
+        const open = body.classList.toggle('open');
+        toggle.classList.toggle('open', open);
+      });
+
+      collapseWrap.appendChild(toggle);
+      collapseWrap.appendChild(body);
+      list.appendChild(collapseWrap);
+    }
 
     section.appendChild(list);
     root.appendChild(section);
@@ -959,7 +998,10 @@ function renderModulesHub() {
     const grid = document.createElement('div');
     grid.className = 'mod-grid';
 
-    cat.modules.forEach(mod => {
+    const activeModules = cat.modules.filter(mod => !mod.maintenance);
+    const maintenanceModules = cat.modules.filter(mod => mod.maintenance);
+
+    function buildModCard(mod) {
       const card = document.createElement('article');
       card.className = 'mod-card' + (cat.warn || mod.restricted ? ' mod-warn' : '') + (mod.maintenance ? ' mod-maintenance' : '');
       card.setAttribute('role', 'button');
@@ -990,9 +1032,39 @@ function renderModulesHub() {
         card.classList.add('mod-hover');
       });
       card.addEventListener('mouseleave', () => card.classList.remove('mod-hover'));
+      return card;
+    }
 
-      grid.appendChild(card);
-    });
+    activeModules.forEach(mod => grid.appendChild(buildModCard(mod)));
+
+    if (maintenanceModules.length > 0) {
+      const collapseWrap = document.createElement('div');
+      collapseWrap.className = 'maintenance-collapse mod-grid-full-row';
+
+      const toggle = document.createElement('button');
+      toggle.type = 'button';
+      toggle.className = 'maintenance-collapse-toggle';
+      toggle.innerHTML =
+        '<svg class="maintenance-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>' +
+        'Em manutenção (' + maintenanceModules.length + ')';
+
+      const body = document.createElement('div');
+      body.className = 'maintenance-collapse-body';
+
+      const innerGrid = document.createElement('div');
+      innerGrid.className = 'mod-grid';
+      maintenanceModules.forEach(mod => innerGrid.appendChild(buildModCard(mod)));
+      body.appendChild(innerGrid);
+
+      toggle.addEventListener('click', function () {
+        const open = body.classList.toggle('open');
+        toggle.classList.toggle('open', open);
+      });
+
+      collapseWrap.appendChild(toggle);
+      collapseWrap.appendChild(body);
+      grid.appendChild(collapseWrap);
+    }
 
     section.appendChild(grid);
     root.appendChild(section);

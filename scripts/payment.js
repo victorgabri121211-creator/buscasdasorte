@@ -171,7 +171,6 @@ function _pixStartPolling(txId) {
         body: JSON.stringify({ transactionId: txId }),
       });
       const data = await resp.json();
-      console.log('[PIX poll]', JSON.stringify(data));
 
       const status = _pixFindStatus(data, 0);
 

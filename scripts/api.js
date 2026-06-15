@@ -310,12 +310,23 @@ function fetchComTimeout(ep){
       .then(r => {
         r.json().then(d => {
           clearTimeout(t);
+          if (r.status === 429) {
+            const retryMsg = (d && d.retry_after)
+              ? ' Aguarde ' + d.retry_after + 's.'
+              : ' Aguarde alguns instantes.';
+            resolve({ ep, ok: false, status: 429, data: { error: 'Limite de consultas atingido.' + retryMsg } });
+            return;
+          }
           const res = { ep, ok: r.ok, status: r.status, data: d };
           if (r.ok) responseCache.set(ck, { ts: Date.now(), data: res });
           resolve(res);
         }).catch(() => {
-          // Resposta não é JSON válido (ex: página de erro do Cloudflare)
           clearTimeout(t);
+          if (r.status === 429) {
+            resolve({ ep, ok: false, status: 429, data: { error: 'Limite de consultas atingido. Aguarde alguns instantes.' } });
+            return;
+          }
+          // Resposta não é JSON válido (ex: página de erro do Cloudflare)
           resolve({ ep, ok: false, status: r.status, data: { error: 'API indisponível (código ' + r.status + '). Verifique sua conexão ou tente mais tarde.' } });
         });
       })

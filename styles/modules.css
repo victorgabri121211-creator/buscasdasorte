@@ -2638,3 +2638,81 @@ body.user-reseller-client #view-loja {
     font-size: 11px;
   }
 }
+
+/* ── Badge de expiração de plano ─────────────────────────────────────────── */
+.plan-expiry-badge {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 20px;
+  margin: 3px 0 4px;
+}
+
+.plan-expiry-badge--warn {
+  background: rgba(251,191,36,0.12);
+  color: #fbbf24;
+  border: 1px solid rgba(251,191,36,0.3);
+}
+
+.plan-expiry-badge--urgent {
+  background: rgba(248,113,113,0.12);
+  color: #f87171;
+  border: 1px solid rgba(248,113,113,0.3);
+  animation: expiryPulse 2s ease-in-out infinite;
+}
+
+@keyframes expiryPulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.6; }
+}
+
+/* ── Módulos em manutenção colapsados ────────────────────────────────────── */
+.maintenance-collapse {
+  margin-top: 8px;
+}
+
+.maintenance-collapse-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  background: none;
+  border: 1px dashed rgba(255,255,255,0.1);
+  border-radius: 8px;
+  padding: 10px 14px;
+  color: rgba(255,255,255,0.35);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.2s, color 0.2s;
+}
+
+.maintenance-collapse-toggle:hover {
+  border-color: rgba(255,255,255,0.2);
+  color: rgba(255,255,255,0.55);
+}
+
+.maintenance-collapse-toggle svg {
+  flex-shrink: 0;
+  transition: transform 0.2s;
+}
+
+.maintenance-collapse-toggle.open svg,
+.maintenance-collapse-toggle[aria-expanded="true"] svg {
+  transform: rotate(180deg);
+}
+
+.mod-grid-full-row {
+  grid-column: 1 / -1;
+}
+
+.maintenance-collapse-body {
+  display: none;
+  padding-top: 8px;
+}
+
+.maintenance-collapse-body.open {
+  display: block;
+}
