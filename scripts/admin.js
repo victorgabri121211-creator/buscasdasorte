@@ -315,7 +315,9 @@ function renderAdminClients(filter) {
   const root = document.getElementById('admin-clients-root');
   if (!root) return;
 
-  const hadSearchFocus = root.querySelector('.admin-clients-search-input') === document.activeElement;
+  const _prevSearch = root.querySelector('.admin-clients-search-input');
+  const hadSearchFocus = _prevSearch === document.activeElement;
+  const searchCursorPos = hadSearchFocus ? _prevSearch.selectionStart : 0;
   const currentFilter = filter || root.getAttribute('data-filter') || 'all';
   root.setAttribute('data-filter', currentFilter);
   const searchTerm = root.getAttribute('data-search') || '';
@@ -333,7 +335,7 @@ function renderAdminClients(filter) {
     const plan = adminGetPlanInfo(u.user);
     if (currentFilter === 'active' && !plan.active) return false;
     if (currentFilter === 'inactive' && plan.active) return false;
-    if (searchTerm && !u.user.toLowerCase().includes(searchTerm)) return false;
+    if (searchTerm && !u.user.toLowerCase().includes(searchTerm.trim().toLowerCase())) return false;
     return true;
   });
 
@@ -438,10 +440,13 @@ function renderAdminClients(filter) {
   const searchEl = root.querySelector('.admin-clients-search-input');
   if (searchEl) {
     searchEl.addEventListener('input', () => {
-      root.setAttribute('data-search', searchEl.value.trim().toLowerCase());
+      root.setAttribute('data-search', searchEl.value);
       renderAdminClients(root.getAttribute('data-filter'));
     });
-    if (hadSearchFocus) searchEl.focus();
+    if (hadSearchFocus) {
+      searchEl.focus();
+      searchEl.setSelectionRange(searchCursorPos, searchCursorPos);
+    }
   }
 
   const tablePanel = root.querySelector('.aclients-table-panel');
