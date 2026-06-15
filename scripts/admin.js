@@ -538,15 +538,18 @@ function renderAdminResellers() {
   const root = document.getElementById('admin-resellers-root');
   if (!root) return;
 
-  const hadSearchFocus = root.querySelector('.admin-resellers-search-input') === document.activeElement;
+  const _prevSearchR = root.querySelector('.admin-resellers-search-input');
+  const hadSearchFocus = _prevSearchR === document.activeElement;
+  const searchCursorPos = hadSearchFocus ? _prevSearchR.selectionStart : 0;
   const searchTerm = root.getAttribute('data-search') || '';
 
   const allUsers = adminGetUsers();
   let enabled = 0;
   allUsers.forEach(u => { if (isResellerEnabled(u.user)) enabled++; });
 
-  const users = searchTerm
-    ? allUsers.filter(u => u.user.toLowerCase().includes(searchTerm))
+  const _searchLower = searchTerm.trim().toLowerCase();
+  const users = _searchLower
+    ? allUsers.filter(u => u.user.toLowerCase().includes(_searchLower))
     : allUsers;
 
   let listHtml = '';
@@ -622,10 +625,13 @@ function renderAdminResellers() {
   const searchEl = root.querySelector('.admin-resellers-search-input');
   if (searchEl) {
     searchEl.addEventListener('input', () => {
-      root.setAttribute('data-search', searchEl.value.trim().toLowerCase());
+      root.setAttribute('data-search', searchEl.value);
       renderAdminResellers();
     });
-    if (hadSearchFocus) searchEl.focus();
+    if (hadSearchFocus) {
+      searchEl.focus();
+      searchEl.setSelectionRange(searchCursorPos, searchCursorPos);
+    }
   }
 
   root.querySelectorAll('[data-reseller-action]').forEach(btn => {
@@ -822,7 +828,7 @@ function patchEnterAppForAdmin() {
     original(user); // já dispara showAppView → renderAdminView via patch abaixo
     updateAppNavigation();
     if (isAdmin()) {
-      bindAdminClientFilters();
+      // filter binding happens inside renderAdminClients on each render
     } else if (typeof refreshClientPlanState === 'function') {
       refreshClientPlanState();
       if (typeof renderModulesHub === 'function') renderModulesHub();
