@@ -196,6 +196,9 @@ function _pixOnConfirmed() {
     const user = typeof getSession === 'function' ? getSession() : null;
     if (user && typeof addResellerCredits === 'function' && _resellerPkg) {
       addResellerCredits(user, _resellerPkg.logins);
+      if (typeof DB !== 'undefined' && DB.isConfigured()) {
+        DB.addResellerCredits(user, _resellerPkg.logins).catch(function() {});
+      }
     }
     if (typeof recordSale === 'function' && _resellerPkg) {
       recordSale({
@@ -219,6 +222,14 @@ function _pixOnConfirmed() {
   } else {
     const user = typeof getSession === 'function' ? getSession() : null;
     if (typeof activatePlan === 'function') activatePlan(_pixPlan);
+    if (user && _pixPlan && typeof DB !== 'undefined' && DB.isConfigured()) {
+      const _pDef = PIX_PLANS[_pixPlan];
+      if (_pDef) {
+        const _pMs = { diaria: 86400000, semana: 604800000, mes: 2592000000 };
+        const _pExp = Date.now() + (_pMs[_pixPlan] || 86400000);
+        DB.setUserPlan(user, _pixPlan, _pDef.label, _pExp).catch(function() {});
+      }
+    }
     const planDef = PIX_PLANS[_pixPlan];
     if (typeof recordSale === 'function' && planDef) {
       recordSale({
