@@ -2696,6 +2696,8 @@ body.user-reseller-client #view-loja {
 
 .maintenance-collapse-toggle svg {
   flex-shrink: 0;
+  width: 14px;
+  height: 14px;
   transition: transform 0.2s;
 }
 
@@ -2714,5 +2716,12 @@ body.user-reseller-client #view-loja {
 }
 
 .maintenance-collapse-body.open {
-  display: block;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* quando o body contém um mod-grid (hub de módulos) */
+.maintenance-collapse-body.open > .mod-grid {
+  display: grid;
 }
