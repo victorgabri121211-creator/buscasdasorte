@@ -1,11 +1,39 @@
 // HUB DE MÓDULOS — tela inicial após login
+
+let _countdownTimer = null;
+
+function formatCountdown(expiresAt) {
+  const diff = expiresAt - Date.now();
+  if (diff <= 0) return 'Expirado';
+  const totalMin = Math.floor(diff / 60000);
+  const days = Math.floor(totalMin / 1440);
+  const hours = Math.floor((totalMin % 1440) / 60);
+  const mins = totalMin % 60;
+  if (days > 0) return 'Expira em ' + days + 'd ' + hours + 'h ' + mins + 'min';
+  if (hours > 0) return 'Expira em ' + hours + 'h ' + mins + 'min';
+  return 'Expira em ' + mins + 'min';
+}
+
+function startCountdown(expiresAt) {
+  stopCountdown();
+  _countdownTimer = setInterval(function () {
+    const el = document.getElementById('plan-countdown-text');
+    if (!el) { stopCountdown(); return; }
+    el.textContent = formatCountdown(expiresAt);
+  }, 60000);
+}
+
+function stopCountdown() {
+  if (_countdownTimer) { clearInterval(_countdownTimer); _countdownTimer = null; }
+}
+
 const PLANS = [
   {
     id: 'diaria',
     period: 'Diária',
     durationLabel: '24 horas',
-    price: 5.5,
-    perDay: 5.5,
+    price: 8.49,
+    perDay: 8.49,
     tag: 'Para começar',
     badge: null,
     featured: false,
@@ -21,7 +49,7 @@ const PLANS = [
     tag: 'Uso frequente',
     badge: 'Mais vendido',
     featured: true,
-    saveHint: 'Economize R$ 18,00',
+    saveHint: 'Economize R$ 38,93',
     perks: ['Consultas ilimitadas no período', 'Melhor que 7 diárias'],
   },
   {
@@ -33,7 +61,7 @@ const PLANS = [
     tag: 'Melhor valor',
     badge: 'Melhor custo',
     featured: false,
-    saveHint: 'Economize R$ 139,50',
+    saveHint: 'Economize R$ 229,20',
     perks: ['Consultas ilimitadas no período', 'Menor custo por dia'],
   },
 ];
@@ -143,18 +171,26 @@ function updatePlanBanner() {
 
       activeBanner.hidden = false;
       activeBanner.style.display = '';
+      activeBanner.className = 'modules-plan-active';
       activeBanner.innerHTML =
-        '<div class="modules-plan-active-inner">' +
-          '<span class="modules-plan-active-icon">✓</span>' +
-          '<div><strong>Plano ativo: ' + (plan.period || plan.id) + '</strong>' +
-          expiryBadge +
-          '<p>Válido até ' + exp.toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) + '</p>' +
+        '<div class="plan-active-icon">' +
+          '<svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>' +
+        '</div>' +
+        '<div class="plan-active-info">' +
+          '<div class="plan-active-title">Plano ativo: ' + (plan.period || plan.id) + '</div>' +
+          '<div class="plan-active-sub">Válido até ' + exp.toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) + '</div>' +
           resellerNote +
+          '<div class="plan-countdown" id="plan-countdown-display">' +
+            '<span class="plan-countdown-dot"></span>' +
+            '<span id="plan-countdown-text">' + formatCountdown(plan.expiresAt) + '</span>' +
+          '</div>' +
         '</div>';
+      startCountdown(plan.expiresAt);
     } else {
       activeBanner.hidden = true;
       activeBanner.style.display = 'none';
       activeBanner.innerHTML = '';
+      stopCountdown();
     }
   }
 
@@ -1007,10 +1043,10 @@ function renderModulesHub() {
       card.setAttribute('role', 'button');
       card.tabIndex = 0;
 
-      let badge = planActive ? 'Módulo Ativo' : 'Plano necessário';
-      let badgeClass = 'mod-badge' + (planActive ? '' : ' mod-badge-locked');
-      if (planActive && mod.hc) { badge = 'Horário Comercial'; badgeClass += ' hc'; }
-      if (mod.restricted) { badge = 'Acesso Restrito'; badgeClass += ' restricted'; }
+      let badge = planActive ? '<span class="mod-online-dot"></span>ONLINE' : 'Plano necessário';
+      let badgeClass = 'mod-badge' + (planActive ? ' mod-badge-online' : ' mod-badge-locked');
+      if (planActive && mod.hc) { badge = 'Horário Comercial'; badgeClass = 'mod-badge hc'; }
+      if (mod.restricted) { badge = 'Acesso Restrito'; badgeClass = 'mod-badge restricted'; }
       if (mod.maintenance) { badge = 'Em Manutenção'; badgeClass = 'mod-badge mod-badge-maintenance'; }
 
       card.innerHTML =

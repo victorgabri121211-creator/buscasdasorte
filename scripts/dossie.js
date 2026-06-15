@@ -1,4 +1,26 @@
 // DOSSIÊ
+
+function showToast(msg, duration) {
+  duration = duration || 2500;
+  var container = document.getElementById('bds-toast-container');
+  if (!container) {
+    container = document.createElement('div');
+    container.id = 'bds-toast-container';
+    document.body.appendChild(container);
+  }
+  var toast = document.createElement('div');
+  toast.className = 'bds-toast';
+  toast.innerHTML =
+    '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>' +
+    escHtml(msg);
+  container.appendChild(toast);
+  setTimeout(function () {
+    toast.classList.add('out');
+    setTimeout(function () { toast.remove(); }, 260);
+  }, duration);
+}
+window.showToast = showToast;
+
 let dossieResults = [];
 let dossieStreamMeta = { label: '', icon: '' };
 let dossieLoading = false;
@@ -436,10 +458,25 @@ function openDossieLoading(queryLabel, iconSvg) {
     box.classList.remove('dossie-box-has-data', 'dossie-box-empty');
   }
   content.innerHTML =
-    '<div class="dossie-loading">' +
-      '<span class="spinner"></span>' +
-      '<p>Consultando fontes...</p>' +
-      '<span class="dossie-loading-hint">O resultado aparece assim que a API responder</span>' +
+    '<div class="dossie-skeleton-wrap">' +
+      '<div class="dossie-skeleton-card">' +
+        '<div class="sk-line sk-title"></div>' +
+        '<div class="sk-line sk-full"></div>' +
+        '<div class="sk-line sk-med"></div>' +
+        '<div class="sk-grid">' +
+          '<div class="sk-cell"></div><div class="sk-cell"></div>' +
+          '<div class="sk-cell"></div><div class="sk-cell"></div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="dossie-skeleton-card">' +
+        '<div class="sk-line sk-title"></div>' +
+        '<div class="sk-line sk-short"></div>' +
+        '<div class="sk-line sk-full"></div>' +
+        '<div class="sk-grid">' +
+          '<div class="sk-cell"></div><div class="sk-cell"></div>' +
+          '<div class="sk-cell"></div>' +
+        '</div>' +
+      '</div>' +
     '</div>';
 
   document.getElementById('dossie-overlay').classList.add('open');
@@ -582,6 +619,7 @@ function dossieAction(type) {
       const orig = btn.innerHTML;
       btn.textContent = '✓ Copiado';
       setTimeout(() => btn.innerHTML = orig, 1800);
+      if (typeof showToast === 'function') showToast('Resultado copiado para a área de transferência');
     });
   } else if (type === 'txt') {
     const blob = new Blob([allText], { type: 'text/plain' });
@@ -589,6 +627,7 @@ function dossieAction(type) {
     a.href = URL.createObjectURL(blob);
     a.download = 'buscasdasorte_resultado.txt';
     a.click();
+    if (typeof showToast === 'function') showToast('Arquivo TXT gerado e baixado');
   } else if (type === 'pdf') {
     const s = 'body{font-family:monospace;background:#020604;color:#4ade80;padding:32px;font-size:13px;line-height:1.7}h1{color:#ecfdf5;margin-bottom:16px}p{color:rgba(107,158,122,0.8);margin-bottom:16px}pre{white-space:pre-wrap;word-break:break-all}';
     const d = new Date().toLocaleString('pt-BR');
@@ -598,5 +637,6 @@ function dossieAction(type) {
     pwin.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>BuscasDasorte<\/title><style>' + s + '<\/style><\/head><body><h1>BuscasDasorte<\/h1><p>Data: ' + d + '<\/p><pre>' + t + '<\/pre><\/body><\/html>');
     pwin.document.close();
     pwin.print();
+    if (typeof showToast === 'function') showToast('PDF aberto para impressão');
   }
 }

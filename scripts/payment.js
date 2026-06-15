@@ -1,7 +1,7 @@
 // PIX via MisticPay — credenciais ficam no Cloudflare Worker (env vars)
 
 const PIX_PLANS = {
-  diaria: { label: 'Diária',   amount: 5.5  },
+  diaria: { label: 'Diária',   amount: 8.49 },
   semana: { label: '1 Semana', amount: 20.5 },
   mes:    { label: '1 Mês',    amount: 25.5 },
 };
