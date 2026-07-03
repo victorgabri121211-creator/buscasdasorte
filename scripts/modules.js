@@ -29,28 +29,17 @@ function stopCountdown() {
 
 const PLANS = [
   {
-    id: 'diaria',
-    period: 'Diária',
-    durationLabel: '24 horas',
-    price: 8.49,
-    perDay: 8.49,
-    tag: 'Para começar',
-    badge: null,
+    id: 'vitalicio',
+    period: 'Vitalício',
+    durationLabel: 'Acesso permanente',
+    price: 150,
+    perDay: 0,
+    lifetime: true,
+    tag: 'Pague uma vez',
+    badge: 'Vitalício',
     featured: false,
-    saveHint: 'Ideal para testar',
-    perks: ['Todos os módulos de consulta', 'Válido por 24 horas'],
-  },
-  {
-    id: 'semana',
-    period: '1 Semana',
-    durationLabel: '7 dias',
-    price: 20.5,
-    perDay: 2.93,
-    tag: 'Uso frequente',
-    badge: 'Mais vendido',
-    featured: true,
-    saveHint: 'Economize R$ 38,93',
-    perks: ['Consultas ilimitadas no período', 'Melhor que 7 diárias'],
+    saveHint: 'Pagamento único • sem renovação',
+    perks: ['Consultas ilimitadas para sempre', 'Sem mensalidade nem expiração'],
   },
   {
     id: 'mes',
@@ -65,17 +54,28 @@ const PLANS = [
     perks: ['Consultas ilimitadas no período', 'Menor custo por dia'],
   },
   {
-    id: 'vitalicio',
-    period: 'Vitalício',
-    durationLabel: 'Acesso permanente',
-    price: 150,
-    perDay: 0,
-    lifetime: true,
-    tag: 'Pague uma vez',
-    badge: 'Vitalício',
+    id: 'semana',
+    period: '1 Semana',
+    durationLabel: '7 dias',
+    price: 20.5,
+    perDay: 2.93,
+    tag: 'Uso frequente',
+    badge: 'Mais vendido',
+    featured: true,
+    saveHint: 'Economize R$ 38,93',
+    perks: ['Consultas ilimitadas no período', 'Melhor que 7 diárias'],
+  },
+  {
+    id: 'diaria',
+    period: 'Diária',
+    durationLabel: '24 horas',
+    price: 8.49,
+    perDay: 8.49,
+    tag: 'Para começar',
+    badge: null,
     featured: false,
-    saveHint: 'Pagamento único • sem renovação',
-    perks: ['Consultas ilimitadas para sempre', 'Sem mensalidade nem expiração'],
+    saveHint: 'Ideal para testar',
+    perks: ['Todos os módulos de consulta', 'Válido por 24 horas'],
   },
 ];
 
@@ -263,11 +263,11 @@ function updatePlanBanner() {
 const REVENDER_REF_PER_LOGIN = 6;
 
 const REVENDER_PACKAGES = [
-  { logins: 1,  price: 5.5,   tag: 'Crédito avulso', badge: null,          featured: false },
-  { logins: 10, price: 49.9,  tag: 'Para começar',    badge: null,          featured: false },
-  { logins: 20, price: 99.9,  tag: 'Melhor custo',    badge: 'Mais vendido', featured: true  },
-  { logins: 30, price: 139.9, tag: 'Máximo volume',   badge: 'Maior lucro',  featured: false },
   { logins: null, unlimited: true, price: 300, tag: 'Crédito infinito', badge: 'Ilimitado', featured: true },
+  { logins: 30, price: 139.9, tag: 'Máximo volume',   badge: 'Maior lucro',  featured: false },
+  { logins: 20, price: 99.9,  tag: 'Melhor custo',    badge: 'Mais vendido', featured: true  },
+  { logins: 10, price: 49.9,  tag: 'Para começar',    badge: null,          featured: false },
+  { logins: 1,  price: 5.5,   tag: 'Crédito avulso', badge: null,          featured: false },
 ];
 
 function formatMoneyBr(value) {
