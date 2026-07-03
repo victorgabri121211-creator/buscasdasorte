@@ -1,0 +1,43 @@
+<!-- Dossiê de Resultados -->
+<div class="dossie-overlay" id="dossie-overlay">
+    <div class="dossie-box" id="dossie-box">
+      <div class="dossie-header">
+        <div class="dossie-header-icon">
+          <svg id="dossie-hdr-icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        </div>
+        <div class="dossie-header-title" id="dossie-hdr-title">Resultado da Consulta</div>
+        <div class="dossie-header-actions">
+          <button class="dossie-btn-copy" onclick="dossieAction('copy')">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            Copiar
+          </button>
+          <button class="dossie-btn-txt" onclick="dossieAction('txt')">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            TXT
+          </button>
+          <button class="dossie-btn-pdf" onclick="dossieAction('pdf')">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+            PDF
+          </button>
+        </div>
+        <button class="dossie-close" onclick="closeDossie()">&#x2715;</button>
+      </div>
+
+      <div class="dossie-body" id="dossie-body">
+        <div class="dossie-hero">
+          <div class="dossie-hero-title">Dossiê de Investigação</div>
+          <div class="dossie-hero-divider"></div>
+          <div class="dossie-hero-meta">
+            Operação autorizada por: <strong>BuscasDasorte</strong><br/>
+            <span id="dossie-datetime"></span>
+          </div>
+        </div>
+        <div id="dossie-tabs-nav" class="dossie-tabs"></div>
+        <div id="dossie-content"></div>
+      </div>
+
+      <div class="dossie-footer">
+        <button class="dossie-btn-nova" onclick="closeDossie()">Nova Consulta</button>
+      </div>
+    </div>
+  </div>

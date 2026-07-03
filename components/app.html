@@ -1,0 +1,217 @@
+<!-- Topbar + Sidebar + Main -->
+<div id="app">
+  <div class="topbar">
+    <div class="menu-btn" id="menu-btn" onclick="toggleSidebar()">
+      <span></span><span></span><span></span>
+    </div>
+    <div class="topbar-brand">Buscas<span>Dasorte</span></div>
+    <div class="topbar-right">
+      <div class="user-chip" id="topbar-username"></div>
+      <button class="btn-logout" onclick="doLogout()">Sair</button>
+    </div>
+  </div>
+
+
+
+  <!-- DOSSIÊ DE RESULTADOS -->
+  <div class="dossie-overlay" id="dossie-overlay">
+    <div class="dossie-box" id="dossie-box">
+      <div class="dossie-header">
+        <div class="dossie-header-icon">
+          <svg id="dossie-hdr-icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        </div>
+        <div class="dossie-header-title" id="dossie-hdr-title">Resultado da Consulta</div>
+        <div class="dossie-header-actions">
+          <button class="dossie-btn-copy" onclick="dossieAction('copy')">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            Copiar
+          </button>
+          <button class="dossie-btn-txt" onclick="dossieAction('txt')">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            TXT
+          </button>
+          <button class="dossie-btn-pdf" onclick="dossieAction('pdf')">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+            PDF
+          </button>
+        </div>
+        <button class="dossie-close" onclick="closeDossie()">&#x2715;</button>
+      </div>
+
+      <div class="dossie-body" id="dossie-body">
+        <div class="dossie-hero">
+          <div class="dossie-hero-title">Dossiê de Investigação</div>
+          <div class="dossie-hero-divider"></div>
+          <div class="dossie-hero-meta">
+            Operação autorizada por: <strong>BuscasDasorte</strong><br/>
+            <span id="dossie-datetime"></span>
+          </div>
+        </div>
+        <div id="dossie-tabs-nav" class="dossie-tabs"></div>
+        <div id="dossie-content"></div>
+      </div>
+
+      <div class="dossie-footer">
+        <button class="dossie-btn-nova" onclick="closeDossie()">Nova Consulta</button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- SETTINGS: NEGATIVACAO KEY -->
+  <div class="modal-overlay" id="negativ-overlay" onclick="if(event.target===this)closeNegativSettings()">
+    <div class="modal-box" id="negativ-box" style="max-width:400px">
+      <button class="modal-close" onclick="closeNegativSettings()">&#x2715;</button>
+      <span class="modal-top-line" style="background:linear-gradient(90deg,transparent,rgba(255,159,10,0.6),transparent)"></span>
+      <div class="modal-icon-wrap" style="background:rgba(255,159,10,0.08);border-color:rgba(255,159,10,0.2);box-shadow:0 0 20px rgba(255,159,10,0.12)">
+        <svg id="modal-icon" viewBox="0 0 24 24" style="stroke:#ff9f0a;filter:drop-shadow(0 0 4px rgba(255,159,10,0.6))"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      </div>
+      <div class="modal-title">Chave de Negativação</div>
+      <div class="modal-sub">Cole abaixo a API Key com cargo <strong style="color:#ff9f0a">negativacao</strong> para habilitar esta consulta.</div>
+      <div class="negativ-key-wrap">
+        <div class="negativ-key-label">X-Api-Key (negativação)</div>
+        <input class="negativ-key-input" id="negativ-key-input" type="text" placeholder="fc_..." autocomplete="off" spellcheck="false"/>
+        <button class="negativ-save-btn" onclick="saveNegativKey()">Salvar chave</button>
+      </div>
+      <div class="auth-msg" id="negativ-msg" style="margin-top:10px"></div>
+    </div>
+  </div>
+
+  <!-- MODAL DE CONSULTA -->
+  <div class="modal-overlay" id="modal-overlay" onclick="closeModalOutside(event)">
+    <div class="modal-box" id="modal-box">
+      <button class="modal-close" onclick="closeModal()">&#x2715;</button>
+      <span class="modal-top-line"></span>
+      <div class="modal-icon-wrap">
+        <svg id="modal-icon" viewBox="0 0 24 24"></svg>
+      </div>
+      <div class="modal-title" id="modal-title">Consulta</div>
+      <div class="modal-sub" id="modal-sub">Preencha o campo abaixo para buscar</div>
+      <div class="modal-input-wrap">
+        <input class="modal-input" id="modal-input" type="text" placeholder="Digite aqui..." autocomplete="off"/>
+      </div>
+      <button class="modal-btn-search" onclick="runModalSearch()">Buscar</button>
+      <button class="modal-btn-cancel" onclick="closeModal()">Cancelar</button>
+    </div>
+  </div>
+
+  <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
+
+  <div class="sidebar" id="sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-section-title">Consultas por CPF</div>
+      <div class="sidebar-item active" onclick="openModal('cpf');closeSidebar()">
+        <div class="s-icon"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><line x1="7" y1="9" x2="17" y2="9"/><line x1="7" y1="13" x2="13" y2="13"/></svg></div>CPF
+      </div>
+      <div class="sidebar-item" onclick="openModal('serasa');closeSidebar()">
+        <div class="s-icon"><svg viewBox="0 0 24 24"><polyline points="2 14 6 10 10 14 14 8 18 11 22 6"/><line x1="2" y1="20" x2="22" y2="20"/></svg></div>Serasa<span class="hc-tag">H.C.</span>
+      </div>
+      <div class="sidebar-item" onclick="openModal('spc');closeSidebar()">
+        <div class="s-icon"><svg viewBox="0 0 24 24"><path d="M9 12l2 2 4-4"/><rect x="3" y="3" width="18" height="18" rx="2"/></svg></div>SPC
+      </div>
+      <div class="sidebar-item" onclick="openModal('receita');closeSidebar()">
+        <div class="s-icon"><svg viewBox="0 0 24 24"><line x1="12" y1="2" x2="12" y2="6"/><path d="M5 12H2l5-7 5 7h-3v5a2 2 0 0 0 4 0v-5h-3l5-7 5 7h-3"/><line x1="12" y1="18" x2="12" y2="22"/></svg></div>Receita Federal
+      </div>
+      <div class="sidebar-item" onclick="openModal('tse');closeSidebar()">
+        <div class="s-icon"><svg viewBox="0 0 24 24"><path d="M3 3h18v4H3z"/><path d="M8 7v14"/><path d="M16 7v14"/><path d="M3 12h18"/></svg></div>TSE
+      </div>
+      <div class="sidebar-item" onclick="openModal('denatran');closeSidebar()">
+        <div class="s-icon"><svg viewBox="0 0 24 24"><rect x="1" y="8" width="22" height="10" rx="2"/><circle cx="7" cy="18" r="2"/><circle cx="17" cy="18" r="2"/><path d="M5 8V6a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v2"/></svg></div>Denatran
+      </div>
+      <div class="sidebar-item" onclick="openModal('score');closeSidebar()">
+        <div class="s-icon"><svg viewBox="0 0 24 24"><path d="M12 20V10"/><path d="M18 20V4"/><path d="M6 20v-4"/></svg></div>Score
+      </div>
+      <div class="sidebar-item" onclick="openModal('foto-cpf');closeSidebar()">
+        <div class="s-icon"><svg viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></div>Foto CPF
+      </div>
+      <div class="sidebar-item" onclick="openModal('foto-sp');closeSidebar()">
+        <div class="s-icon"><svg viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><path d="M9 13a3 3 0 1 0 6 0 3 3 0 0 0-6 0"/><line x1="17" y1="10" x2="17.01" y2="10"/></svg></div>Foto SP
+      </div>
+    </div>
+    <div class="sidebar-divider"></div>
+    <div class="sidebar-section">
+      <div class="sidebar-section-title">Outras consultas</div>
+      <div class="sidebar-item" onclick="openModal('nome');closeSidebar()">
+        <div class="s-icon"><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>Nome
+      </div>
+      <div class="sidebar-item" onclick="openModal('tel');closeSidebar()">
+        <div class="s-icon"><svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2A19.8 19.8 0 0 1 3.1 5.18 2 2 0 0 1 5.09 3h3a2 2 0 0 1 2 1.72 12.8 12.8 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L9.09 10.9a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.8 12.8 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg></div>Telefone
+      </div>
+      <div class="sidebar-item" onclick="openModal('email');closeSidebar()">
+        <div class="s-icon"><svg viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg></div>Email
+      </div>
+      <div class="sidebar-item" onclick="openModal('cep');closeSidebar()">
+        <div class="s-icon"><svg viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg></div>CEP
+      </div>
+      <div class="sidebar-item" onclick="openModal('placa');closeSidebar()">
+        <div class="s-icon"><svg viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="10" rx="2"/><line x1="6" y1="11" x2="6" y2="13"/><line x1="9" y1="11" x2="15" y2="11"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="18" y1="11" x2="18" y2="13"/></svg></div>Placa
+      </div>
+      <div class="sidebar-item" onclick="openModal('rg');closeSidebar()">
+        <div class="s-icon"><svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><circle cx="8" cy="10" r="2"/><path d="M2 17l4-4 4 4"/><line x1="14" y1="9" x2="20" y2="9"/><line x1="14" y1="13" x2="18" y2="13"/></svg></div>RG
+      </div>
+      <div class="sidebar-item" onclick="openModal('chassi');closeSidebar()">
+        <div class="s-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg></div>Chassi
+      </div>
+      <div class="sidebar-item" onclick="openModal('bin');closeSidebar()">
+        <div class="s-icon"><svg viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg></div>BIN
+      </div>
+      <div class="sidebar-item" onclick="openModal('processo');closeSidebar()">
+        <div class="s-icon"><svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>Processo
+      </div>
+      <div class="sidebar-item" onclick="openModal('irmaos');closeSidebar()">
+        <div class="s-icon"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>Irmãos
+      </div>
+      <div class="sidebar-item" onclick="openModal('foto-pe');closeSidebar()">
+        <div class="s-icon"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>Foto PE
+      </div>
+    </div>
+    <div class="sidebar-divider"></div>
+    <div class="sidebar-section">
+      <div class="sidebar-section-title">Acesso Restrito</div>
+      <div class="sidebar-item" onclick="openModal('negativacao');closeSidebar()">
+        <div class="s-icon" style="background:rgba(255,159,10,0.1);border-color:rgba(255,159,10,0.25);box-shadow:0 0 10px rgba(255,159,10,0.12)"><svg viewBox="0 0 24 24" style="stroke:#ff9f0a;filter:drop-shadow(0 0 3px rgba(255,159,10,0.55))"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div>
+        Negativação <span class="hc-tag" style="background:rgba(255,159,10,0.08);color:#ff9f0a;border-color:rgba(255,159,10,0.2)">H.C.</span>
+      </div>
+    </div>
+    <div class="sidebar-divider"></div>
+    <div class="sidebar-settings-btn" onclick="openNegativSettings();closeSidebar()">
+      <div class="s-icon" style="background:rgba(255,255,255,0.04);border-color:rgba(255,255,255,0.07);box-shadow:none"><svg viewBox="0 0 24 24" style="stroke:rgba(255,255,255,0.3);filter:none"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></div>
+      Configurar chave de negativação
+    </div>
+  </div>
+
+  <div class="main">
+
+    <div class="section-label" style="margin-top:4px">Busca</div>
+    <div class="search-card">
+      <div class="search-grid">
+        <div class="field-group"><label class="field-label">CPF</label><input class="field-input" id="f-cpf" placeholder="000.000.000-00" maxlength="14"/></div>
+        <div class="field-group"><label class="field-label">Nome</label><input class="field-input" id="f-nome" placeholder="Nome completo"/></div>
+        <div class="field-group"><label class="field-label">Telefone</label><input class="field-input" id="f-tel" placeholder="(00) 00000-0000" maxlength="15"/></div>
+        <div class="field-group"><label class="field-label">Email</label><input class="field-input" id="f-email" placeholder="email@exemplo.com"/></div>
+        <div class="field-group"><label class="field-label">CEP</label><input class="field-input" id="f-cep" placeholder="00000-000" maxlength="9"/></div>
+        <div class="field-group"><label class="field-label">Placa</label><input class="field-input" id="f-placa" placeholder="ABC-1234" maxlength="8"/></div>
+        <div class="field-group"><label class="field-label">RG</label><input class="field-input" id="f-rg" placeholder="Número do RG"/></div>
+        <div class="field-group"><label class="field-label">BIN</label><input class="field-input" id="f-bin" placeholder="Primeiros 6 dígitos" maxlength="6"/></div>
+        <div class="field-group"><label class="field-label">Processo</label><input class="field-input" id="f-processo" placeholder="Número do processo"/></div>
+        <div class="field-group"><label class="field-label">Irmãos (nome da mãe)</label><input class="field-input" id="f-irmaos" placeholder="Nome da mãe"/></div>
+        <div class="field-group"><label class="field-label">Chassi</label><input class="field-input" id="f-chassi" placeholder="Número do chassi"/></div>
+      </div>
+      <div class="btn-row">
+        <button class="btn-buscar" onclick="executarBusca()">Buscar</button>
+        <button class="btn-limpar" onclick="limparTudo()">Limpar</button>
+      </div>
+    </div>
+
+    <div class="pills-wrap" id="pills-container">
+      <span style="font-size:13px;color:var(--text3)">Preencha um campo para ver as opções</span>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="result-area" id="result-area">
+      <div class="empty-state"><p>Preencha um campo e clique em buscar</p></div>
+    </div>
+
+  </div>
+</div>

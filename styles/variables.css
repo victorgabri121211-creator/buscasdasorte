@@ -1,0 +1,56 @@
+/* VARIÁVEIS GLOBAIS */
+:root {
+  --bg: #080808;
+  --bg2: #101010;
+  --bg3: #141414;
+  --card: #111111;
+  --card2: #181818;
+  --border: rgba(255,255,255,0.07);
+  --border2: rgba(255,255,255,0.12);
+  --green: #30d158;
+  --green-soft: #5ee27f;
+  --green-dim: rgba(48,209,88,0.12);
+  --green-glow: rgba(48,209,88,0.08);
+  --green-grad: linear-gradient(135deg, #43e06a 0%, #23b84a 100%);
+  --text: #f5f5f7;
+  --text2: #86868b;
+  --text3: #48484a;
+  --danger: #ff453a;
+  --danger-bg: rgba(255,69,58,0.08);
+  --warn-bg: rgba(255,159,10,0.08);
+  --warn: #ff9f0a;
+  --radius: 16px;
+  --radius-sm: 10px;
+  --radius-xs: 8px;
+  /* elevação */
+  --shadow-sm: 0 2px 8px rgba(0,0,0,0.4);
+  --shadow-md: 0 8px 30px rgba(0,0,0,0.45);
+  --shadow-lg: 0 24px 70px rgba(0,0,0,0.6);
+  --ring: 0 0 0 3px var(--green-glow), 0 0 18px rgba(48,209,88,0.08);
+  --ease: cubic-bezier(0.16,1,0.3,1);
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: -apple-system, 'SF Pro Display', 'Inter', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  position: relative;
+}
+/* fundo ambiente sutil — profundidade sem distrair */
+body::before {
+  content: '';
+  position: fixed; inset: 0; z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(60% 45% at 50% -5%, rgba(48,209,88,0.08) 0%, transparent 60%),
+    radial-gradient(45% 40% at 100% 100%, rgba(48,209,88,0.05) 0%, transparent 65%),
+    radial-gradient(40% 35% at 0% 60%, rgba(48,209,88,0.035) 0%, transparent 70%);
+}
+/* seleção de texto na cor da marca */
+::selection { background: rgba(48,209,88,0.25); color: #fff; }

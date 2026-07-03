@@ -1,0 +1,123 @@
+/* ===== MODAL DE CONSULTA ===== */
+.modal-overlay {
+  position: fixed; inset: 0; z-index: 200;
+  background: rgba(0,0,0,0.72);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.22s;
+}
+.modal-overlay.open { opacity: 1; pointer-events: all; }
+
+.modal-box {
+  width: 100%; max-width: 420px;
+  background: #0f0f0f;
+  border: 1px solid rgba(48,209,88,0.18);
+  border-radius: 22px;
+  padding: 32px 28px 28px;
+  position: relative;
+  transform: translateY(16px) scale(0.97);
+  transition: transform 0.28s cubic-bezier(0.16,1,0.3,1);
+  box-shadow: 0 0 60px rgba(48,209,88,0.08), 0 24px 60px rgba(0,0,0,0.7);
+}
+.modal-overlay.open .modal-box {
+  transform: translateY(0) scale(1);
+}
+
+.modal-top-line {
+  width: 48px; height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(48,209,88,0.6), transparent);
+  border-radius: 2px; margin: 0 auto 28px; display: block;
+}
+
+.modal-icon-wrap {
+  width: 52px; height: 52px; border-radius: 14px;
+  background: rgba(48,209,88,0.08);
+  border: 1px solid rgba(48,209,88,0.18);
+  display: flex; align-items: center; justify-content: center;
+  margin: 0 auto 18px;
+  box-shadow: 0 0 20px rgba(48,209,88,0.15);
+}
+.modal-icon-wrap svg {
+  width: 22px; height: 22px;
+  stroke: #30d158; stroke-width: 1.6; fill: none;
+  stroke-linecap: round; stroke-linejoin: round;
+  filter: drop-shadow(0 0 4px rgba(48,209,88,0.6));
+}
+
+.modal-title {
+  text-align: center; font-size: 18px; font-weight: 600;
+  color: var(--text); letter-spacing: -0.3px; margin-bottom: 6px;
+}
+.modal-sub {
+  text-align: center; font-size: 13px; color: var(--text2);
+  margin-bottom: 26px; font-weight: 400;
+}
+
+.modal-input-wrap {
+  position: relative; margin-bottom: 14px;
+}
+.modal-input {
+  width: 100%; padding: 14px 16px;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.08);
+  background: #161616;
+  color: var(--text); font-size: 16px; font-family: inherit;
+  outline: none; letter-spacing: 0.01em;
+  transition: border 0.2s, box-shadow 0.2s;
+}
+.modal-input:focus {
+  border-color: rgba(48,209,88,0.45);
+  box-shadow: 0 0 0 3px rgba(48,209,88,0.08);
+}
+.modal-input::placeholder { color: #333; }
+
+.modal-btn-search {
+  position: relative; overflow: hidden;
+  width: 100%; padding: 14px;
+  border-radius: 12px; border: none;
+  background: var(--green-grad); color: #032b0f;
+  font-size: 15px; font-weight: 700; font-family: inherit;
+  cursor: pointer; letter-spacing: -0.2px;
+  transition: transform 0.18s var(--ease), box-shadow 0.18s var(--ease), filter 0.18s; margin-bottom: 10px;
+  box-shadow: 0 4px 20px rgba(48,209,88,0.28), inset 0 1px 0 rgba(255,255,255,0.25);
+}
+.modal-btn-search::after {
+  content: ''; position: absolute; top: 0; left: -60%; width: 40%; height: 100%;
+  background: linear-gradient(100deg, transparent, rgba(255,255,255,0.4), transparent);
+  transform: skewX(-20deg); transition: left 0.5s var(--ease);
+}
+.modal-btn-search:hover { transform: translateY(-1px); box-shadow: 0 6px 26px rgba(48,209,88,0.38), inset 0 1px 0 rgba(255,255,255,0.3); }
+.modal-btn-search:hover::after { left: 130%; }
+.modal-btn-search:active { transform: scale(0.99); }
+
+.modal-btn-cancel {
+  width: 100%; padding: 11px;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.07);
+  background: transparent; color: var(--text2);
+  font-size: 14px; font-family: inherit;
+  cursor: pointer; transition: all 0.15s;
+}
+.modal-btn-cancel:hover { background: rgba(255,255,255,0.04); color: var(--text); }
+
+.modal-close {
+  position: absolute; top: 16px; right: 16px;
+  width: 28px; height: 28px; border-radius: 50%;
+  background: rgba(255,255,255,0.06); border: none;
+  color: var(--text2); font-size: 16px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.15s;
+}
+.modal-close:hover { background: rgba(255,255,255,0.1); color: var(--text); }
+
+/* ===== RESPONSIVO — MODAL ===== */
+@media (max-width: 480px) {
+  .modal-overlay { padding: 14px; }
+  .modal-box { padding: 28px 20px 22px; border-radius: 20px; }
+  .modal-top-line { margin-bottom: 22px; }
+  .modal-icon-wrap { width: 46px; height: 46px; margin-bottom: 14px; }
+  .modal-sub { margin-bottom: 20px; }
+  .modal-input { font-size: 16px; } /* evita zoom no iOS */
+}

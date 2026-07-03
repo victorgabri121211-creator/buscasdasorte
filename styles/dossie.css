@@ -1,0 +1,180 @@
+/* ===== DOSSIÊ DE RESULTADOS ===== */
+.dossie-overlay {
+  position: fixed; inset: 0; z-index: 300;
+  background: rgba(0,0,0,0.8);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  display: flex; align-items: center; justify-content: center;
+  padding: 20px;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.25s;
+}
+.dossie-overlay.open { opacity: 1; pointer-events: all; }
+
+.dossie-box {
+  width: 100%; max-width: 680px;
+  max-height: 88vh;
+  background: #0a0a0a;
+  border: 1px solid rgba(48,209,88,0.22);
+  border-radius: 20px;
+  display: flex; flex-direction: column;
+  transform: translateY(20px) scale(0.97);
+  transition: transform 0.3s cubic-bezier(0.16,1,0.3,1);
+  box-shadow: 0 0 80px rgba(48,209,88,0.08), 0 32px 80px rgba(0,0,0,0.8);
+  overflow: hidden;
+}
+.dossie-overlay.open .dossie-box { transform: translateY(0) scale(1); }
+
+.dossie-header {
+  display: flex; align-items: center; gap: 12px;
+  padding: 16px 20px;
+  border-bottom: 1px solid rgba(48,209,88,0.1);
+  background: rgba(48,209,88,0.04);
+  flex-shrink: 0;
+}
+.dossie-header-icon {
+  width: 34px; height: 34px; border-radius: 9px;
+  background: rgba(48,209,88,0.12); border: 1px solid rgba(48,209,88,0.25);
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 0 12px rgba(48,209,88,0.2);
+}
+.dossie-header-icon svg { width: 16px; height: 16px; stroke: #30d158; stroke-width: 1.8; fill: none; stroke-linecap: round; stroke-linejoin: round; filter: drop-shadow(0 0 3px rgba(48,209,88,0.7)); }
+.dossie-header-title { font-size: 13px; font-weight: 600; color: #30d158; letter-spacing: 0.08em; text-transform: uppercase; }
+.dossie-header-actions { display: flex; gap: 7px; margin-left: auto; }
+.dossie-btn-copy, .dossie-btn-txt, .dossie-btn-pdf {
+  padding: 6px 13px; border-radius: 8px; font-size: 12px;
+  font-weight: 500; cursor: pointer; font-family: inherit;
+  display: flex; align-items: center; gap: 5px;
+  transition: all 0.15s; border: 1px solid;
+}
+.dossie-btn-copy { background: rgba(48,209,88,0.08); color: #30d158; border-color: rgba(48,209,88,0.25); }
+.dossie-btn-copy:hover { background: rgba(48,209,88,0.15); }
+.dossie-btn-txt { background: rgba(255,255,255,0.04); color: rgba(255,255,255,0.6); border-color: rgba(255,255,255,0.1); }
+.dossie-btn-txt:hover { background: rgba(255,255,255,0.08); color: var(--text); }
+.dossie-btn-pdf { background: rgba(255,69,58,0.08); color: #ff453a; border-color: rgba(255,69,58,0.2); }
+.dossie-btn-pdf:hover { background: rgba(255,69,58,0.14); }
+.dossie-close {
+  width: 28px; height: 28px; border-radius: 50%;
+  background: rgba(255,255,255,0.06); border: none;
+  color: rgba(255,255,255,0.4); font-size: 14px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.15s; margin-left: 6px;
+}
+.dossie-close:hover { background: rgba(255,69,58,0.15); color: #ff453a; }
+
+.dossie-body { overflow-y: auto; flex: 1; padding: 20px; }
+
+.dossie-hero {
+  text-align: center; padding: 14px 0 20px;
+  border-bottom: 1px solid rgba(48,209,88,0.08);
+  margin-bottom: 20px;
+}
+.dossie-hero-title {
+  font-size: 15px; font-weight: 700; color: #30d158;
+  letter-spacing: 0.2em; text-transform: uppercase;
+  text-shadow: 0 0 20px rgba(48,209,88,0.4);
+}
+.dossie-hero-divider {
+  width: 120px; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(48,209,88,0.5), transparent);
+  margin: 10px auto 12px;
+}
+.dossie-hero-meta { font-size: 12px; color: rgba(255,255,255,0.3); line-height: 1.7; }
+.dossie-hero-meta strong { color: rgba(48,209,88,0.7); font-weight: 500; }
+
+.dossie-section { margin-bottom: 18px; }
+.dossie-section-label {
+  font-size: 11px; font-weight: 600; color: rgba(48,209,88,0.5);
+  letter-spacing: 0.12em; text-transform: uppercase;
+  margin-bottom: 10px; display: flex; align-items: center; gap: 8px;
+}
+.dossie-section-label::before {
+  content: ''; width: 6px; height: 6px; border-radius: 50%;
+  background: #30d158; display: inline-block;
+  box-shadow: 0 0 6px rgba(48,209,88,0.8);
+}
+.dossie-section-label::after {
+  content: ''; flex: 1; height: 1px;
+  background: rgba(48,209,88,0.1);
+}
+
+.dossie-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 8px; }
+.dossie-field {
+  background: #111;
+  border: 1px solid rgba(48,209,88,0.1);
+  border-radius: 10px; padding: 10px 12px;
+  transition: border-color 0.15s;
+}
+.dossie-field:hover { border-color: rgba(48,209,88,0.2); }
+.dossie-field-key {
+  font-size: 10px; font-weight: 600; color: rgba(48,209,88,0.45);
+  text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 4px;
+}
+.dossie-field-val {
+  font-size: 13px; color: rgba(255,255,255,0.85); font-weight: 400;
+  word-break: break-word; line-height: 1.4;
+}
+.dossie-field-val.null-val { color: rgba(255,255,255,0.18); font-style: italic; font-size: 12px; }
+
+.dossie-raw {
+  background: #0d0d0d; border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 10px; padding: 14px;
+}
+.dossie-raw pre { font-family: 'SF Mono','Fira Code','Courier New',monospace; font-size: 11.5px; color: rgba(48,209,88,0.6); line-height: 1.7; white-space: pre-wrap; word-break: break-all; }
+
+.dossie-footer {
+  padding: 14px 20px;
+  border-top: 1px solid rgba(48,209,88,0.08);
+  flex-shrink: 0;
+}
+.dossie-btn-nova {
+  width: 100%; padding: 13px;
+  border-radius: 11px; border: 1px solid rgba(48,209,88,0.25);
+  background: rgba(48,209,88,0.07); color: #30d158;
+  font-size: 13px; font-weight: 600; font-family: inherit;
+  letter-spacing: 0.1em; text-transform: uppercase;
+  cursor: pointer; transition: all 0.18s;
+}
+.dossie-btn-nova:hover { background: rgba(48,209,88,0.13); box-shadow: 0 0 20px rgba(48,209,88,0.1); }
+
+/* tab nav for multiple results */
+.dossie-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 16px; }
+.dossie-tab {
+  padding: 5px 13px; border-radius: 20px; font-size: 12px;
+  cursor: pointer; border: 1px solid rgba(255,255,255,0.08);
+  background: transparent; color: rgba(255,255,255,0.4);
+  transition: all 0.15s; font-family: inherit; font-weight: 500;
+}
+.dossie-tab.active { background: rgba(48,209,88,0.12); color: #30d158; border-color: rgba(48,209,88,0.3); }
+.dossie-tab-panel { display: none; }
+.dossie-tab-panel.active { display: block; }
+
+/* ═══════════════════════════════════
+   RESPONSIVO — DOSSIÊ
+═══════════════════════════════════ */
+@media (max-width: 620px) {
+  .dossie-overlay { padding: 0; align-items: stretch; }
+  .dossie-box {
+    max-width: 100%; max-height: 100%; height: 100%;
+    border-radius: 0; border-left: none; border-right: none;
+  }
+  .dossie-header { padding: 12px 14px; flex-wrap: wrap; gap: 10px; }
+  /* título ocupa a linha toda; ações vão para baixo, alinhadas e roláveis */
+  .dossie-header-title { font-size: 12px; }
+  .dossie-header-actions {
+    order: 3; width: 100%; margin-left: 0;
+    overflow-x: auto; padding-bottom: 2px; -webkit-overflow-scrolling: touch;
+  }
+  .dossie-header-actions::-webkit-scrollbar { display: none; }
+  .dossie-btn-copy, .dossie-btn-txt, .dossie-btn-pdf { flex-shrink: 0; padding: 7px 12px; }
+  .dossie-close { margin-left: auto; }
+
+  .dossie-body { padding: 16px 14px; }
+  .dossie-hero-title { font-size: 13px; letter-spacing: 0.12em; }
+  .dossie-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
+  .dossie-footer { padding: 12px 14px; padding-bottom: max(12px, env(safe-area-inset-bottom)); }
+}
+
+@media (max-width: 400px) {
+  .dossie-grid { grid-template-columns: 1fr; }
+}
