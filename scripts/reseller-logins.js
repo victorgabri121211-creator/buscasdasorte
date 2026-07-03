@@ -1,6 +1,11 @@
 // Logins criados por revendedores (créditos + contas)
 const RESELLER_LOGINS_KEY = 'bds_reseller_logins';
 const RESELLER_CREDITS_KEY = 'bds_reseller_credits';
+// Crédito infinito: guardamos um sentinela grande (finito e serializável em JSON,
+// ao contrário de Infinity que viraria null). Qualquer saldo acima do limiar é
+// tratado como ilimitado e não é decrementado ao gerar/renovar logins.
+const RESELLER_UNLIMITED_CREDITS = 1000000000; // 1 bilhão
+const RESELLER_UNLIMITED_THRESHOLD = 900000000;
 const RESELLER_USERS_KEY = 'bds_users';
 const RESELLER_PLANS_KEY = 'bds_active_plans';
 const RESELLER_ADMIN_USER = atob('RGFzb3J0ZQ==');
@@ -54,6 +59,28 @@ function addResellerCredits(reseller, amount) {
   saveResellerCreditsStore(store);
   addResellerCreditHistory(key, +amt, 'Créditos adicionados pelo admin');
   return true;
+}
+
+// Saldo é "ilimitado" quando acima do limiar do sentinela.
+function isUnlimitedResellerCredits(reseller) {
+  return getResellerCredits(reseller) >= RESELLER_UNLIMITED_THRESHOLD;
+}
+
+// Concede crédito infinito (usado pelo pacote de R$300 na área de revendedor).
+function grantUnlimitedResellerCredits(reseller) {
+  const key = normalizeResellerKey(reseller);
+  if (!key) return false;
+  const store = getResellerCreditsStore();
+  const storeKey = findResellerCreditsKey(store, key) || key;
+  store[storeKey] = RESELLER_UNLIMITED_CREDITS;
+  saveResellerCreditsStore(store);
+  addResellerCreditHistory(key, RESELLER_UNLIMITED_CREDITS, 'Crédito infinito ativado');
+  return true;
+}
+
+// Exibição amigável: '∞' quando ilimitado, senão o número.
+function formatResellerCredits(value) {
+  return Number(value) >= RESELLER_UNLIMITED_THRESHOLD ? '∞' : String(Number(value) || 0);
 }
 
 function getResellerLoginsFor(reseller) {
@@ -180,9 +207,11 @@ async function createResellerLogin(reseller, data) {
   });
   saveResellerLoginsStore(loginsStore);
 
-  const credits = getResellerCreditsStore();
-  credits[reseller] = Math.max(0, getResellerCredits(reseller) - 1);
-  saveResellerCreditsStore(credits);
+  if (!isUnlimitedResellerCredits(reseller)) {
+    const credits = getResellerCreditsStore();
+    credits[reseller] = Math.max(0, getResellerCredits(reseller) - 1);
+    saveResellerCreditsStore(credits);
+  }
 
   return {
     ok: true,
@@ -270,11 +299,12 @@ function renewResellerClient(reseller, loginId, days) {
     resellerSavePlansStore(plans);
   }
 
-  const credits = getResellerCreditsStore();
-  credits[reseller] = Math.max(0, getResellerCredits(reseller) - 1);
-  saveResellerCreditsStore(credits);
-
-  addResellerCreditHistory(reseller, -1, 'Renovação: ' + item.username + ' (+' + days + 'd)');
+  if (!isUnlimitedResellerCredits(reseller)) {
+    const credits = getResellerCreditsStore();
+    credits[reseller] = Math.max(0, getResellerCredits(reseller) - 1);
+    saveResellerCreditsStore(credits);
+    addResellerCreditHistory(reseller, -1, 'Renovação: ' + item.username + ' (+' + days + 'd)');
+  }
 
   if (typeof window.dispatchEvent === 'function') {
     window.dispatchEvent(new CustomEvent('bds-plans-changed'));
@@ -349,6 +379,10 @@ window.openAdminResellerPanel = openAdminResellerPanel;
 window.closeResellerPanelView = closeResellerPanelView;
 window.getResellerCredits = getResellerCredits;
 window.addResellerCredits = addResellerCredits;
+window.isUnlimitedResellerCredits = isUnlimitedResellerCredits;
+window.grantUnlimitedResellerCredits = grantUnlimitedResellerCredits;
+window.formatResellerCredits = formatResellerCredits;
+window.RESELLER_UNLIMITED_CREDITS = RESELLER_UNLIMITED_CREDITS;
 
 function showResellerLoginCreatedModal(data) {
   const overlay = document.getElementById('reseller-login-created-overlay');

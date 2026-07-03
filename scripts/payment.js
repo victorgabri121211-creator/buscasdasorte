@@ -1,10 +1,14 @@
 // PIX via MisticPay — credenciais ficam no Cloudflare Worker (env vars)
 
 const PIX_PLANS = {
-  diaria: { label: 'Diária',   amount: 8.49 },
-  semana: { label: '1 Semana', amount: 20.5 },
-  mes:    { label: '1 Mês',    amount: 25.5 },
+  diaria:    { label: 'Diária',    amount: 8.49 },
+  semana:    { label: '1 Semana',  amount: 20.5 },
+  mes:       { label: '1 Mês',     amount: 25.5 },
+  vitalicio: { label: 'Vitalício', amount: 150 },
 };
+
+// Vitalício: ~100 anos (mesmo valor usado em plans.js) para o Date válido no banco.
+const _PIX_PLAN_MS = { diaria: 86400000, semana: 604800000, mes: 2592000000, vitalicio: 3153600000000 };
 
 let _pixPlan      = null;
 let _pixPollTimer = null;
@@ -45,7 +49,9 @@ function openResellerPixPayment(pkg) {
   if (cpfEl)  cpfEl.value  = '';
   _pixMsg('');
 
-  document.getElementById('pix-plan-label').textContent = pkg.logins + ' créditos de login';
+  document.getElementById('pix-plan-label').textContent = pkg.unlimited
+    ? 'Crédito infinito de login'
+    : pkg.logins + ' créditos de login';
   document.getElementById('pix-plan-price').textContent  =
     'R$ ' + pkg.price.toFixed(2).replace('.', ',');
 
@@ -83,7 +89,9 @@ async function submitPixForm() {
   if (_pixMode === 'reseller') {
     if (!_resellerPkg) return;
     amount      = _resellerPkg.price;
-    description = 'BuscasDasorte - Pacote ' + _resellerPkg.logins + ' logins';
+    description = _resellerPkg.unlimited
+      ? 'BuscasDasorte - Pacote crédito infinito'
+      : 'BuscasDasorte - Pacote ' + _resellerPkg.logins + ' logins';
   } else {
     const plan = PIX_PLANS[_pixPlan];
     if (!plan) return;
@@ -193,23 +201,33 @@ function _pixOnConfirmed() {
 
   if (_pixMode === 'reseller') {
     const user = typeof getSession === 'function' ? getSession() : null;
-    if (user && typeof addResellerCredits === 'function' && _resellerPkg) {
-      addResellerCredits(user, _resellerPkg.logins);
-      if (typeof DB !== 'undefined' && DB.isConfigured()) {
-        DB.addResellerCredits(user, _resellerPkg.logins).catch(function() {});
+    const isUnlimited = !!(_resellerPkg && _resellerPkg.unlimited);
+    if (user && _resellerPkg) {
+      if (isUnlimited) {
+        if (typeof grantUnlimitedResellerCredits === 'function') grantUnlimitedResellerCredits(user);
+        if (typeof DB !== 'undefined' && DB.isConfigured() && typeof RESELLER_UNLIMITED_CREDITS !== 'undefined') {
+          DB.addResellerCredits(user, RESELLER_UNLIMITED_CREDITS).catch(function() {});
+        }
+      } else if (typeof addResellerCredits === 'function') {
+        addResellerCredits(user, _resellerPkg.logins);
+        if (typeof DB !== 'undefined' && DB.isConfigured()) {
+          DB.addResellerCredits(user, _resellerPkg.logins).catch(function() {});
+        }
       }
     }
     if (typeof recordSale === 'function' && _resellerPkg) {
       recordSale({
         txId:      _pixTxId,
         category:  'reseller',
-        productId: String(_resellerPkg.logins),
-        label:     _resellerPkg.logins + ' logins',
+        productId: isUnlimited ? 'unlimited' : String(_resellerPkg.logins),
+        label:     isUnlimited ? 'Crédito infinito' : _resellerPkg.logins + ' logins',
         amount:    _resellerPkg.price,
         buyer:     user || '—',
       });
     }
-    if (subtitleEl) subtitleEl.textContent = (_resellerPkg ? _resellerPkg.logins : '') + ' créditos adicionados. Você já pode criar logins!';
+    if (subtitleEl) subtitleEl.textContent = isUnlimited
+      ? 'Crédito infinito ativado. Crie quantos logins quiser!'
+      : (_resellerPkg ? _resellerPkg.logins : '') + ' créditos adicionados. Você já pode criar logins!';
     if (actionBtn) {
       actionBtn.textContent = 'Abrir painel';
       actionBtn.onclick = () => {
@@ -224,8 +242,7 @@ function _pixOnConfirmed() {
     if (user && _pixPlan && typeof DB !== 'undefined' && DB.isConfigured()) {
       const _pDef = PIX_PLANS[_pixPlan];
       if (_pDef) {
-        const _pMs = { diaria: 86400000, semana: 604800000, mes: 2592000000 };
-        const _pExp = Date.now() + (_pMs[_pixPlan] || 86400000);
+        const _pExp = Date.now() + (_PIX_PLAN_MS[_pixPlan] || 86400000);
         DB.setUserPlan(user, _pixPlan, _pDef.label, _pExp).catch(function() {});
       }
     }

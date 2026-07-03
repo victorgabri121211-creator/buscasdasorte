@@ -562,6 +562,10 @@ function renderAdminResellers() {
     users.forEach(u => {
       const on = isResellerEnabled(u.user);
       const credits = typeof getResellerCredits === 'function' ? getResellerCredits(u.user) : 0;
+      const creditsUnlimited = typeof isUnlimitedResellerCredits === 'function' && isUnlimitedResellerCredits(u.user);
+      const creditsLabel = creditsUnlimited
+        ? '<strong>∞</strong> créditos'
+        : '<strong>' + credits + '</strong> crédito' + (credits === 1 ? '' : 's');
       const loginsCount = typeof getResellerLoginsFor === 'function' ? getResellerLoginsFor(u.user).length : 0;
       const userEsc = escAdmin(u.user);
       cards +=
@@ -570,7 +574,7 @@ function renderAdminResellers() {
             '<div class="admin-reseller-card-identity">' +
               '<h4 class="admin-reseller-card-name">' + userEsc + '</h4>' +
               '<p class="admin-reseller-card-meta">' +
-                '<span class="admin-reseller-meta-item"><strong>' + credits + '</strong> crédito' + (credits === 1 ? '' : 's') + '</span>' +
+                '<span class="admin-reseller-meta-item">' + creditsLabel + '</span>' +
                 '<span class="admin-reseller-meta-sep">·</span>' +
                 '<span class="admin-reseller-meta-item">' + loginsCount + ' login' + (loginsCount === 1 ? '' : 's') + ' criado' + (loginsCount === 1 ? '' : 's') + '</span>' +
               '</p>' +
@@ -669,7 +673,10 @@ function openAdminResellerCreditsModal(reseller) {
 
   if (titleEl) titleEl.textContent = 'Créditos — ' + reseller;
   if (currentEl) {
-    currentEl.textContent = 'Saldo atual: ' + credits + ' crédito' + (credits === 1 ? '' : 's') + ' disponíve' + (credits === 1 ? 'l' : 'is');
+    const unlimited = typeof isUnlimitedResellerCredits === 'function' && isUnlimitedResellerCredits(reseller);
+    currentEl.textContent = unlimited
+      ? 'Saldo atual: crédito infinito (∞)'
+      : 'Saldo atual: ' + credits + ' crédito' + (credits === 1 ? '' : 's') + ' disponíve' + (credits === 1 ? 'l' : 'is');
   }
   if (amountEl) amountEl.value = '10';
   if (msgEl) {

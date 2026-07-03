@@ -4,16 +4,21 @@
 
   var PLAN_STORE_KEY = 'bds_active_plans';
   var PLAN_ADMIN_USER = atob('RGFzb3J0ZQ==');
+  // Vitalício: expiração ~100 anos à frente (efetivamente sem expiração,
+  // mas ainda um número finito serializável e um Date válido).
+  var PLAN_VITALICIO_MS = 100 * 365 * 24 * 60 * 60 * 1000;
   var PLAN_DURATIONS_MS = {
     diaria: 24 * 60 * 60 * 1000,
     semana: 7 * 24 * 60 * 60 * 1000,
     mes: 30 * 24 * 60 * 60 * 1000,
+    vitalicio: PLAN_VITALICIO_MS,
   };
 
   var PLAN_LABELS = {
     diaria: 'Diária',
     semana: '1 Semana',
     mes: '1 Mês',
+    vitalicio: 'Vitalício',
     reseller: 'Revenda',
   };
 

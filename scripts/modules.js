@@ -64,6 +64,19 @@ const PLANS = [
     saveHint: 'Economize R$ 229,20',
     perks: ['Consultas ilimitadas no período', 'Menor custo por dia'],
   },
+  {
+    id: 'vitalicio',
+    period: 'Vitalício',
+    durationLabel: 'Acesso permanente',
+    price: 150,
+    perDay: 0,
+    lifetime: true,
+    tag: 'Pague uma vez',
+    badge: 'Vitalício',
+    featured: false,
+    saveHint: 'Pagamento único • sem renovação',
+    perks: ['Consultas ilimitadas para sempre', 'Sem mensalidade nem expiração'],
+  },
 ];
 
 const PLAN_STORE_KEY = typeof window !== 'undefined' && window.PLAN_STORE_KEY
@@ -74,7 +87,7 @@ const PLAN_ADMIN_USER = typeof window !== 'undefined' && window.PLAN_ADMIN_USER
   : atob('RGFzb3J0ZQ==');
 const PLAN_DURATIONS_MS = typeof window !== 'undefined' && window.PLAN_DURATIONS_MS
   ? window.PLAN_DURATIONS_MS
-  : { diaria: 86400000, semana: 604800000, mes: 2592000000 };
+  : { diaria: 86400000, semana: 604800000, mes: 2592000000, vitalicio: 3153600000000 };
 
 function hasActivePlan() {
   if (typeof hasActivePlanForSession === 'function') return hasActivePlanForSession();
@@ -155,6 +168,7 @@ function updatePlanBanner() {
 
   if (activeBanner) {
     if (plan && plan.id !== 'admin') {
+      const isLifetime = plan.id === 'vitalicio';
       const exp = new Date(plan.expiresAt);
       const msLeft = plan.expiresAt - Date.now();
       const hLeft  = Math.ceil(msLeft / 3600000);
@@ -163,11 +177,18 @@ function updatePlanBanner() {
         : '';
 
       let expiryBadge = '';
-      if (msLeft < 2 * 3600000) {
+      if (!isLifetime && msLeft < 2 * 3600000) {
         expiryBadge = '<span class="plan-expiry-badge plan-expiry-badge--urgent">Expira em ' + hLeft + 'h</span>';
-      } else if (msLeft < 48 * 3600000) {
+      } else if (!isLifetime && msLeft < 48 * 3600000) {
         expiryBadge = '<span class="plan-expiry-badge plan-expiry-badge--warn">Expira em ' + hLeft + 'h</span>';
       }
+
+      const subLine = isLifetime
+        ? '<div class="plan-active-sub">Acesso vitalício • sem expiração</div>'
+        : '<div class="plan-active-sub">Válido até ' + exp.toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) + '</div>';
+      const countdownBlock = isLifetime
+        ? '<div class="plan-countdown" id="plan-countdown-display"><span class="plan-countdown-dot"></span><span id="plan-countdown-text">Acesso permanente</span></div>'
+        : '<div class="plan-countdown" id="plan-countdown-display"><span class="plan-countdown-dot"></span><span id="plan-countdown-text">' + formatCountdown(plan.expiresAt) + '</span></div>';
 
       activeBanner.hidden = false;
       activeBanner.style.display = '';
@@ -178,14 +199,11 @@ function updatePlanBanner() {
         '</div>' +
         '<div class="plan-active-info">' +
           '<div class="plan-active-title">Plano ativo: ' + (plan.period || plan.id) + expiryBadge + '</div>' +
-          '<div class="plan-active-sub">Válido até ' + exp.toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) + '</div>' +
+          subLine +
           resellerNote +
-          '<div class="plan-countdown" id="plan-countdown-display">' +
-            '<span class="plan-countdown-dot"></span>' +
-            '<span id="plan-countdown-text">' + formatCountdown(plan.expiresAt) + '</span>' +
-          '</div>' +
+          countdownBlock +
         '</div>';
-      startCountdown(plan.expiresAt);
+      if (isLifetime) stopCountdown(); else startCountdown(plan.expiresAt);
     } else {
       activeBanner.hidden = true;
       activeBanner.style.display = 'none';
@@ -249,6 +267,7 @@ const REVENDER_PACKAGES = [
   { logins: 10, price: 49.9,  tag: 'Para começar',    badge: null,          featured: false },
   { logins: 20, price: 99.9,  tag: 'Melhor custo',    badge: 'Mais vendido', featured: true  },
   { logins: 30, price: 139.9, tag: 'Máximo volume',   badge: 'Maior lucro',  featured: false },
+  { logins: null, unlimited: true, price: 300, tag: 'Crédito infinito', badge: 'Ilimitado', featured: true },
 ];
 
 function formatMoneyBr(value) {
@@ -453,30 +472,43 @@ function renderResellerPackages() {
     card.setAttribute('role', 'listitem');
     card.tabIndex = 0;
 
-    const savings = getResellerSavings(pkg);
     let savingsHtml;
-    if (savings >= 1) {
-      savingsHtml = '<span class="reseller-save">Economize R$ ' + formatMoneyBr(savings) + '</span>';
-    } else if (pkg.logins === 10) {
-      savingsHtml = '<span class="reseller-save">Preço de entrada</span>';
+    if (pkg.unlimited) {
+      savingsHtml = '<span class="reseller-save">Logins sem limite</span>';
     } else {
-      savingsHtml = '<span class="reseller-save">Custo reduzido por login</span>';
+      const savings = getResellerSavings(pkg);
+      if (savings >= 1) {
+        savingsHtml = '<span class="reseller-save">Economize R$ ' + formatMoneyBr(savings) + '</span>';
+      } else if (pkg.logins === 10) {
+        savingsHtml = '<span class="reseller-save">Preço de entrada</span>';
+      } else {
+        savingsHtml = '<span class="reseller-save">Custo reduzido por login</span>';
+      }
     }
 
     const badgeHtml = pkg.badge
       ? '<span class="reseller-package-badge">' + pkg.badge + '</span>'
       : '';
 
+    const loginsLine = pkg.unlimited
+      ? '<div class="reseller-package-logins">∞ <span>logins</span></div>'
+      : '<div class="reseller-package-logins">' + pkg.logins + ' <span>logins</span></div>';
+    const perLine = pkg.unlimited
+      ? '<div class="reseller-package-per">Pagamento único</div>'
+      : '<div class="reseller-package-per">R$ ' + formatMoneyBr(getResellerPerLogin(pkg)) + ' / login</div>';
+    const perksLine = pkg.unlimited
+      ? '<li>Logins ilimitados para revender</li><li>Sem recarga de créditos</li>'
+      : '<li>' + pkg.logins + ' acessos para revender</li><li>Margem na revenda</li>';
+
     card.innerHTML =
       badgeHtml +
       '<span class="reseller-package-tag">' + pkg.tag + '</span>' +
-      '<div class="reseller-package-logins">' + pkg.logins + ' <span>logins</span></div>' +
+      loginsLine +
       '<div class="reseller-package-price">' + formatResellerPriceHtml(pkg.price) + '</div>' +
-      '<div class="reseller-package-per">R$ ' + formatMoneyBr(getResellerPerLogin(pkg)) + ' / login</div>' +
+      perLine +
       savingsHtml +
       '<ul class="reseller-package-perks">' +
-        '<li>' + pkg.logins + ' acessos para revender</li>' +
-        '<li>Margem na revenda</li>' +
+        perksLine +
       '</ul>' +
       '<button type="button" class="service-cta service-cta-orange reseller-cta">Comprar agora</button>';
 
@@ -504,7 +536,11 @@ function renderResellerDashboard() {
   const logins = typeof getResellerLoginsFor === 'function' ? getResellerLoginsFor(reseller) : [];
   const isAdminView = typeof isAdmin === 'function' && isAdmin() && window._resellerPanelUser;
   const readOnly = isAdminView;
-  const credLow = stats.creditsRemaining <= 3;
+  const creditsUnlimited = typeof isUnlimitedResellerCredits === 'function' && isUnlimitedResellerCredits(reseller);
+  const credLow = !creditsUnlimited && stats.creditsRemaining <= 3;
+  const creditsDisplay = creditsUnlimited
+    ? '∞'
+    : (typeof formatResellerCredits === 'function' ? formatResellerCredits(stats.creditsRemaining) : (stats.creditsRemaining || 0));
 
   // Build client rows
   let clientsBodyHtml = '';
@@ -598,8 +634,8 @@ function renderResellerDashboard() {
             '<div class="rdash-kpi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg></div>' +
             '<span class="rdash-kpi-label">Créditos</span>' +
           '</div>' +
-          '<div class="rdash-kpi-amount">' + (stats.creditsRemaining || 0) + '</div>' +
-          '<div class="rdash-kpi-meta">' + (credLow ? '⚠ Saldo baixo' : (stats.creditsUsed || 0) + ' usados') + '</div>' +
+          '<div class="rdash-kpi-amount">' + creditsDisplay + '</div>' +
+          '<div class="rdash-kpi-meta">' + (creditsUnlimited ? 'Crédito infinito' : (credLow ? '⚠ Saldo baixo' : (stats.creditsUsed || 0) + ' usados')) + '</div>' +
         '</div>' +
         '<div class="rdash-kpi rdash-kpi-clients">' +
           '<div class="rdash-kpi-top">' +
@@ -809,8 +845,14 @@ function openResellerRenewModal(reseller, item, cb) {
   }
   function updateRenewCost() {
     const costEl = document.getElementById('rr-cost');
+    if (!costEl) return;
+    const unlimited = typeof isUnlimitedResellerCredits === 'function' && isUnlimitedResellerCredits(reseller);
+    if (unlimited) {
+      costEl.textContent = 'Crédito infinito — renovações ilimitadas sem custo de saldo';
+      return;
+    }
     const newCr = credits - 1;
-    if (costEl) costEl.textContent = 'Custo: 1 crédito — Saldo atual: ' + credits + ' → ' + (newCr >= 0 ? newCr : 0) + ' após renovação';
+    costEl.textContent = 'Custo: 1 crédito — Saldo atual: ' + credits + ' → ' + (newCr >= 0 ? newCr : 0) + ' após renovação';
   }
   document.getElementById('rr-title').textContent = 'Renovar: ' + item.username;
   document.getElementById('rr-sub').textContent = 'Selecione quantos dias adicionar ao plano do cliente.';
@@ -1094,11 +1136,14 @@ function updateStoreActivePlan() {
     return;
   }
   const exp = new Date(plan.expiresAt);
+  const expText = plan.id === 'vitalicio'
+    ? 'acesso vitalício • sem expiração'
+    : 'válido até ' + exp.toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
   el.hidden = false;
   el.innerHTML =
     '<span class="store-active-plan-label">Plano ativo</span>' +
     '<strong>' + plan.period + '</strong>' +
-    '<span class="store-active-plan-exp">válido até ' + exp.toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) + '</span>';
+    '<span class="store-active-plan-exp">' + expText + '</span>';
 }
 
 function buyPlan(plan) {
@@ -1123,12 +1168,16 @@ function renderPlansGrid() {
       ? '<span class="store-plan-badge">' + plan.badge + '</span>'
       : '';
 
+    const perLine = plan.lifetime
+      ? '<div class="store-plan-per">Pagamento único</div>'
+      : '<div class="store-plan-per">~ R$ ' + formatMoneyBr(plan.perDay) + ' / dia</div>';
+
     card.innerHTML =
       badgeHtml +
       '<span class="store-plan-tag">' + plan.tag + '</span>' +
       '<div class="store-plan-period">' + plan.period + ' <span>' + plan.durationLabel + '</span></div>' +
       '<div class="store-plan-price">' + formatResellerPriceHtml(plan.price) + '</div>' +
-      '<div class="store-plan-per">~ R$ ' + formatMoneyBr(plan.perDay) + ' / dia</div>' +
+      perLine +
       '<span class="store-save">' + plan.saveHint + '</span>' +
       '<ul class="store-plan-perks">' +
         plan.perks.map(p => '<li>' + p + '</li>').join('') +
