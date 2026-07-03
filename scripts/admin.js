@@ -410,24 +410,26 @@ function renderAdminClients(filter) {
           'Sincronizar' +
         '</button>' +
       '</div>' +
-      '<div class="aclients-toolbar">' +
-        '<div class="aclients-stats">' +
-          '<span class="admin-count-pill active">' + active + ' ativos</span>' +
-          '<span class="admin-count-pill inactive">' + inactive + ' inativos</span>' +
-          '<span class="admin-count-pill total">' + users.length + ' total</span>' +
-          (expiring > 0 ? '<span class="admin-expiring-badge">⚠ ' + expiring + ' expira' + (expiring === 1 ? '' : 'm') + ' em 24h</span>' : '') +
+      '<div class="sdash-stats">' +
+        _sdashStat('Total de clientes', users.length,
+          '<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>', 'blue') +
+        _sdashStat('Ativos', active,
+          '<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>', 'green') +
+        _sdashStat('Inativos', inactive,
+          '<circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>', 'purple') +
+        _sdashStat('Expiram em 24h', expiring,
+          '<path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>', 'orange') +
+      '</div>' +
+      '<div class="aclients-controls">' +
+        '<div class="admin-filter-bar">' + fBtn('all', 'Todos') + fBtn('active', 'Ativos') + fBtn('inactive', 'Inativos') + '</div>' +
+        '<div class="admin-search-wrap aclients-search">' +
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>' +
+          '<input class="admin-search-input admin-clients-search-input" type="text" placeholder="Buscar usuário..." value="' + escAdmin(searchTerm) + '" autocomplete="off"/>' +
         '</div>' +
-        '<div class="aclients-controls">' +
-          '<div class="admin-filter-bar">' + fBtn('all', 'Todos') + fBtn('active', 'Ativos') + fBtn('inactive', 'Inativos') + '</div>' +
-          '<div class="admin-search-wrap aclients-search">' +
-            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>' +
-            '<input class="admin-search-input admin-clients-search-input" type="text" placeholder="Buscar usuário..." value="' + escAdmin(searchTerm) + '" autocomplete="off"/>' +
-          '</div>' +
-          '<button type="button" class="admin-export-btn" onclick="adminExportClientsCSV()">' +
-            '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>' +
-            'Exportar CSV' +
-          '</button>' +
-        '</div>' +
+        '<button type="button" class="admin-export-btn" onclick="adminExportClientsCSV()">' +
+          '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>' +
+          'Exportar CSV' +
+        '</button>' +
       '</div>' +
       bulkBar +
       '<div class="admin-panel aclients-table-panel">' + tableHtml + '</div>' +
@@ -544,8 +546,15 @@ function renderAdminResellers() {
   const searchTerm = root.getAttribute('data-search') || '';
 
   const allUsers = adminGetUsers();
-  let enabled = 0;
-  allUsers.forEach(u => { if (isResellerEnabled(u.user)) enabled++; });
+  let enabled = 0, totalLogins = 0, totalCredits = 0;
+  allUsers.forEach(u => {
+    if (isResellerEnabled(u.user)) enabled++;
+    if (typeof getResellerLoginsFor === 'function') totalLogins += getResellerLoginsFor(u.user).length;
+    if (typeof getResellerCredits === 'function') {
+      const unl = typeof isUnlimitedResellerCredits === 'function' && isUnlimitedResellerCredits(u.user);
+      if (!unl) totalCredits += getResellerCredits(u.user);
+    }
+  });
 
   const _searchLower = searchTerm.trim().toLowerCase();
   const users = _searchLower
@@ -614,6 +623,16 @@ function renderAdminResellers() {
           '</div>' +
         '</div>' +
         '<span class="aresellers-count-badge">' + enabled + ' de ' + allUsers.length + ' ativos</span>' +
+      '</div>' +
+      '<div class="sdash-stats">' +
+        _sdashStat('Usuários', allUsers.length,
+          '<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>', 'blue') +
+        _sdashStat('Revenda ativa', enabled,
+          '<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>', 'green') +
+        _sdashStat('Logins criados', totalLogins,
+          '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/>', 'orange') +
+        _sdashStat('Créditos distribuídos', totalCredits,
+          '<rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/>', 'purple') +
       '</div>' +
       '<div class="admin-resellers-legend">' +
         '<div class="admin-resellers-legend-item"><span class="admin-resellers-legend-dot"></span><span><strong>Créditos</strong> — cada unidade permite gerar 1 login de cliente.</span></div>' +
