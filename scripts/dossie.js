@@ -170,12 +170,56 @@ function isSearchSuccess(res) {
 }
 
 function getSearchErrorMessage(res) {
-  if (!res) return 'Erro na consulta.';
+  if (!res) return 'Não foi possível concluir a consulta. Tente novamente.';
   const d = res.data || {};
-  if (!res.ok) return d.message || d.error || d.detail || ('Erro HTTP ' + (res.status || ''));
-  if (d.success === false) return d.message || d.error || 'A API não retornou dados para esta consulta.';
-  if (d.error) return String(d.error);
-  return 'Nenhum dado encontrado para os critérios informados.';
+  const status = Number(res.status) || 0;
+  const raw = String(d.error || d.message || d.detail || '').toLowerCase();
+
+  // Sem conexão / tempo esgotado (status 0 = falha de rede ou timeout)
+  if (status === 0) {
+    if (raw.indexOf('timeout') !== -1 || raw.indexOf('demor') !== -1) {
+      return 'A consulta demorou mais que o esperado. Tente novamente.';
+    }
+    return 'Sem conexão com o servidor. Verifique sua internet e tente novamente.';
+  }
+
+  // Limite de consultas (a API permite ~1 por minuto por tipo)
+  if (status === 429) {
+    return 'Muitas consultas em pouco tempo. Aguarde cerca de 1 minuto e tente de novo.';
+  }
+
+  // Serviço de consultas fora do ar: erros 5xx e erros de origem do
+  // Cloudflare (ex.: "error code: 1016") caem aqui.
+  if (status >= 500 || raw.indexOf('1016') !== -1 || raw.indexOf('indispon') !== -1) {
+    return 'Serviço de consultas temporariamente indisponível. Tente novamente em alguns minutos.';
+  }
+
+  // Não autorizado (ex.: chave da API com problema)
+  if (status === 401 || status === 403) {
+    return 'A consulta não foi autorizada no momento. Se continuar, avise o administrador.';
+  }
+
+  // Erros de validação (400/422): a mensagem da API costuma ser útil (ex.: "CPF inválido")
+  if (status === 400 || status === 422) {
+    return d.message || d.error || 'Dados inválidos. Confira o que foi digitado e tente novamente.';
+  }
+
+  // Não encontrado
+  if (status === 404) {
+    return 'Nenhum dado encontrado para os dados informados.';
+  }
+
+  // A API respondeu, mas sem dados
+  if (d.success === false) {
+    return d.message || d.error || 'A fonte não retornou dados para esta consulta.';
+  }
+
+  // Falha genérica: não expõe código técnico ao usuário
+  if (!res.ok) {
+    return 'Não foi possível concluir a consulta. Tente novamente em instantes.';
+  }
+
+  return 'Nenhum dado encontrado para os dados informados.';
 }
 
 function getEmptySearchMessage(res) {
