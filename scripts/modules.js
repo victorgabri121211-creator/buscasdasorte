@@ -525,42 +525,54 @@ function _rdashMoney(v) {
   return 'R$ ' + (Number(v) || 0).toFixed(2).replace('.', ',');
 }
 
-// Painel de ganhos + preço de revenda + link de afiliado.
+// Painel de ganhos + preços de revenda por duração + link de afiliado.
 function _resellerEarningsHtml(reseller, readOnly) {
   const esc = typeof escAdmin === 'function' ? escAdmin : (s) => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   const e = typeof getResellerEarnings === 'function'
     ? getResellerEarnings(reseller)
-    : { price: 0, loginsTotal: 0, cost: 0, revenue: 0, profit: 0, margin: 0, revenue30: 0 };
+    : { prices: { dia: 0, semana: 0, mes: 0 }, loginsTotal: 0, cost: 0, revenue: 0, profit: 0, margin: 0, revenue30: 0, logins30: 0, costCount: 0 };
+  const p = e.prices || { dia: 0, semana: 0, mes: 0 };
   const link = typeof getResellerAffiliateLink === 'function' ? getResellerAffiliateLink(reseller) : '';
   const profitClass = e.profit >= 0 ? 'pos' : 'neg';
+  const money2 = (v) => (Number(v) || 0).toFixed(2).replace('.', ',');
+
+  const priceField = (id, label, hint, val) =>
+    '<div class="rdash-price-field">' +
+      '<label class="rdash-price-label">' + label + '<span class="rdash-price-dur">' + hint + '</span></label>' +
+      '<div class="rdash-price-row">' +
+        '<span class="rdash-price-prefix">R$</span>' +
+        '<input type="text" id="' + id + '" class="rdash-price-input" value="' + money2(val) + '" inputmode="decimal"/>' +
+      '</div>' +
+    '</div>';
 
   return '<div class="rdash-earn">' +
     '<div class="rdash-earn-head">' +
       '<h4 class="rdash-earn-title">Relatório de ganhos</h4>' +
-      '<span class="rdash-earn-hint">Estimativa por ' + _rdashMoney(e.price) + ' / login</span>' +
+      '<span class="rdash-earn-hint">Estimativa com base nos seus preços de revenda</span>' +
     '</div>' +
     '<div class="rdash-earn-grid">' +
-      '<div class="rdash-earn-cell"><span class="rdash-earn-label">Receita estimada</span><span class="rdash-earn-val">' + _rdashMoney(e.revenue) + '</span><span class="rdash-earn-sub">' + e.loginsTotal + ' login' + (e.loginsTotal !== 1 ? 's' : '') + ' vendido' + (e.loginsTotal !== 1 ? 's' : '') + '</span></div>' +
+      '<div class="rdash-earn-cell"><span class="rdash-earn-label">Receita estimada</span><span class="rdash-earn-val">' + _rdashMoney(e.revenue) + '</span><span class="rdash-earn-sub">' + e.loginsTotal + ' acesso' + (e.loginsTotal !== 1 ? 's' : '') + ' vendido' + (e.loginsTotal !== 1 ? 's' : '') + '</span></div>' +
       '<div class="rdash-earn-cell"><span class="rdash-earn-label">Custo (créditos)</span><span class="rdash-earn-val">' + _rdashMoney(e.cost) + '</span><span class="rdash-earn-sub">' + e.costCount + ' compra' + (e.costCount !== 1 ? 's' : '') + '</span></div>' +
       '<div class="rdash-earn-cell"><span class="rdash-earn-label">Lucro estimado</span><span class="rdash-earn-val rdash-earn-' + profitClass + '">' + _rdashMoney(e.profit) + '</span><span class="rdash-earn-sub">margem ' + e.margin + '%</span></div>' +
       '<div class="rdash-earn-cell"><span class="rdash-earn-label">Receita 30 dias</span><span class="rdash-earn-val">' + _rdashMoney(e.revenue30) + '</span><span class="rdash-earn-sub">' + e.logins30 + ' recente' + (e.logins30 !== 1 ? 's' : '') + '</span></div>' +
     '</div>' +
     (readOnly ? '' :
-      '<div class="rdash-earn-tools">' +
-        '<div class="rdash-price-box">' +
-          '<label class="rdash-price-label">Preço de revenda por login</label>' +
-          '<div class="rdash-price-row">' +
-            '<span class="rdash-price-prefix">R$</span>' +
-            '<input type="text" id="rdash-price-input" class="rdash-price-input" value="' + e.price.toFixed(2).replace('.', ',') + '" inputmode="decimal"/>' +
-            '<button type="button" id="rdash-price-save" class="rdash-price-save">Salvar</button>' +
-          '</div>' +
+      '<div class="rdash-price-panel">' +
+        '<div class="rdash-price-title">Seus preços de revenda</div>' +
+        '<p class="rdash-price-explain">Quanto <strong>você cobra do seu cliente</strong> por cada acesso, conforme a duração. Serve só para <strong>estimar sua receita e seu lucro</strong> acima — não cobra nada de ninguém automaticamente.</p>' +
+        '<div class="rdash-price-grid">' +
+          priceField('rdash-price-dia', 'Diária', '1 dia', p.dia) +
+          priceField('rdash-price-semana', 'Semanal', 'até 7 dias', p.semana) +
+          priceField('rdash-price-mes', 'Mensal', '15 a 30 dias', p.mes) +
         '</div>' +
-        '<div class="rdash-aff-box">' +
-          '<label class="rdash-price-label">Seu link de afiliado</label>' +
-          '<div class="rdash-price-row">' +
-            '<input type="text" id="rdash-aff-link" class="rdash-price-input rdash-aff-input" value="' + esc(link) + '" readonly/>' +
-            '<button type="button" id="rdash-aff-copy" class="rdash-price-save" data-link="' + esc(link) + '">Copiar</button>' +
-          '</div>' +
+        '<button type="button" id="rdash-price-save" class="rdash-price-save rdash-price-save-full">Salvar preços</button>' +
+      '</div>' +
+      '<div class="rdash-aff-box">' +
+        '<label class="rdash-price-label">Seu link de afiliado</label>' +
+        '<p class="rdash-price-explain">Divulgue este link. Quem entrar por ele e comprar um plano gera comissão para você.</p>' +
+        '<div class="rdash-price-row">' +
+          '<input type="text" id="rdash-aff-link" class="rdash-price-input rdash-aff-input" value="' + esc(link) + '" readonly/>' +
+          '<button type="button" id="rdash-aff-copy" class="rdash-price-save" data-link="' + esc(link) + '">Copiar</button>' +
         '</div>' +
       '</div>') +
   '</div>';
@@ -725,15 +737,18 @@ function renderResellerDashboard() {
     });
   }
 
-  // Preço de revenda personalizável + recálculo dos ganhos.
-  const priceInput = document.getElementById('rdash-price-input');
+  // Preços de revenda por duração + recálculo dos ganhos.
   const priceSave = document.getElementById('rdash-price-save');
-  if (priceSave && priceInput) {
+  if (priceSave) {
     priceSave.addEventListener('click', () => {
-      const v = parseFloat(String(priceInput.value).replace(',', '.'));
-      if (!(v > 0)) { if (typeof showToast === 'function') showToast('Informe um preço válido.', 'error'); return; }
-      if (typeof setResellerPrice === 'function') setResellerPrice(reseller, v);
-      if (typeof showToast === 'function') showToast('Preço de revenda salvo.');
+      const num = (id) => parseFloat(String((document.getElementById(id) || {}).value || '').replace(',', '.'));
+      const dia = num('rdash-price-dia'), semana = num('rdash-price-semana'), mes = num('rdash-price-mes');
+      if (!(dia > 0) || !(semana > 0) || !(mes > 0)) {
+        if (typeof showToast === 'function') showToast('Informe valores válidos nos três preços.', 'error');
+        return;
+      }
+      if (typeof setResellerPrices === 'function') setResellerPrices(reseller, { dia: dia, semana: semana, mes: mes });
+      if (typeof showToast === 'function') showToast('Preços de revenda salvos.');
       renderResellerDashboard();
     });
   }

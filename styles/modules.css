@@ -2942,3 +2942,22 @@ body.user-reseller-client #view-loja {
   font-family: inherit; cursor: pointer; white-space: nowrap; transition: background 0.15s;
 }
 .rdash-price-save:hover { background: rgba(74,222,128,0.2); }
+
+/* ── Preços de revenda por duração + textos explicativos ── */
+.rdash-price-panel {
+  margin-top: 14px; padding: 14px;
+  background: rgba(255,255,255,0.02); border: 1px solid var(--border); border-radius: 12px;
+}
+.rdash-price-title { font-size: 13px; font-weight: 800; color: var(--text); margin-bottom: 6px; }
+.rdash-price-explain { font-size: 12px; color: var(--text2); line-height: 1.5; margin: 0 0 12px; }
+.rdash-price-explain strong { color: var(--text); font-weight: 700; }
+.rdash-price-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+@media (max-width: 560px) { .rdash-price-grid { grid-template-columns: 1fr; } }
+.rdash-price-field { display: flex; flex-direction: column; }
+.rdash-price-label {
+  display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap;
+  font-size: 12px; font-weight: 700; color: var(--text); margin-bottom: 6px;
+}
+.rdash-price-dur { font-size: 10px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: 0.04em; }
+.rdash-price-save-full { width: 100%; margin-top: 12px; }
+.rdash-aff-box { margin-top: 14px; }

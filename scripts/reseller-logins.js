@@ -331,37 +331,55 @@ function addResellerCreditHistory(reseller, amount, label) {
   } catch {}
 }
 
-// ── Preço de revenda personalizado (por revendedor) ────────────────────────
-const RESELLER_PRICE_KEY = 'bds_reseller_price';
-const RESELLER_DEFAULT_PRICE = 15; // preço sugerido por login vendido ao cliente
+// ── Preços de revenda por duração (por revendedor) ──────────────────────────
+// Quanto o revendedor cobra do cliente por um acesso de 1 dia / 1 semana / 1 mês.
+const RESELLER_PRICES_KEY = 'bds_reseller_prices';
+const RESELLER_DEFAULT_PRICES = { dia: 10, semana: 25, mes: 40 };
 
-function getResellerPrice(reseller) {
+function getResellerPrices(reseller) {
   try {
-    const store = JSON.parse(localStorage.getItem(RESELLER_PRICE_KEY)) || {};
-    const v = Number(store[normalizeResellerKey(reseller)]);
-    return v > 0 ? v : RESELLER_DEFAULT_PRICE;
-  } catch { return RESELLER_DEFAULT_PRICE; }
+    const store = JSON.parse(localStorage.getItem(RESELLER_PRICES_KEY)) || {};
+    const p = store[normalizeResellerKey(reseller)] || {};
+    return {
+      dia:    Number(p.dia)    > 0 ? Number(p.dia)    : RESELLER_DEFAULT_PRICES.dia,
+      semana: Number(p.semana) > 0 ? Number(p.semana) : RESELLER_DEFAULT_PRICES.semana,
+      mes:    Number(p.mes)    > 0 ? Number(p.mes)    : RESELLER_DEFAULT_PRICES.mes,
+    };
+  } catch (e) { return Object.assign({}, RESELLER_DEFAULT_PRICES); }
 }
 
-function setResellerPrice(reseller, price) {
+function setResellerPrices(reseller, prices) {
   const key = normalizeResellerKey(reseller);
-  const v = Number(price);
-  if (!key || !(v > 0)) return false;
+  if (!key || !prices) return false;
   try {
-    const store = JSON.parse(localStorage.getItem(RESELLER_PRICE_KEY)) || {};
-    store[key] = Math.round(v * 100) / 100;
-    localStorage.setItem(RESELLER_PRICE_KEY, JSON.stringify(store));
+    const store = JSON.parse(localStorage.getItem(RESELLER_PRICES_KEY)) || {};
+    const cur = store[key] || {};
+    ['dia', 'semana', 'mes'].forEach(function (k) {
+      const v = Number(prices[k]);
+      if (v > 0) cur[k] = Math.round(v * 100) / 100;
+    });
+    store[key] = cur;
+    localStorage.setItem(RESELLER_PRICES_KEY, JSON.stringify(store));
     return true;
-  } catch { return false; }
+  } catch (e) { return false; }
+}
+
+// Escolhe o preço conforme a duração do acesso (em dias).
+function _resellerPriceForDays(prices, days) {
+  days = Number(days) || 0;
+  if (days <= 1) return prices.dia;
+  if (days <= 7) return prices.semana;
+  return prices.mes;
 }
 
 // ── Relatório de ganhos do revendedor ───────────────────────────────────────
 // Custo = quanto o revendedor gastou comprando pacotes (vendas category=reseller,
-// buyer=revendedor). Receita estimada = logins criados × preço de revenda.
+// buyer=revendedor). Receita estimada = soma do preço de revenda de cada acesso
+// criado, conforme a duração dele.
 function getResellerEarnings(reseller) {
   const key = normalizeResellerKey(reseller);
   const logins = getResellerLoginsFor(reseller);
-  const price = getResellerPrice(reseller);
+  const prices = getResellerPrices(reseller);
   const now = Date.now();
   const d30 = now - 30 * RESELLER_DAY_MS;
 
@@ -376,15 +394,20 @@ function getResellerEarnings(reseller) {
     });
   } catch (e) {}
 
+  let revenue = 0, revenue30 = 0;
+  logins.forEach(function (l) {
+    const p = _resellerPriceForDays(prices, l.days);
+    revenue += p;
+    if ((l.createdAt || 0) >= d30) revenue30 += p;
+  });
+
   const loginsTotal = logins.length;
   const logins30 = logins.filter(function (l) { return (l.createdAt || 0) >= d30; }).length;
-  const revenue = loginsTotal * price;
-  const revenue30 = logins30 * price;
   const profit = revenue - cost;
   const margin = revenue > 0 ? Math.round((profit / revenue) * 100) : 0;
 
   return {
-    price: price,
+    prices: prices,
     loginsTotal: loginsTotal,
     logins30: logins30,
     cost: cost,
@@ -470,8 +493,8 @@ window.isUnlimitedResellerCredits = isUnlimitedResellerCredits;
 window.grantUnlimitedResellerCredits = grantUnlimitedResellerCredits;
 window.formatResellerCredits = formatResellerCredits;
 window.RESELLER_UNLIMITED_CREDITS = RESELLER_UNLIMITED_CREDITS;
-window.getResellerPrice = getResellerPrice;
-window.setResellerPrice = setResellerPrice;
+window.getResellerPrices = getResellerPrices;
+window.setResellerPrices = setResellerPrices;
 window.getResellerEarnings = getResellerEarnings;
 window.getResellerAffiliateLink = getResellerAffiliateLink;
 try { captureAffiliateRef(); } catch (e) {}
