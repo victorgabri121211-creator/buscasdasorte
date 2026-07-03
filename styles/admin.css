@@ -918,6 +918,59 @@ body.user-admin #view-revendedor-painel.app-view.active {
 /* feed de vendas dentro do painel: remove indentação dupla */
 .sales-recent-panel .sdash-item { padding-left: 4px; padding-right: 4px; }
 
+/* ── Header actions (export + sync) ── */
+.sdash-header-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.admin-sync-btn-ghost {
+  background: rgba(255,255,255,0.04);
+  border-color: var(--border);
+  color: var(--text2);
+}
+.admin-sync-btn-ghost:hover { color: var(--text); border-color: var(--border2); }
+
+/* ── Seletor de período ── */
+.sdash-period {
+  display: inline-flex; gap: 2px; padding: 3px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+.sdash-period-btn {
+  font-family: inherit; font-size: 12px; font-weight: 700;
+  padding: 5px 11px; border-radius: 7px; border: none;
+  background: transparent; color: var(--text2); cursor: pointer;
+  transition: background 0.15s, color 0.15s; font-variant-numeric: tabular-nums;
+}
+.sdash-period-btn:hover:not(.active) { color: var(--text); }
+.sdash-period-btn.active { background: rgba(74,222,128,0.14); color: #4ade80; }
+
+.sdash-legend-row { margin-bottom: 14px; }
+.sdash-panel-hint { font-size: 11px; color: var(--text3); }
+
+/* ── Ranking de produtos ── */
+.sdash-ranking { display: flex; flex-direction: column; gap: 12px; }
+.sdash-rank-empty { text-align: center; color: var(--text3); font-size: 13px; padding: 16px 0; margin: 0; }
+.sdash-rank-row { display: flex; align-items: flex-start; gap: 12px; }
+.sdash-rank-pos {
+  width: 22px; height: 22px; flex-shrink: 0; margin-top: 1px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 7px; font-size: 11px; font-weight: 800;
+  background: rgba(255,255,255,0.05); color: var(--text2);
+  font-variant-numeric: tabular-nums;
+}
+.sdash-rank-row:first-child .sdash-rank-pos { background: rgba(251,191,36,0.15); color: #fbbf24; }
+.sdash-rank-body { flex: 1; min-width: 0; }
+.sdash-rank-line { display: flex; justify-content: space-between; gap: 10px; margin-bottom: 5px; }
+.sdash-rank-name {
+  font-size: 13px; font-weight: 600; color: var(--text);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.sdash-rank-amount { font-size: 13px; font-weight: 800; color: var(--text); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.sdash-rank-bar { height: 6px; border-radius: 999px; background: rgba(255,255,255,0.05); overflow: hidden; }
+.sdash-rank-fill { display: block; height: 100%; border-radius: 999px; }
+.sdash-rank-fill.is-plan { background: linear-gradient(90deg, #3b82f6, #60a5fa); }
+.sdash-rank-fill.is-res  { background: linear-gradient(90deg, #ea580c, #fb923c); }
+.sdash-rank-meta { font-size: 11px; color: var(--text3); margin-top: 4px; }
+
 .sales-recent-panel {
   margin-bottom: 24px;
   padding: 16px 18px;

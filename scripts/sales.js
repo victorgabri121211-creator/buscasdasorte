@@ -2,6 +2,7 @@
 const SALES_STORE_KEY = 'bds_sales';
 const DAY_MS = 24 * 60 * 60 * 1000;
 var _salesTab = 'recent';
+var _sdashPeriod = 7; // 7 | 30 | 90 dias (filtro do gráfico e ranking)
 
 function getSalesList() {
   try {
@@ -254,26 +255,50 @@ window.switchSalesTab = function(tab) {
   renderSalesPanel();
 };
 
-function getSalesLast7Days() {
+// Série de receita agrupada em blocos, adaptando ao período escolhido.
+function getSalesSeries(periodDays) {
   const sales = getSalesList();
-  const days = [];
-  for (let i = 6; i >= 0; i--) {
-    const d = new Date();
-    d.setHours(0, 0, 0, 0);
-    d.setDate(d.getDate() - i);
-    const start = d.getTime();
-    const end = start + DAY_MS - 1;
-    const label = d.toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', '');
-    const dayLabel = d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+  let buckets, bucketDays, mode;
+  if (periodDays <= 7)       { buckets = 7;  bucketDays = 1;  mode = 'day'; }
+  else if (periodDays <= 30) { buckets = 10; bucketDays = 3;  mode = 'range'; }
+  else                       { buckets = 9;  bucketDays = 10; mode = 'range'; }
+
+  const todayStart = startOfLocalDay(Date.now());
+  const out = [];
+  for (let k = buckets - 1; k >= 0; k--) {
+    const start = todayStart - (k * bucketDays + (bucketDays - 1)) * DAY_MS;
+    const end   = todayStart - (k * bucketDays) * DAY_MS + DAY_MS - 1;
     let plan = 0, reseller = 0;
     sales.forEach(s => {
       if (s.ts >= start && s.ts <= end) {
         if (s.category === 'reseller') reseller += s.amount; else plan += s.amount;
       }
     });
-    days.push({ label: label, dayLabel: dayLabel, plan: plan, reseller: reseller, total: plan + reseller, isToday: i === 0 });
+    const sd = new Date(start);
+    const ed = new Date(end);
+    const label = mode === 'day'
+      ? sd.toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', '')
+      : sd.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+    const dayLabel = mode === 'day'
+      ? sd.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
+      : sd.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }) + '–' + ed.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+    out.push({ label: label, dayLabel: dayLabel, plan: plan, reseller: reseller, total: plan + reseller, isToday: k === 0 });
   }
-  return days;
+  return out;
+}
+
+// Ranking de produtos por receita no período.
+function getProductRanking(periodDays) {
+  const start = startOfLocalDay(Date.now()) - (periodDays - 1) * DAY_MS;
+  const map = {};
+  getSalesList().forEach(s => {
+    if (s.ts < start) return;
+    const key = s.label || s.productId || '—';
+    if (!map[key]) map[key] = { label: key, amount: 0, count: 0, category: s.category };
+    map[key].amount += s.amount;
+    map[key].count += 1;
+  });
+  return Object.keys(map).map(k => map[k]).sort((a, b) => b.amount - a.amount).slice(0, 6);
 }
 
 // "nice" ceiling para o eixo Y (ex: 137 -> 150, 1240 -> 1500)
@@ -288,7 +313,7 @@ function _sdashNiceMax(v) {
 function renderSalesChart() {
   const chartWrap = document.getElementById('sales-chart-wrap');
   if (!chartWrap) return;
-  const days = getSalesLast7Days();
+  const days = getSalesSeries(_sdashPeriod);
   const rawMax = Math.max.apply(null, days.map(d => d.total).concat([1]));
   const max = _sdashNiceMax(rawMax);
 
@@ -353,6 +378,106 @@ function renderSalesChart() {
   });
 }
 
+function renderProductRanking() {
+  const el = document.getElementById('sdash-ranking');
+  if (!el) return;
+  const items = getProductRanking(_sdashPeriod);
+  if (!items.length) {
+    el.innerHTML = '<p class="sdash-rank-empty">Nenhuma venda no período.</p>';
+    return;
+  }
+  const max = items[0].amount || 1;
+  el.innerHTML = items.map(function (it, i) {
+    const pct = Math.max(4, Math.round((it.amount / max) * 100));
+    const isRes = it.category === 'reseller';
+    return '<div class="sdash-rank-row">' +
+      '<span class="sdash-rank-pos">' + (i + 1) + '</span>' +
+      '<div class="sdash-rank-body">' +
+        '<div class="sdash-rank-line">' +
+          '<span class="sdash-rank-name">' + escSale(it.label) + '</span>' +
+          '<span class="sdash-rank-amount">' + formatSaleMoney(it.amount) + '</span>' +
+        '</div>' +
+        '<div class="sdash-rank-bar"><span class="sdash-rank-fill ' + (isRes ? 'is-res' : 'is-plan') + '" style="width:' + pct + '%"></span></div>' +
+        '<div class="sdash-rank-meta">' + it.count + ' venda' + (it.count !== 1 ? 's' : '') + '</div>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+
+// Exporta todas as vendas em CSV (separador ; para o Excel BR, com BOM).
+function exportSalesCSV() {
+  const sales = getSalesList().slice().sort(function (a, b) { return b.ts - a.ts; });
+  const rows = [['Data', 'Categoria', 'Produto', 'Comprador', 'Valor']];
+  sales.forEach(function (s) {
+    rows.push([
+      new Date(s.ts).toLocaleString('pt-BR'),
+      s.category === 'reseller' ? 'Revenda' : 'Plano',
+      s.label || s.productId || '',
+      s.buyer || '',
+      formatSaleMoney(s.amount),
+    ]);
+  });
+  const csv = rows.map(function (r) {
+    return r.map(function (c) { return '"' + String(c).replace(/"/g, '""') + '"'; }).join(';');
+  }).join('\r\n');
+  const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'vendas-buscasdasorte-' + new Date().toISOString().slice(0, 10) + '.csv';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+}
+window.exportSalesCSV = exportSalesCSV;
+
+// Troca o período do gráfico/ranking sem re-renderizar o dashboard inteiro.
+window.sdashSetPeriod = function (p) {
+  _sdashPeriod = Number(p) || 7;
+  document.querySelectorAll('.sdash-period-btn').forEach(function (b) {
+    b.classList.toggle('active', Number(b.getAttribute('data-period')) === _sdashPeriod);
+  });
+  const titleEl = document.getElementById('sdash-chart-title');
+  if (titleEl) titleEl.textContent = 'Receita — últimos ' + _sdashPeriod + ' dias';
+  renderSalesChart();
+  renderProductRanking();
+};
+
+// Detecta vendas novas desde o último render e avisa (tempo real via sync).
+function _sdashDetectNewSales() {
+  try {
+    const sales = getSalesList();
+    if (window._sdashSeenSales) {
+      const fresh = sales.filter(function (s) { return !window._sdashSeenSales.has(s.id); });
+      if (fresh.length && typeof showToast === 'function') {
+        const f = fresh.slice().sort(function (a, b) { return b.ts - a.ts; })[0];
+        showToast('Nova venda: ' + f.label + ' — ' + formatSaleMoney(f.amount), 'success');
+      }
+    }
+    window._sdashSeenSales = new Set(sales.map(function (s) { return s.id; }));
+  } catch (e) { /* ignore */ }
+}
+
+// Polling leve enquanto o dashboard admin está visível (near real-time).
+function _sdashStartPolling() {
+  if (window._sdashPollTimer) clearInterval(window._sdashPollTimer);
+  window._sdashPollTimer = setInterval(function () {
+    const view = document.getElementById('view-admin-dashboard');
+    if (!view || !view.classList.contains('active')) {
+      clearInterval(window._sdashPollTimer);
+      window._sdashPollTimer = null;
+      return;
+    }
+    if (typeof DB !== 'undefined' && DB.isConfigured()) {
+      const before = getSalesList().length;
+      DB.syncSales().then(function () {
+        if (getSalesList().length !== before) renderSalesDashboard();
+      }).catch(function () {});
+    }
+  }, 30000);
+}
+
 function renderSalesDashboard() {
   const root = document.getElementById('sales-dashboard');
   if (!root) return;
@@ -382,10 +507,16 @@ function renderSalesDashboard() {
           '<p class="sdash-sub">' + escSale(hoje.charAt(0).toUpperCase() + hoje.slice(1)) + '</p>' +
         '</div>' +
       '</div>' +
-      '<button type="button" class="admin-sync-btn" onclick="adminSyncFromSupabase()">' +
-        '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>' +
-        'Sincronizar' +
-      '</button>' +
+      '<div class="sdash-header-actions">' +
+        '<button type="button" class="admin-sync-btn admin-sync-btn-ghost" onclick="exportSalesCSV()">' +
+          '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>' +
+          'Exportar CSV' +
+        '</button>' +
+        '<button type="button" class="admin-sync-btn" onclick="adminSyncFromSupabase()">' +
+          '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>' +
+          'Sincronizar' +
+        '</button>' +
+      '</div>' +
     '</div>' +
 
     '<div class="sdash-kpis">' +
@@ -416,11 +547,16 @@ function renderSalesDashboard() {
 
     '<div class="sdash-panel">' +
       '<div class="sdash-panel-head">' +
-        '<h4 class="sdash-panel-title">Receita dos últimos 7 dias</h4>' +
-        '<div class="sdash-legend">' +
-          '<span class="sdash-legend-item"><span class="sdash-legend-dot sdash-dot-plan"></span>Planos</span>' +
-          '<span class="sdash-legend-item"><span class="sdash-legend-dot sdash-dot-res"></span>Revenda</span>' +
+        '<h4 class="sdash-panel-title" id="sdash-chart-title">Receita — últimos ' + _sdashPeriod + ' dias</h4>' +
+        '<div class="sdash-period">' +
+          [7, 30, 90].map(function (p) {
+            return '<button type="button" class="sdash-period-btn' + (p === _sdashPeriod ? ' active' : '') + '" data-period="' + p + '" onclick="sdashSetPeriod(' + p + ')">' + p + 'd</button>';
+          }).join('') +
         '</div>' +
+      '</div>' +
+      '<div class="sdash-legend sdash-legend-row">' +
+        '<span class="sdash-legend-item"><span class="sdash-legend-dot sdash-dot-plan"></span>Planos</span>' +
+        '<span class="sdash-legend-item"><span class="sdash-legend-dot sdash-dot-res"></span>Revenda</span>' +
       '</div>' +
       '<div class="sales-chart-wrap" id="sales-chart-wrap"></div>' +
       (splitTotal > 0
@@ -437,10 +573,21 @@ function renderSalesDashboard() {
         : '') +
     '</div>' +
 
+    '<div class="sdash-panel">' +
+      '<div class="sdash-panel-head">' +
+        '<h4 class="sdash-panel-title">Produtos mais vendidos</h4>' +
+        '<span class="sdash-panel-hint">no período selecionado</span>' +
+      '</div>' +
+      '<div class="sdash-ranking" id="sdash-ranking"></div>' +
+    '</div>' +
+
     '</div>';
 
   renderSalesChart();
+  renderProductRanking();
   renderSalesPanel();
+  _sdashDetectNewSales();
+  _sdashStartPolling();
 }
 
 function escSale(s) {
