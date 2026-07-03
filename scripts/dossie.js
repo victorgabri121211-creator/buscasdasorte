@@ -668,17 +668,34 @@ function pickRecordField(rec, keys) {
   return null;
 }
 
+// Chaves que são sub-listas DENTRO de um perfil (parentes, endereços...) e que
+// NÃO devem ser confundidas com "lista de pessoas encontradas". Sem isso, ao
+// abrir o perfil de um CPF o dossiê mostraria os parentes/vizinhos como se
+// fossem os resultados da busca (bug: "aparece outra pessoa aleatória").
+const REC_SUBLIST_KEYS = new Set([
+  'parentes', 'vizinhos', 'enderecos', 'endereços', 'telefones', 'telefone',
+  'emails', 'e-mails', 'veiculos', 'veículos', 'familiares', 'contatos',
+  'socios', 'sócios', 'empresas', 'phones', 'addresses',
+]);
+
 // Retorna um array de registros (com CPF) se o payload for uma lista de pessoas.
 function detectRecordList(payload) {
   if (!payload || typeof payload !== 'object') return null;
+
+  // Se o objeto raiz já é um perfil de UMA pessoa (tem CPF próprio no topo),
+  // não é uma lista de resultados — é o perfil clicado. Evita renderizar os
+  // parentes/vizinhos embutidos como se fossem "outras pessoas encontradas".
+  if (!Array.isArray(payload) && recFindCpf(payload)) return null;
+
   let arr = null;
   if (Array.isArray(payload)) {
     arr = payload;
   } else {
-    const cands = ['results', 'result', 'data', 'list', 'items', 'pessoas', 'registros', 'matches', 'records', 'rows', 'lista', 'resultados'];
+    const cands = ['results', 'result', 'list', 'items', 'pessoas', 'registros', 'matches', 'records', 'rows', 'lista', 'resultados'];
     for (const c of cands) { if (Array.isArray(payload[c])) { arr = payload[c]; break; } }
     if (!arr) {
       for (const k of Object.keys(payload)) {
+        if (REC_SUBLIST_KEYS.has(k.toLowerCase())) continue;
         const v = payload[k];
         if (Array.isArray(v) && v.length && typeof v[0] === 'object' && recFindCpf(v[0])) { arr = v; break; }
       }
