@@ -191,7 +191,7 @@
   // ── Vendas ────────────────────────────────────────────────────────────────
 
   function recordSale(sale) {
-    return _rpc('bds_record_sale', {
+    var base = {
       p_id:         sale.id,
       p_tx_id:      sale.txId || null,
       p_ts:         sale.ts || Date.now(),
@@ -200,7 +200,22 @@
       p_label:      sale.label || '',
       p_amount:     Number(sale.amount) || 0,
       p_buyer:      sale.buyer || ''
+    };
+    var ref = null;
+    try { ref = localStorage.getItem('bds_affiliate_ref') || null; } catch (e) {}
+    if (!ref) return _rpc('bds_record_sale', base);
+    // Tenta com afiliado; se a função ainda não tiver o parâmetro p_ref
+    // (migração não aplicada), refaz sem — sem perder o registro da venda.
+    var withRef = Object.assign({}, base, { p_ref: ref });
+    return _rpc('bds_record_sale', withRef).then(function (r) {
+      if (r && r.ok) return r;
+      return _rpc('bds_record_sale', base);
     });
+  }
+
+  // Relatório de indicações do afiliado (revendedor).
+  function getAffiliateReport(reseller) {
+    return _rpc('bds_get_affiliate_report', { p_reseller: reseller });
   }
 
   // ── Revendedor: logins ─────────────────────────────────────────────────────
@@ -296,6 +311,7 @@
     deactivateResellerLogin: deactivateResellerLogin,
     deleteResellerLogin: deleteResellerLogin,
     recordSale: recordSale,
+    getAffiliateReport: getAffiliateReport,
     syncSales: syncSales
   };
 

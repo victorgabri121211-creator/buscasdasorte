@@ -284,19 +284,66 @@ create table if not exists bds_sales (
   label text,
   amount numeric(10,2),
   buyer text,
+  ref text,
+  commission numeric(10,2) default 0,
   created_at bigint default (extract(epoch from now()) * 1000)::bigint
 );
 
 alter table bds_sales enable row level security;
 
--- Registrar venda (chamado pelo browser do cliente após pagamento aprovado)
-create or replace function bds_record_sale(p_id text, p_tx_id text, p_ts bigint, p_category text, p_product_id text, p_label text, p_amount numeric, p_buyer text)
-returns jsonb language plpgsql security definer as $$
+-- Registrar venda (chamado pelo browser do cliente após pagamento aprovado).
+-- Atribui comissão de afiliado quando p_ref é um revendedor válido.
+-- Ver supabase-affiliate.sql para detalhes; comissão em v_rate (0.20 = 20%).
+create or replace function bds_record_sale(
+  p_id text, p_tx_id text, p_ts bigint, p_category text,
+  p_product_id text, p_label text, p_amount numeric, p_buyer text,
+  p_ref text default null
+) returns jsonb language plpgsql security definer as $$
+declare
+  v_rate       numeric := 0.20;
+  v_ref        text;
+  v_commission numeric(10,2) := 0;
+  v_is_reseller boolean := false;
 begin
-  insert into bds_sales(id, tx_id, ts, category, product_id, label, amount, buyer)
-  values(p_id, p_tx_id, p_ts, p_category, p_product_id, p_label, p_amount, p_buyer)
+  v_ref := nullif(trim(coalesce(p_ref, '')), '');
+  if v_ref is not null then
+    select coalesce(ra.enabled, false) into v_is_reseller
+    from bds_reseller_access ra where lower(ra.username) = lower(v_ref);
+    if coalesce(v_is_reseller, false) = false
+       or lower(v_ref) = lower(coalesce(p_buyer, '')) then
+      v_ref := null;
+    end if;
+  end if;
+  if v_ref is not null and p_category = 'plan' then
+    v_commission := round(coalesce(p_amount, 0) * v_rate, 2);
+  end if;
+  insert into bds_sales(id, tx_id, ts, category, product_id, label, amount, buyer, ref, commission)
+  values(p_id, p_tx_id, p_ts, p_category, p_product_id, p_label, p_amount, p_buyer, v_ref, v_commission)
   on conflict (id) do nothing;
-  return jsonb_build_object('ok', true);
+  return jsonb_build_object('ok', true, 'ref', v_ref, 'commission', v_commission);
+end; $$;
+
+-- Relatório de indicações por revendedor (afiliado)
+create or replace function bds_get_affiliate_report(p_reseller text)
+returns jsonb language plpgsql security definer as $$
+declare v_key text := lower(trim(coalesce(p_reseller, '')));
+begin
+  if v_key = '' then return jsonb_build_object('ok', false, 'msg', 'Revendedor inválido.'); end if;
+  return (
+    select jsonb_build_object(
+      'ok', true,
+      'referrals', coalesce(count(*), 0),
+      'revenue', coalesce(sum(amount), 0),
+      'commission', coalesce(sum(commission), 0),
+      'recent', coalesce((
+        select jsonb_agg(jsonb_build_object(
+          'ts', s2.ts, 'label', s2.label, 'amount', s2.amount, 'commission', s2.commission, 'buyer', s2.buyer
+        ) order by s2.ts desc)
+        from (select * from bds_sales where lower(ref) = v_key order by ts desc limit 20) s2
+      ), '[]'::jsonb)
+    )
+    from bds_sales where lower(ref) = v_key
+  );
 end; $$;
 
 -- ── Permissões de acesso (anon pode chamar as funções) ─────────────────────
@@ -313,6 +360,7 @@ grant execute on function bds_admin_clear_plan(text, text) to anon;
 grant execute on function bds_admin_set_reseller(text, text, boolean) to anon;
 grant execute on function bds_admin_add_credits(text, text, integer) to anon;
 grant execute on function bds_create_reseller_login(text, text, text, integer) to anon;
-grant execute on function bds_record_sale(text, text, bigint, text, text, text, numeric, text) to anon;
+grant execute on function bds_record_sale(text, text, bigint, text, text, text, numeric, text, text) to anon;
+grant execute on function bds_get_affiliate_report(text) to anon;
 grant execute on function bds_deactivate_reseller_login(text, text) to anon;
 grant execute on function bds_delete_reseller_login(text, text) to anon;
