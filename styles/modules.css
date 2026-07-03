@@ -2902,3 +2902,43 @@ body.user-reseller-client #view-loja {
 .maintenance-collapse-body.open > .mod-grid {
   display: grid;
 }
+
+/* ── Relatório de ganhos do revendedor ── */
+.rdash-earn {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 16px; padding: 18px; margin-bottom: 16px;
+}
+.rdash-earn-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
+.rdash-earn-title { font-size: 14px; font-weight: 800; color: var(--text); margin: 0; }
+.rdash-earn-hint { font-size: 11px; color: var(--text3); }
+.rdash-earn-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+@media (max-width: 640px) { .rdash-earn-grid { grid-template-columns: 1fr 1fr; } }
+.rdash-earn-cell {
+  display: flex; flex-direction: column; gap: 3px;
+  padding: 12px 14px; border-radius: 12px;
+  background: rgba(255,255,255,0.02); border: 1px solid var(--border);
+}
+.rdash-earn-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text2); }
+.rdash-earn-val { font-size: 20px; font-weight: 800; color: var(--text); line-height: 1.1; font-variant-numeric: tabular-nums; }
+.rdash-earn-val.rdash-earn-pos { color: #4ade80; }
+.rdash-earn-val.rdash-earn-neg { color: #f87171; }
+.rdash-earn-sub { font-size: 11px; color: var(--text3); }
+
+.rdash-earn-tools { display: grid; grid-template-columns: 1fr 1.4fr; gap: 12px; margin-top: 14px; }
+@media (max-width: 640px) { .rdash-earn-tools { grid-template-columns: 1fr; } }
+.rdash-price-label { display: block; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text2); margin-bottom: 6px; }
+.rdash-price-row { display: flex; align-items: center; gap: 6px; }
+.rdash-price-prefix { font-size: 14px; color: var(--text2); font-weight: 700; }
+.rdash-price-input {
+  flex: 1; min-width: 0; padding: 9px 12px; border-radius: 10px;
+  background: var(--bg3, #141414); border: 1px solid var(--border); color: var(--text);
+  font-size: 14px; font-family: inherit; outline: none; transition: border-color 0.15s;
+}
+.rdash-price-input:focus { border-color: rgba(74,222,128,0.4); }
+.rdash-aff-input { font-family: 'SF Mono', ui-monospace, monospace; font-size: 12px; }
+.rdash-price-save {
+  padding: 9px 15px; border-radius: 10px; border: 1px solid rgba(74,222,128,0.3);
+  background: rgba(74,222,128,0.1); color: #4ade80; font-size: 13px; font-weight: 700;
+  font-family: inherit; cursor: pointer; white-space: nowrap; transition: background 0.15s;
+}
+.rdash-price-save:hover { background: rgba(74,222,128,0.2); }

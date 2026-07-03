@@ -521,6 +521,51 @@ function renderResellerPackages() {
   });
 }
 
+function _rdashMoney(v) {
+  return 'R$ ' + (Number(v) || 0).toFixed(2).replace('.', ',');
+}
+
+// Painel de ganhos + preço de revenda + link de afiliado.
+function _resellerEarningsHtml(reseller, readOnly) {
+  const esc = typeof escAdmin === 'function' ? escAdmin : (s) => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  const e = typeof getResellerEarnings === 'function'
+    ? getResellerEarnings(reseller)
+    : { price: 0, loginsTotal: 0, cost: 0, revenue: 0, profit: 0, margin: 0, revenue30: 0 };
+  const link = typeof getResellerAffiliateLink === 'function' ? getResellerAffiliateLink(reseller) : '';
+  const profitClass = e.profit >= 0 ? 'pos' : 'neg';
+
+  return '<div class="rdash-earn">' +
+    '<div class="rdash-earn-head">' +
+      '<h4 class="rdash-earn-title">Relatório de ganhos</h4>' +
+      '<span class="rdash-earn-hint">Estimativa por ' + _rdashMoney(e.price) + ' / login</span>' +
+    '</div>' +
+    '<div class="rdash-earn-grid">' +
+      '<div class="rdash-earn-cell"><span class="rdash-earn-label">Receita estimada</span><span class="rdash-earn-val">' + _rdashMoney(e.revenue) + '</span><span class="rdash-earn-sub">' + e.loginsTotal + ' login' + (e.loginsTotal !== 1 ? 's' : '') + ' vendido' + (e.loginsTotal !== 1 ? 's' : '') + '</span></div>' +
+      '<div class="rdash-earn-cell"><span class="rdash-earn-label">Custo (créditos)</span><span class="rdash-earn-val">' + _rdashMoney(e.cost) + '</span><span class="rdash-earn-sub">' + e.costCount + ' compra' + (e.costCount !== 1 ? 's' : '') + '</span></div>' +
+      '<div class="rdash-earn-cell"><span class="rdash-earn-label">Lucro estimado</span><span class="rdash-earn-val rdash-earn-' + profitClass + '">' + _rdashMoney(e.profit) + '</span><span class="rdash-earn-sub">margem ' + e.margin + '%</span></div>' +
+      '<div class="rdash-earn-cell"><span class="rdash-earn-label">Receita 30 dias</span><span class="rdash-earn-val">' + _rdashMoney(e.revenue30) + '</span><span class="rdash-earn-sub">' + e.logins30 + ' recente' + (e.logins30 !== 1 ? 's' : '') + '</span></div>' +
+    '</div>' +
+    (readOnly ? '' :
+      '<div class="rdash-earn-tools">' +
+        '<div class="rdash-price-box">' +
+          '<label class="rdash-price-label">Preço de revenda por login</label>' +
+          '<div class="rdash-price-row">' +
+            '<span class="rdash-price-prefix">R$</span>' +
+            '<input type="text" id="rdash-price-input" class="rdash-price-input" value="' + e.price.toFixed(2).replace('.', ',') + '" inputmode="decimal"/>' +
+            '<button type="button" id="rdash-price-save" class="rdash-price-save">Salvar</button>' +
+          '</div>' +
+        '</div>' +
+        '<div class="rdash-aff-box">' +
+          '<label class="rdash-price-label">Seu link de afiliado</label>' +
+          '<div class="rdash-price-row">' +
+            '<input type="text" id="rdash-aff-link" class="rdash-price-input rdash-aff-input" value="' + esc(link) + '" readonly/>' +
+            '<button type="button" id="rdash-aff-copy" class="rdash-price-save" data-link="' + esc(link) + '">Copiar</button>' +
+          '</div>' +
+        '</div>' +
+      '</div>') +
+  '</div>';
+}
+
 function renderResellerDashboard() {
   const root = document.getElementById('reseller-dashboard-root');
   if (!root) return;
@@ -655,6 +700,8 @@ function renderResellerDashboard() {
         '</div>' +
       '</div>' +
 
+      _resellerEarningsHtml(reseller, readOnly) +
+
       formHtml +
 
       '<div class="sdash-recent">' +
@@ -675,6 +722,35 @@ function renderResellerDashboard() {
     buyBtn.addEventListener('click', () => {
       if (isAdminView) { if (typeof showToast === 'function') showToast('O revendedor deve comprar créditos na Área do Revendedor.', 'info'); return; }
       showAppView('revendedor');
+    });
+  }
+
+  // Preço de revenda personalizável + recálculo dos ganhos.
+  const priceInput = document.getElementById('rdash-price-input');
+  const priceSave = document.getElementById('rdash-price-save');
+  if (priceSave && priceInput) {
+    priceSave.addEventListener('click', () => {
+      const v = parseFloat(String(priceInput.value).replace(',', '.'));
+      if (!(v > 0)) { if (typeof showToast === 'function') showToast('Informe um preço válido.', 'error'); return; }
+      if (typeof setResellerPrice === 'function') setResellerPrice(reseller, v);
+      if (typeof showToast === 'function') showToast('Preço de revenda salvo.');
+      renderResellerDashboard();
+    });
+  }
+
+  // Copiar link de afiliado.
+  const affBtn = document.getElementById('rdash-aff-copy');
+  if (affBtn) {
+    affBtn.addEventListener('click', () => {
+      const link = affBtn.getAttribute('data-link') || '';
+      const done = () => { if (typeof showToast === 'function') showToast('Link copiado!'); };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(link).then(done).catch(() => {
+          const inp = document.getElementById('rdash-aff-link'); if (inp) { inp.select(); document.execCommand('copy'); done(); }
+        });
+      } else {
+        const inp = document.getElementById('rdash-aff-link'); if (inp) { inp.select(); document.execCommand('copy'); done(); }
+      }
     });
   }
 

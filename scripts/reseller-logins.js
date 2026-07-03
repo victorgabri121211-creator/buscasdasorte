@@ -331,6 +331,93 @@ function addResellerCreditHistory(reseller, amount, label) {
   } catch {}
 }
 
+// ── Preço de revenda personalizado (por revendedor) ────────────────────────
+const RESELLER_PRICE_KEY = 'bds_reseller_price';
+const RESELLER_DEFAULT_PRICE = 15; // preço sugerido por login vendido ao cliente
+
+function getResellerPrice(reseller) {
+  try {
+    const store = JSON.parse(localStorage.getItem(RESELLER_PRICE_KEY)) || {};
+    const v = Number(store[normalizeResellerKey(reseller)]);
+    return v > 0 ? v : RESELLER_DEFAULT_PRICE;
+  } catch { return RESELLER_DEFAULT_PRICE; }
+}
+
+function setResellerPrice(reseller, price) {
+  const key = normalizeResellerKey(reseller);
+  const v = Number(price);
+  if (!key || !(v > 0)) return false;
+  try {
+    const store = JSON.parse(localStorage.getItem(RESELLER_PRICE_KEY)) || {};
+    store[key] = Math.round(v * 100) / 100;
+    localStorage.setItem(RESELLER_PRICE_KEY, JSON.stringify(store));
+    return true;
+  } catch { return false; }
+}
+
+// ── Relatório de ganhos do revendedor ───────────────────────────────────────
+// Custo = quanto o revendedor gastou comprando pacotes (vendas category=reseller,
+// buyer=revendedor). Receita estimada = logins criados × preço de revenda.
+function getResellerEarnings(reseller) {
+  const key = normalizeResellerKey(reseller);
+  const logins = getResellerLoginsFor(reseller);
+  const price = getResellerPrice(reseller);
+  const now = Date.now();
+  const d30 = now - 30 * RESELLER_DAY_MS;
+
+  let cost = 0, costCount = 0;
+  try {
+    const sales = typeof getSalesList === 'function' ? getSalesList() : [];
+    sales.forEach(function (s) {
+      if (s.category === 'reseller' && String(s.buyer).trim() === key) {
+        cost += Number(s.amount) || 0;
+        costCount++;
+      }
+    });
+  } catch (e) {}
+
+  const loginsTotal = logins.length;
+  const logins30 = logins.filter(function (l) { return (l.createdAt || 0) >= d30; }).length;
+  const revenue = loginsTotal * price;
+  const revenue30 = logins30 * price;
+  const profit = revenue - cost;
+  const margin = revenue > 0 ? Math.round((profit / revenue) * 100) : 0;
+
+  return {
+    price: price,
+    loginsTotal: loginsTotal,
+    logins30: logins30,
+    cost: cost,
+    costCount: costCount,
+    revenue: revenue,
+    revenue30: revenue30,
+    profit: profit,
+    margin: margin,
+  };
+}
+
+// ── Link de afiliado ────────────────────────────────────────────────────────
+function getResellerAffiliateLink(reseller) {
+  const key = normalizeResellerKey(reseller);
+  let base = 'https://dasortebuscas.com.br/';
+  try {
+    if (typeof location !== 'undefined' && location.origin && location.origin.indexOf('http') === 0) {
+      base = location.origin + location.pathname;
+    }
+  } catch (e) {}
+  return base + '?ref=' + encodeURIComponent(key);
+}
+
+// Captura ?ref= na URL e guarda para atribuição (a atribuição real da venda
+// depende do servidor/Supabase; aqui apenas registramos a origem).
+function captureAffiliateRef() {
+  try {
+    const params = new URLSearchParams(location.search);
+    const ref = params.get('ref');
+    if (ref) localStorage.setItem('bds_affiliate_ref', ref);
+  } catch (e) {}
+}
+
 function deleteResellerClient(reseller, loginId) {
   const store = getResellerLoginsStore();
   const list = store[reseller];
@@ -383,6 +470,11 @@ window.isUnlimitedResellerCredits = isUnlimitedResellerCredits;
 window.grantUnlimitedResellerCredits = grantUnlimitedResellerCredits;
 window.formatResellerCredits = formatResellerCredits;
 window.RESELLER_UNLIMITED_CREDITS = RESELLER_UNLIMITED_CREDITS;
+window.getResellerPrice = getResellerPrice;
+window.setResellerPrice = setResellerPrice;
+window.getResellerEarnings = getResellerEarnings;
+window.getResellerAffiliateLink = getResellerAffiliateLink;
+try { captureAffiliateRef(); } catch (e) {}
 
 function showResellerLoginCreatedModal(data) {
   const overlay = document.getElementById('reseller-login-created-overlay');
