@@ -525,6 +525,75 @@ function _rdashMoney(v) {
   return 'R$ ' + (Number(v) || 0).toFixed(2).replace('.', ',');
 }
 
+// Bloco de comissões de indicação (afiliado). Carrega do Supabase (assíncrono).
+function _resellerCommissionsHtml() {
+  return '<div class="rdash-earn rdash-comm" id="rdash-comm">' +
+    '<div class="rdash-earn-head">' +
+      '<h4 class="rdash-earn-title">Comissões de indicação</h4>' +
+      '<span class="rdash-earn-hint">Vendas de plano feitas pelo seu link</span>' +
+    '</div>' +
+    '<div id="rdash-comm-body" class="rdash-comm-body">' +
+      '<div class="rdash-comm-loading"><span class="spinner"></span> Carregando…</div>' +
+    '</div>' +
+  '</div>';
+}
+
+function _loadResellerCommissions(reseller) {
+  var body = document.getElementById('rdash-comm-body');
+  if (!body) return;
+  var esc = typeof escAdmin === 'function' ? escAdmin : function (s) { return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); };
+
+  var neutral = '<p class="rdash-comm-empty">As comissões de indicação aparecem aqui quando o servidor está conectado.</p>';
+  if (typeof DB === 'undefined' || typeof DB.isConfigured !== 'function' || !DB.isConfigured() || typeof DB.getAffiliateReport !== 'function') {
+    body.innerHTML = neutral;
+    return;
+  }
+
+  DB.getAffiliateReport(reseller).then(function (r) {
+    var el = document.getElementById('rdash-comm-body');
+    if (!el) return;
+    if (!r || !r.ok) { el.innerHTML = neutral; return; }
+
+    var referrals = Number(r.referrals) || 0;
+    if (referrals === 0) {
+      el.innerHTML =
+        '<div class="rdash-comm-grid">' +
+          '<div class="rdash-earn-cell"><span class="rdash-earn-label">A receber</span><span class="rdash-earn-val rdash-earn-pos">' + _rdashMoney(0) + '</span><span class="rdash-earn-sub">comissão acumulada</span></div>' +
+          '<div class="rdash-earn-cell"><span class="rdash-earn-label">Indicações</span><span class="rdash-earn-val">0</span><span class="rdash-earn-sub">vendas pelo link</span></div>' +
+          '<div class="rdash-earn-cell"><span class="rdash-earn-label">Receita indicada</span><span class="rdash-earn-val">' + _rdashMoney(0) + '</span><span class="rdash-earn-sub">total comprado</span></div>' +
+        '</div>' +
+        '<p class="rdash-comm-empty">Nenhuma indicação ainda. Divulgue seu link de afiliado para começar a ganhar comissão.</p>';
+      return;
+    }
+
+    var recent = Array.isArray(r.recent) ? r.recent : [];
+    var rows = recent.map(function (s) {
+      var d = new Date(Number(s.ts) || Date.now());
+      var when = d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+      return '<div class="rdash-comm-row">' +
+        '<span class="rdash-comm-date">' + esc(when) + '</span>' +
+        '<span class="rdash-comm-label">' + esc(s.label || 'Plano') + '</span>' +
+        '<span class="rdash-comm-buyer">' + esc(s.buyer || '') + '</span>' +
+        '<span class="rdash-comm-amount">' + _rdashMoney(s.amount) + '</span>' +
+        '<span class="rdash-comm-plus">+' + _rdashMoney(s.commission) + '</span>' +
+      '</div>';
+    }).join('');
+
+    el.innerHTML =
+      '<div class="rdash-comm-grid">' +
+        '<div class="rdash-earn-cell"><span class="rdash-earn-label">A receber</span><span class="rdash-earn-val rdash-earn-pos">' + _rdashMoney(r.commission) + '</span><span class="rdash-earn-sub">comissão acumulada</span></div>' +
+        '<div class="rdash-earn-cell"><span class="rdash-earn-label">Indicações</span><span class="rdash-earn-val">' + referrals + '</span><span class="rdash-earn-sub">venda' + (referrals !== 1 ? 's' : '') + ' pelo link</span></div>' +
+        '<div class="rdash-earn-cell"><span class="rdash-earn-label">Receita indicada</span><span class="rdash-earn-val">' + _rdashMoney(r.revenue) + '</span><span class="rdash-earn-sub">total comprado</span></div>' +
+      '</div>' +
+      (rows
+        ? '<div class="rdash-comm-list-head">Últimas indicações</div><div class="rdash-comm-list">' + rows + '</div>'
+        : '');
+  }).catch(function () {
+    var el = document.getElementById('rdash-comm-body');
+    if (el) el.innerHTML = neutral;
+  });
+}
+
 // Painel de ganhos + preços de revenda por duração + link de afiliado.
 function _resellerEarningsHtml(reseller, readOnly) {
   const esc = typeof escAdmin === 'function' ? escAdmin : (s) => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
@@ -714,6 +783,8 @@ function renderResellerDashboard() {
 
       _resellerEarningsHtml(reseller, readOnly) +
 
+      _resellerCommissionsHtml() +
+
       formHtml +
 
       '<div class="sdash-recent">' +
@@ -725,6 +796,8 @@ function renderResellerDashboard() {
       '</div>' +
 
     '</div>';
+
+  _loadResellerCommissions(reseller);
 
   const backBtn = document.getElementById('reseller-dash-back');
   if (backBtn) backBtn.addEventListener('click', closeResellerPanelView);
