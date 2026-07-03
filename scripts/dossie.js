@@ -502,7 +502,9 @@ function renderDossiePanels() {
   tabsNav.innerHTML = '';
   content.innerHTML = '';
 
-  const successful = sortResultsByDataPriority(dossieResults.filter(isSearchSuccess));
+  // Mantém a ordem de inserção: consulta primária primeiro, depois o
+  // enriquecimento (parentes/vizinhos/telefone/foto) na sequência em que chega.
+  const successful = dossieResults.filter(isSearchSuccess);
 
   if (successful.length === 0) {
     if (box) {
@@ -613,7 +615,11 @@ function openDossie(results, queryLabel, iconSvg) {
   if (iconSvg) document.getElementById('dossie-hdr-icon').innerHTML = iconSvg;
   document.getElementById('dossie-hdr-title').textContent = dossieStreamMeta.label;
 
-  requestAnimationFrame(() => renderDossiePanels());
+  requestAnimationFrame(() => {
+    renderDossiePanels();
+    const body = document.getElementById('dossie-body');
+    if (body) body.scrollTop = 0;
+  });
   document.getElementById('dossie-overlay').classList.add('open');
 }
 
