@@ -125,6 +125,8 @@ function fieldSortKey(key) {
 function getResultPayload(data) {
   if (!data || typeof data !== 'object') return null;
   if (data.success === true && data.data != null) return data.data;
+  // Snoop API: os dados vêm em { statusCode, body: { ... } }
+  if (data.body != null && typeof data.body === 'object') return data.body;
   if (data.data != null && typeof data.data === 'object') return data.data;
   if (data.result != null) return data.result;
   return data;
@@ -166,13 +168,15 @@ function isSearchSuccess(res) {
   if (!res || !res.ok || !res.data) return false;
   if (res.data.error) return false;
   if (res.data.success === false) return false;
+  // Snoop pode responder HTTP 200 com erro no corpo (statusCode >= 400)
+  if (typeof res.data.statusCode === 'number' && res.data.statusCode >= 400) return false;
   return payloadHasValues(getResultPayload(res.data));
 }
 
 function getSearchErrorMessage(res) {
   if (!res) return 'Não foi possível concluir a consulta. Tente novamente.';
   const d = res.data || {};
-  const status = Number(res.status) || 0;
+  const status = Number(res.status) || Number(d.statusCode) || 0;
   const raw = String(d.error || d.message || d.detail || '').toLowerCase();
 
   // Sem conexão / tempo esgotado (status 0 = falha de rede ou timeout)
