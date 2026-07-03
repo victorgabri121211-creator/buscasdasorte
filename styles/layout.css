@@ -62,15 +62,32 @@
 .sidebar-section-title {
   font-size: 10px; font-weight: 500; color: rgba(48,209,88,0.35);
   text-transform: uppercase; letter-spacing: 0.12em;
-  padding: 0 10px; margin-bottom: 4px;
+  padding: 0 10px; margin-bottom: 2px;
+}
+.sidebar-section-sub {
+  font-size: 10.5px; color: rgba(255,255,255,0.28);
+  padding: 0 10px; margin-bottom: 8px; line-height: 1.35;
+  letter-spacing: 0.01em;
+}
+.sidebar-maint {
+  display: flex; align-items: center; gap: 7px;
+  padding: 6px 10px 2px; margin-top: 2px;
+  font-size: 10.5px; font-style: italic;
+  color: rgba(255,255,255,0.24); letter-spacing: 0.03em;
+  user-select: none;
+}
+.sidebar-maint::before {
+  content: ''; width: 5px; height: 5px; border-radius: 50%;
+  background: rgba(255,176,32,0.55); flex-shrink: 0;
+  box-shadow: 0 0 6px rgba(255,176,32,0.45);
 }
 .sidebar-item {
   display: flex; align-items: center; gap: 11px;
   padding: 8px 10px; border-radius: 11px;
-  cursor: pointer; font-size: 13.5px;
+  cursor: pointer; font-size: 12.5px; line-height: 1.25;
   color: rgba(255,255,255,0.45);
   transition: all 0.18s; user-select: none; margin-bottom: 1px;
-  font-weight: 400; letter-spacing: -0.1px;
+  font-weight: 400; letter-spacing: 0.01em;
   position: relative;
 }
 .sidebar-item:hover {
