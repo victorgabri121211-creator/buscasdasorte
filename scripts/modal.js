@@ -154,29 +154,113 @@ document.addEventListener('keydown', e => {
 });
 
 function runModalSearch() {
-  const cfg = MODAL_CONFIG[currentModalKey];
+  const key = currentModalKey;
+  const cfg = MODAL_CONFIG[key];
   if (!cfg) return;
 
   // Coleta e valida os valores dos campos
   const values = {};
+  let firstRaw = '';
   for (const f of cfg.fields) {
     const el = document.getElementById('modal-f-' + f.name);
     const raw = el ? el.value.trim() : '';
     if (!raw && !f.optional) {
-      el.focus();
-      el.style.borderColor = 'rgba(255,69,58,0.5)';
-      setTimeout(() => (el.style.borderColor = ''), 1000);
+      if (el) {
+        el.focus();
+        el.style.borderColor = 'rgba(255,69,58,0.5)';
+        setTimeout(() => (el.style.borderColor = ''), 1000);
+      }
       return;
     }
+    if (!firstRaw && raw) firstRaw = raw;
     values[f.name] = f.sane ? f.sane(raw) : raw;
   }
 
-  const path = cfg.path(values);
-  const ep = { id: currentModalKey, label: cfg.title, path };
   closeModal();
-  runDirectSearch([ep], cfg.title, cfg.icon);
+  runModuleSearch(key, cfg, values, firstRaw);
 }
 
+// Executa a consulta primária e, se um CPF for encontrado, enriquece o dossiê.
+async function runModuleSearch(key, cfg, values, term) {
+  const label = cfg.title;
+  const icon = cfg.icon;
+  const ep = { id: key, label, path: cfg.path(values) };
+
+  const area = document.getElementById('result-area');
+  if (area) area.innerHTML = '';
+  if (typeof openDossieLoading === 'function') openDossieLoading(label.toUpperCase(), icon);
+
+  let primary;
+  try {
+    primary = await fetchComTimeout(ep);
+  } catch (e) {
+    primary = { ep, ok: false, status: 0, data: { error: 'Erro na consulta.' } };
+  }
+
+  const ok = (typeof isSearchSuccess === 'function') ? isSearchSuccess(primary) : !!primary.ok;
+  if (typeof openDossie === 'function') openDossie([primary], label.toUpperCase(), icon);
+
+  if (term && typeof SearchHistory !== 'undefined') {
+    try { SearchHistory.record({ term: term, field: key, label: label, count: ok ? 1 : 0 }); } catch (_) {}
+  }
+
+  // Enriquecimento por CPF: puxa o perfil completo + relações/telefone/foto.
+  if (ok) {
+    let cpf = (values.cpf && values.cpf.length === 11) ? values.cpf : extractCpfFromData(primary.data);
+    if (cpf && cpf.length === 11) enrichFromCpf(cpf, key);
+  }
+}
+
+// Endpoints por CPF disparados no enriquecimento (sequencial, para nao bater
+// no limite de "consultas simultaneas de CPF" da Snoop).
+const CPF_ENRICH_KEYS = ['cpf', 'parentes', 'vizinhos', 'tel-cpf', 'foto'];
+
+async function enrichFromCpf(cpf, primaryKey) {
+  for (const k of CPF_ENRICH_KEYS) {
+    if (k === primaryKey) continue;
+    const cfg = MODAL_CONFIG[k];
+    if (!cfg) continue;
+    const ep = { id: k, label: cfg.title, path: cfg.path({ cpf }) };
+    try {
+      const res = await fetchComTimeout(ep);
+      if (typeof appendDossieResult === 'function') appendDossieResult(res);
+    } catch (_) { /* ignora falha de um endpoint */ }
+    await new Promise(r => setTimeout(r, 350));
+  }
+}
+
+// Procura um CPF (11 digitos em campo cuja chave contem "cpf") no resultado.
+function extractCpfFromData(data) {
+  const payload = (typeof getResultPayload === 'function')
+    ? getResultPayload(data)
+    : (data && (data.body || data.data || data));
+  if (!payload || typeof payload !== 'object') return null;
+
+  function scan(obj, depth) {
+    if (!obj || typeof obj !== 'object' || depth > 6) return null;
+    if (Array.isArray(obj)) {
+      for (const it of obj) { const r = scan(it, depth + 1); if (r) return r; }
+      return null;
+    }
+    for (const k of Object.keys(obj)) {
+      const v = obj[k];
+      if (typeof v === 'string' || typeof v === 'number') {
+        const digits = String(v).replace(/\D/g, '');
+        const kl = k.toLowerCase();
+        if (digits.length === 11 && (kl.includes('cpf') || kl === 'documento' || kl === 'doc')) {
+          return digits;
+        }
+      } else if (v && typeof v === 'object') {
+        const found = scan(v, depth + 1);
+        if (found) return found;
+      }
+    }
+    return null;
+  }
+  return scan(payload, 0);
+}
+
+// Mantido para compatibilidade (buscas diretas por lista de endpoints).
 function runDirectSearch(eps, label, iconSvg) {
   const area = document.getElementById('result-area');
   if (area) area.innerHTML = '';
