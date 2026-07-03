@@ -1546,7 +1546,6 @@ body.user-admin #view-revendedor-painel.app-view.active {
   flex-wrap: wrap;
   align-items: center;
   gap: 8px;
-  margin-left: auto;
 }
 
 .aclients-search {

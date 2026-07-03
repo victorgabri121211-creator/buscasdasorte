@@ -779,13 +779,16 @@ async function adminAddResellerCredits(reseller, amount) {
     }
 
     const total = getResellerCredits(reseller);
+    const totalUnlimited = typeof isUnlimitedResellerCredits === 'function' && isUnlimitedResellerCredits(reseller);
     if (msgEl) {
-      msgEl.textContent = '+' + amt + ' crédito' + (amt === 1 ? '' : 's') + ' adicionado' + (amt === 1 ? '' : 's') + '. Novo saldo: ' + total + '.';
+      msgEl.textContent = '+' + amt + ' crédito' + (amt === 1 ? '' : 's') + ' adicionado' + (amt === 1 ? '' : 's') + '. Novo saldo: ' + (totalUnlimited ? '∞' : total) + '.';
       msgEl.className = 'admin-reseller-credits-msg ok';
     }
     const currentEl = document.getElementById('admin-reseller-credits-current');
     if (currentEl) {
-      currentEl.textContent = 'Saldo atual: ' + total + ' crédito' + (total === 1 ? '' : 's') + ' disponíve' + (total === 1 ? 'l' : 'is');
+      currentEl.textContent = totalUnlimited
+        ? 'Saldo atual: crédito infinito (∞)'
+        : 'Saldo atual: ' + total + ' crédito' + (total === 1 ? '' : 's') + ' disponíve' + (total === 1 ? 'l' : 'is');
     }
     renderAdminResellers();
   } finally {
@@ -805,10 +808,12 @@ function openAdminResellerLoginsModal(reseller) {
 
   const logins = typeof getResellerLoginsFor === 'function' ? getResellerLoginsFor(reseller) : [];
   const credits = typeof getResellerCredits === 'function' ? getResellerCredits(reseller) : 0;
+  const creditsUnlimited = typeof isUnlimitedResellerCredits === 'function' && isUnlimitedResellerCredits(reseller);
 
   if (titleEl) titleEl.textContent = 'Logins de ' + reseller;
   if (creditsEl) {
-    creditsEl.textContent = credits + ' crédito' + (credits === 1 ? '' : 's') + ' não usados · ' + logins.length + ' login' + (logins.length === 1 ? '' : 's') + ' criado' + (logins.length === 1 ? '' : 's');
+    const credTxt = creditsUnlimited ? '∞ créditos' : credits + ' crédito' + (credits === 1 ? '' : 's');
+    creditsEl.textContent = credTxt + ' não usados · ' + logins.length + ' login' + (logins.length === 1 ? '' : 's') + ' criado' + (logins.length === 1 ? '' : 's');
   }
 
   if (!logins.length) {
