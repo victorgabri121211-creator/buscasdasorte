@@ -1,24 +1,24 @@
--- BuscasDaSorte — Atribuição de vendas por afiliado (link ?ref=)
+-- BuscasDaSorte - Atribuicao de vendas por afiliado (link ?ref=)
 -- Cole este SQL no SQL Editor do Supabase e clique em RUN.
--- É incremental e seguro: pode ser executado sobre o banco já existente.
+-- Incremental e seguro: pode ser executado sobre o banco ja existente.
 --
 -- O que faz:
---   • adiciona colunas de afiliado à tabela de vendas (ref + comissão)
---   • ao registrar uma venda, credita comissão ao revendedor que indicou
---     (somente se o ref for um revendedor real e não o próprio comprador)
---   • expõe um relatório de indicações por revendedor
+--   - adiciona colunas de afiliado na tabela de vendas (ref + comissao)
+--   - ao registrar uma venda, credita comissao ao revendedor que indicou
+--     (somente se o ref for um revendedor real e nao o proprio comprador)
+--   - expoe um relatorio de indicacoes por revendedor
 --
--- COMISSÃO: por padrão 20% sobre vendas de PLANO. Para mudar, altere
--- o valor de v_rate na função bds_record_sale abaixo (0.20 = 20%).
+-- COMISSAO: por padrao 20% sobre vendas de PLANO. Para mudar, altere
+-- o valor de v_rate na funcao bds_record_sale abaixo (0.20 = 20%).
 
--- ── 1. Colunas de afiliado na tabela de vendas ──────────────────────────────
-alter table bds_sales add column if not exists ref        text;
+-- 1. Colunas de afiliado na tabela de vendas
+alter table bds_sales add column if not exists ref text;
 alter table bds_sales add column if not exists commission numeric(10,2) default 0;
 
 create index if not exists bds_sales_ref_idx on bds_sales (lower(ref));
 
--- ── 2. Registrar venda (agora com atribuição de afiliado) ───────────────────
--- Remove a versão antiga (8 args) para evitar ambiguidade de sobrecarga.
+-- 2. Registrar venda (agora com atribuicao de afiliado)
+-- Remove a versao antiga (8 args) para evitar ambiguidade de sobrecarga.
 drop function if exists bds_record_sale(text, text, bigint, text, text, text, numeric, text);
 
 create or replace function bds_record_sale(
@@ -27,28 +27,24 @@ create or replace function bds_record_sale(
   p_ref text default null
 ) returns jsonb language plpgsql security definer as $$
 declare
-  v_rate       numeric := 0.20;   -- % de comissão sobre vendas de plano
+  v_rate       numeric := 0.20;
   v_ref        text;
   v_commission numeric(10,2) := 0;
   v_is_reseller boolean := false;
 begin
-  -- Normaliza o ref e valida a atribuição.
   v_ref := nullif(trim(coalesce(p_ref, '')), '');
 
   if v_ref is not null then
-    -- Só credita se o ref for um revendedor habilitado…
     select coalesce(ra.enabled, false) into v_is_reseller
     from bds_reseller_access ra
     where lower(ra.username) = lower(v_ref);
 
-    -- …e não pode indicar a si mesmo.
     if coalesce(v_is_reseller, false) = false
        or lower(v_ref) = lower(coalesce(p_buyer, '')) then
       v_ref := null;
     end if;
   end if;
 
-  -- Comissão apenas sobre vendas de plano (não sobre compra de créditos).
   if v_ref is not null and p_category = 'plan' then
     v_commission := round(coalesce(p_amount, 0) * v_rate, 2);
   end if;
@@ -60,19 +56,19 @@ begin
   return jsonb_build_object('ok', true, 'ref', v_ref, 'commission', v_commission);
 end; $$;
 
--- ── 3. Relatório de indicações por revendedor ───────────────────────────────
+-- 3. Relatorio de indicacoes por revendedor
 create or replace function bds_get_affiliate_report(p_reseller text)
 returns jsonb language plpgsql security definer as $$
 declare v_key text := lower(trim(coalesce(p_reseller, '')));
 begin
   if v_key = '' then
-    return jsonb_build_object('ok', false, 'msg', 'Revendedor inválido.');
+    return jsonb_build_object('ok', false, 'msg', 'Revendedor invalido.');
   end if;
   return (
     select jsonb_build_object(
       'ok', true,
       'referrals', coalesce(count(*), 0),
-      'revenue',    coalesce(sum(amount), 0),
+      'revenue', coalesce(sum(amount), 0),
       'commission', coalesce(sum(commission), 0),
       'recent', coalesce((
         select jsonb_agg(jsonb_build_object(
@@ -90,6 +86,6 @@ begin
   );
 end; $$;
 
--- ── 4. Permissões ───────────────────────────────────────────────────────────
+-- 4. Permissoes
 grant execute on function bds_record_sale(text, text, bigint, text, text, text, numeric, text, text) to anon;
 grant execute on function bds_get_affiliate_report(text) to anon;
