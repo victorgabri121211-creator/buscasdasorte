@@ -5,7 +5,7 @@
  *  1. Acesse https://dash.cloudflare.com → Workers & Pages → seu worker
  *  2. Cole este arquivo no editor
  *  3. Vá em Settings → Variables and Secrets → adicione (NUNCA no código):
- *       Nome: API_KEY         | Valor: <sua API key do painel.fr4ud.center>
+ *       Nome: API_KEY         | Valor: <sua API Key da Snoop Intelligence>
  *       Nome: MISTICPAY_CI    | Valor: <seu client id da MisticPay>
  *       Nome: MISTICPAY_CS    | Valor: <seu client secret da MisticPay>
  *  4. Salve e faça o Deploy
@@ -14,7 +14,10 @@
  *   em repositório público. As chaves vivem apenas nas Secrets do Worker.
  */
 
-const API_BASE      = 'https://painel.fr4ud.center';
+// Snoop Intelligence — proxy da API de consultas.
+// O cliente envia o path completo (ex.: /api/v2/generic/cpf?cpf=... ou
+// /api/v1/sp/cpf?cpf=...); o worker apenas repassa para a base + injeta o Bearer.
+const API_BASE      = 'https://snoopintelligence.cloud';
 const MISTICPAY_URL = 'https://api.misticpay.com/api';
 
 // Origens autorizadas a usar este worker (evita abuso por terceiros).
@@ -75,23 +78,15 @@ export default {
       return handlePixHistory(request, env, origin);
     }
 
-    // ── Proxy para a API de busca ───────────────────────────────────────
-    const isNegativacao = path.includes('/negativacao/');
-
-    let apiKey;
-    if (isNegativacao) {
-      apiKey = request.headers.get('X-Negativ-Key') || '';
-      if (!apiKey) return apiResponse({ error: 'Chave de negativação não fornecida.' }, 401, origin);
-    } else {
-      apiKey = env.API_KEY || '';
-      if (!apiKey) return apiResponse({ error: 'Configuração interna incorreta.' }, 500, origin);
-    }
+    // ── Proxy para a API de busca (Snoop) ───────────────────────────────
+    const apiKey = env.API_KEY || '';
+    if (!apiKey) return apiResponse({ error: 'Configuração interna incorreta.' }, 500, origin);
 
     const targetUrl = API_BASE + path + url.search;
     try {
       const resp = await fetch(targetUrl, {
         method: 'GET',
-        headers: { 'X-Api-Key': apiKey },
+        headers: { 'Authorization': 'Bearer ' + apiKey },
       });
 
       const contentType = resp.headers.get('Content-Type') || 'application/json';
