@@ -560,8 +560,8 @@
 // O username é ofuscado (base64) e a senha é comparada como hash SHA-256.
 // Isso evita que as credenciais apareçam em texto claro no código-fonte.
 const _AU = atob('RGFzb3J0ZQ==');
-// Hash SHA-256 da senha admin — a senha real nunca aparece no código
-const _APH = '9dc3eba65b8905b9ea4fb08b06c800de0b35256d0ecfdd80bc59d9713b0bed8c';
+// O hash da senha de admin NÃO fica mais no código: o login é validado no
+// servidor (Supabase) e o hash é derivado da senha digitada, guardado só na sessão.
 
 const STORE_KEY = 'bds_users';
 const SESSION_KEY = 'bds_session';
@@ -582,7 +582,11 @@ function getUsers() { try { return JSON.parse(localStorage.getItem(STORE_KEY)) |
 function saveUsers(u) { localStorage.setItem(STORE_KEY, JSON.stringify(u)); }
 function getSession() { return localStorage.getItem(SESSION_KEY); }
 function setSession(u) { localStorage.setItem(SESSION_KEY, u); }
-function clearSession() { localStorage.removeItem(SESSION_KEY); }
+function clearSession() {
+  localStorage.removeItem(SESSION_KEY);
+  try { localStorage.removeItem('bds_admin_h'); } catch (e) {}
+  if (window.DB && window.DB.setAdminHash) { try { window.DB.setAdminHash(null); } catch (e) {} }
+}
 
 function switchTab(tab) {
   document.querySelectorAll('.auth-tab').forEach((t,i) => t.classList.toggle('active', (i===0&&tab==='login')||(i===1&&tab==='register')));
@@ -620,16 +624,25 @@ async function doLogin() {
   if (btn) { btn.disabled = true; btn.textContent = 'Verificando...'; }
 
   try {
-    // Verifica admin (hash SHA-256)
-    const passHash = await _hashPass(pass);
-    if (user === _AU && passHash === _APH) {
-      _saveLock({c:0,l:0});
-      setSession(user);
-      if (window.DB) {
+    // Verifica admin NO SERVIDOR (o hash não fica embutido no código).
+    if (user === _AU) {
+      let adminOk = false;
+      if (window.DB && window.DB.isConfigured()) {
+        const passHash = await _hashPass(pass);
+        try {
+          const chk = await window.DB.adminCheck(passHash);
+          adminOk = !!(chk && chk.ok);
+        } catch (e) {}
+        if (adminOk) window.DB.setAdminHash(passHash);
+      }
+      if (adminOk) {
+        _saveLock({c:0,l:0});
+        setSession(user);
         showMsg('login-msg', 'Carregando dados...', 'success');
         await window.DB.syncOnLogin(user);
+        enterApp(user); return;
       }
-      enterApp(user); return;
+      // Senha de admin incorreta (ou servidor indisponível): cai na falha abaixo.
     }
 
     // Tenta Supabase primeiro
@@ -749,7 +762,7 @@ document.getElementById('login-user').addEventListener('keydown',e=>{if(e.key===
 </script>
 
 <script src="../scripts/toast.js?v=1"></script>
-<script src="../scripts/db.js?v=4"></script>
+<script src="../scripts/db.js?v=5"></script>
 <script src="../scripts/clovers.js?v=3"></script>
 <script src="../scripts/auth.js?v=3"></script>
 <script src="../scripts/history.js?v=1"></script>

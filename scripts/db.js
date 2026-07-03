@@ -8,8 +8,22 @@
   var SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRncHl1anJrZGtnd25rdnJja3VuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkzMjcwMzcsImV4cCI6MjA5NDkwMzAzN30.kBRmCzxePQTjoBsrr2L74yKEXD1t2PTqoP46VcJGHPQ';
   // ─────────────────────────────────────────────────────────────────────────
 
-  var _APH = '9dc3eba65b8905b9ea4fb08b06c800de0b35256d0ecfdd80bc59d9713b0bed8c';
   var _AU  = atob('RGFzb3J0ZQ==');
+
+  // Hash de admin: NAO fica embutido no codigo. E derivado da senha que o
+  // admin digita no login (validado no servidor) e guardado so na sessao.
+  var _adminHash = null;
+  try { _adminHash = localStorage.getItem('bds_admin_h') || null; } catch (e) {}
+  function setAdminHash(h) {
+    _adminHash = h || null;
+    try {
+      if (h) localStorage.setItem('bds_admin_h', h);
+      else localStorage.removeItem('bds_admin_h');
+    } catch (e) {}
+  }
+  function adminCheck(hash) {
+    return _rpc('bds_admin_check', { p_hash: hash });
+  }
 
   function _ok() {
     return SB_URL !== 'SUPABASE_URL' && SB_KEY !== 'SUPABASE_ANON_KEY';
@@ -73,7 +87,7 @@
     if (!username || !_ok()) return;
 
     if (username === _AU) {
-      const res = await _rpc('bds_admin_full_sync', { p_hash: _APH });
+      const res = await _rpc('bds_admin_full_sync', { p_hash: _adminHash });
       if (!res || !res.ok) return;
 
       const supaUsers = res.users || [];
@@ -171,21 +185,21 @@
 
   function setUserPlan(username, planId, period, expiresAt) {
     return _rpc('bds_admin_set_plan', {
-      p_hash: _APH, p_username: username, p_plan_id: planId,
+      p_hash: _adminHash, p_username: username, p_plan_id: planId,
       p_period: period, p_expires_at: expiresAt
     });
   }
 
   function clearUserPlan(username) {
-    return _rpc('bds_admin_clear_plan', { p_hash: _APH, p_username: username });
+    return _rpc('bds_admin_clear_plan', { p_hash: _adminHash, p_username: username });
   }
 
   function setResellerAccess(username, enabled) {
-    return _rpc('bds_admin_set_reseller', { p_hash: _APH, p_username: username, p_enabled: enabled });
+    return _rpc('bds_admin_set_reseller', { p_hash: _adminHash, p_username: username, p_enabled: enabled });
   }
 
   function addResellerCredits(username, amount) {
-    return _rpc('bds_admin_add_credits', { p_hash: _APH, p_username: username, p_amount: amount });
+    return _rpc('bds_admin_add_credits', { p_hash: _adminHash, p_username: username, p_amount: amount });
   }
 
   // ── Vendas ────────────────────────────────────────────────────────────────
@@ -253,7 +267,7 @@
 
   async function syncSales() {
     if (!_ok()) return null;
-    const res = await _rpc('bds_admin_full_sync', { p_hash: _APH });
+    const res = await _rpc('bds_admin_full_sync', { p_hash: _adminHash });
     if (!res || !res.ok) return null;
     const remoteSales = res.sales || [];
     const localSales = _get('bds_sales', []);
@@ -298,6 +312,8 @@
 
   global.DB = {
     isConfigured: _ok,
+    adminCheck: adminCheck,
+    setAdminHash: setAdminHash,
     registerUser: registerUser,
     loginUser: loginUser,
     syncOnLogin: syncOnLogin,
