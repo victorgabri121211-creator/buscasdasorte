@@ -225,9 +225,10 @@ function consultarCpf(cpf) {
 }
 if (typeof window !== 'undefined') window.consultarCpf = consultarCpf;
 
-// Endpoints por CPF disparados no enriquecimento (sequencial, para nao bater
-// no limite de "consultas simultaneas de CPF" da Snoop).
-const CPF_ENRICH_KEYS = ['cpf', 'parentes', 'vizinhos', 'tel-cpf', 'foto'];
+// Enriquecimento por CPF: SÓ dados da própria pessoa (perfil completo + foto).
+// Parentes/vizinhos NÃO entram aqui (são outras pessoas) — ficam nos módulos
+// próprios, se o usuário quiser consultar.
+const CPF_ENRICH_KEYS = ['cpf', 'foto'];
 
 async function enrichFromCpf(cpf, primaryKey) {
   for (const k of CPF_ENRICH_KEYS) {
