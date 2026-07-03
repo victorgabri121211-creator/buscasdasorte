@@ -633,6 +633,102 @@ function appendDossieResult(res) {
   queueDossieRender();
 }
 
+// ── Lista de pessoas (multiplos resultados: nome, parentes, vizinhos...) ──
+const REC_NAME_KEYS  = ['nome', 'name', 'nome_completo', 'full_name', 'razao_social', 'nomecompleto'];
+const REC_BIRTH_KEYS = ['nascimento', 'birth_date', 'data_nascimento', 'dt_nascimento', 'nasc', 'data_nasc', 'birthdate', 'dt_nasc'];
+const REC_REL_KEYS   = ['parentesco', 'relacao', 'vinculo', 'grau', 'relationship'];
+
+function recFindCpf(rec) {
+  if (!rec || typeof rec !== 'object') return null;
+  for (const k of Object.keys(rec)) {
+    const kl = k.toLowerCase();
+    const v = rec[k];
+    if ((kl.includes('cpf') || kl === 'documento' || kl === 'doc') && (typeof v === 'string' || typeof v === 'number')) {
+      const d = String(v).replace(/\D/g, '');
+      if (d.length === 11) return d;
+    }
+  }
+  return null;
+}
+
+function pickRecordField(rec, keys) {
+  if (!rec || typeof rec !== 'object') return null;
+  const lower = {};
+  Object.keys(rec).forEach(k => { lower[k.toLowerCase()] = rec[k]; });
+  for (const key of keys) {
+    const v = lower[key];
+    if (v != null && v !== '' && typeof v !== 'object') return String(v);
+  }
+  return null;
+}
+
+// Retorna um array de registros (com CPF) se o payload for uma lista de pessoas.
+function detectRecordList(payload) {
+  if (!payload || typeof payload !== 'object') return null;
+  let arr = null;
+  if (Array.isArray(payload)) {
+    arr = payload;
+  } else {
+    const cands = ['results', 'result', 'data', 'list', 'items', 'pessoas', 'registros', 'matches', 'records', 'rows', 'lista', 'resultados'];
+    for (const c of cands) { if (Array.isArray(payload[c])) { arr = payload[c]; break; } }
+    if (!arr) {
+      for (const k of Object.keys(payload)) {
+        const v = payload[k];
+        if (Array.isArray(v) && v.length && typeof v[0] === 'object' && recFindCpf(v[0])) { arr = v; break; }
+      }
+    }
+  }
+  if (!arr || !arr.length) return null;
+  const objs = arr.filter(x => x && typeof x === 'object' && !Array.isArray(x));
+  if (!objs.length || !objs.some(recFindCpf)) return null;
+  return objs;
+}
+
+function formatCpfMask(d) {
+  const s = String(d).replace(/\D/g, '');
+  if (s.length !== 11) return String(d);
+  return s.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
+}
+
+function createRecordListView(items) {
+  const wrap = document.createElement('div');
+  wrap.className = 'dossie-source-inner';
+
+  const head = document.createElement('div');
+  head.className = 'dossie-section-sub';
+  head.style.marginBottom = '10px';
+  head.textContent = items.length + (items.length === 1 ? ' pessoa encontrada' : ' pessoas encontradas') +
+    ' — clique para ver o perfil completo';
+  wrap.appendChild(head);
+
+  items.forEach(rec => {
+    const cpf  = recFindCpf(rec);
+    const nome = pickRecordField(rec, REC_NAME_KEYS) || '—';
+    const nasc = pickRecordField(rec, REC_BIRTH_KEYS);
+    const rel  = pickRecordField(rec, REC_REL_KEYS);
+
+    let meta = 'CPF: ' + (cpf ? formatCpfMask(cpf) : '—');
+    if (nasc) meta += '  •  Nasc.: ' + nasc;
+    if (rel)  meta += '  •  ' + rel;
+
+    const card = document.createElement('div');
+    card.style.cssText = 'display:flex;flex-direction:column;gap:3px;padding:12px 14px;margin-bottom:8px;' +
+      'border:1px solid rgba(48,209,88,0.18);border-radius:12px;background:rgba(48,209,88,0.04);' +
+      (cpf ? 'cursor:pointer;transition:background .15s;' : '');
+    card.innerHTML =
+      '<div style="font-weight:600;font-size:14px;color:#fff">' + escHtml(nome) + '</div>' +
+      '<div style="font-size:12px;color:rgba(255,255,255,0.55)">' + escHtml(meta) + '</div>' +
+      (cpf ? '<div style="font-size:11px;color:#30d158;margin-top:2px">Ver perfil completo →</div>' : '');
+    if (cpf) {
+      card.addEventListener('click', () => { if (typeof consultarCpf === 'function') consultarCpf(cpf); });
+      card.addEventListener('mouseenter', () => { card.style.background = 'rgba(48,209,88,0.1)'; });
+      card.addEventListener('mouseleave', () => { card.style.background = 'rgba(48,209,88,0.04)'; });
+    }
+    wrap.appendChild(card);
+  });
+  return wrap;
+}
+
 function buildResultPanel(result, idx) {
   const panel = document.createElement('div');
   const data = result.data;
@@ -641,6 +737,14 @@ function buildResultPanel(result, idx) {
   const block = document.createElement('div');
   block.className = 'dossie-alvo-block dossie-tactical-panel';
   block.appendChild(createAlvoHeader(idx, result.ep.label));
+
+  // Multiplos resultados (homonimos, parentes, vizinhos): lista clicavel.
+  const recList = detectRecordList(root);
+  if (recList && recList.length >= 2) {
+    block.appendChild(createRecordListView(recList));
+    panel.appendChild(block);
+    return panel;
+  }
 
   const sections = splitPayloadIntoSections(root).slice().sort((a, b) => {
     const pa = partitionFields(a.fields);
@@ -722,6 +826,7 @@ window.isSearchSuccess = isSearchSuccess;
 window.getSearchErrorMessage = getSearchErrorMessage;
 window.getEmptySearchMessage = getEmptySearchMessage;
 window.getResultPayload = getResultPayload;
+window.detectRecordList = detectRecordList;
 
 function dossieAction(type) {
   const allText = dossieResults.map(r =>

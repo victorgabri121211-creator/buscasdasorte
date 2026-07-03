@@ -204,12 +204,26 @@ async function runModuleSearch(key, cfg, values, term) {
     try { SearchHistory.record({ term: term, field: key, label: label, count: ok ? 1 : 0 }); } catch (_) {}
   }
 
-  // Enriquecimento por CPF: puxa o perfil completo + relações/telefone/foto.
+  // Se veio uma lista de pessoas (homônimos), o dossiê mostra a lista clicável
+  // e NÃO enriquece automaticamente. Senão, puxa o perfil completo por CPF.
   if (ok) {
-    let cpf = (values.cpf && values.cpf.length === 11) ? values.cpf : extractCpfFromData(primary.data);
-    if (cpf && cpf.length === 11) enrichFromCpf(cpf, key);
+    const payload = (typeof getResultPayload === 'function') ? getResultPayload(primary.data) : primary.data;
+    const list = (typeof detectRecordList === 'function') ? detectRecordList(payload) : null;
+    if (!(list && list.length >= 2)) {
+      let cpf = (values.cpf && values.cpf.length === 11) ? values.cpf : extractCpfFromData(primary.data);
+      if (cpf && cpf.length === 11) enrichFromCpf(cpf, key);
+    }
   }
 }
+
+// Abre o perfil completo de um CPF (ao clicar num item da lista de pessoas).
+function consultarCpf(cpf) {
+  const clean = String(cpf).replace(/\D/g, '');
+  if (clean.length !== 11) return;
+  const cfg = MODAL_CONFIG.cpf;
+  if (cfg) runModuleSearch('cpf', cfg, { cpf: clean }, clean);
+}
+if (typeof window !== 'undefined') window.consultarCpf = consultarCpf;
 
 // Endpoints por CPF disparados no enriquecimento (sequencial, para nao bater
 // no limite de "consultas simultaneas de CPF" da Snoop).
