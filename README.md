@@ -1,6 +1,6 @@
 # BuscasDasorte
 
-Painel de consultas — API fr4ud.center
+Painel de consultas
 
 ## Estrutura
 ```

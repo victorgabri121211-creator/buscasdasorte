@@ -20,7 +20,6 @@ const MODAL_CONFIG = {
   processo: { title: 'Consulta de Processo', sub: 'Digite o número do processo judicial', placeholder: 'Número do processo', field: 'f-processo', icon: '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>', mask: null },
   irmaos:   { title: 'Consulta de Irmãos', sub: 'Digite o nome da mãe para buscar irmãos', placeholder: 'Nome da mãe', field: 'f-irmaos', icon: '<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>', mask: null },
   'foto-pe': { title: 'Foto PE', sub: 'Digite o nome completo para buscar foto em PE', placeholder: 'Nome completo', field: 'f-nome', icon: '<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/>', mask: null },
-  'negativacao': { title: 'Negativação', sub: 'Rota restrita — requer chave com cargo "negativacao". Disponível seg–sex, 8h–18h.', placeholder: '000.000.000-00', field: 'f-cpf', icon: '<circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>', mask: 'cpf', isNegativacao: true },
 };
 
 let currentModalKey = null;
@@ -38,26 +37,6 @@ function openModal(key) {
   inp.value = '';
   inp.setAttribute('data-mask', cfg.mask || '');
 
-  // Negativacao: check key + business hours
-  if (cfg.isNegativacao) {
-    const negativKey = getNegativKey();
-    if (!negativKey) {
-      closeModal();
-      openNegativSettings();
-      return;
-    }
-    if (!isHorarioComercial()) {
-      document.getElementById('modal-overlay').classList.add('open');
-      setTimeout(() => {
-        inp.disabled = true;
-        document.querySelector('.modal-btn-search').disabled = true;
-        document.querySelector('.modal-btn-search').style.opacity = '0.4';
-        document.getElementById('modal-sub').innerHTML = '⚠️ Fora do horário comercial. Disponível seg–sex, 8h–18h.';
-      }, 50);
-      return;
-    }
-    inp.disabled = false;
-  }
   document.getElementById('modal-overlay').classList.add('open');
   setTimeout(() => inp.focus(), 120);
 }
@@ -93,54 +72,9 @@ function runModalSearch() {
     setTimeout(() => document.getElementById('modal-input').style.borderColor = '', 1000);
     return;
   }
-  // Clear ALL fields and results before new search
   document.querySelectorAll('.field-input').forEach(i => i.value = '');
   selectedIds.clear();
-  document.getElementById('result-area').innerHTML = '<div class="empty-state"><p>Preencha um campo e clique em buscar</p></div>';
-  // Fill only the selected field and trigger search
-  const field = document.getElementById(cfg.field);
-  if (field) { field.value = val; field.dispatchEvent(new Event('input')); }
-
-  // Negativacao: direct fetch bypassing pills
-  if (currentModalKey === 'negativacao') {
-    closeModal();
-    const cpf = val.replace(/\D/g,'');
-    const ep = { id:'negativacao', label:'Negativação', path:`/api/v1/search/consultcenter/negativacao/cpf/${cpf}`, isNegativacao: true };
-    runDirectSearch([ep], 'Negativação', MODAL_CONFIG.negativacao.icon);
-    return;
-  }
-
-  // For CPF-based consultcenter queries, pre-select only that pill
-  if (['serasa','spc','receita','tse','denatran','score','foto-cpf','foto-sp'].includes(currentModalKey)) {
-    const pillId = ['serasa','spc','receita','tse','denatran'].includes(currentModalKey)
-      ? 'cc-' + currentModalKey
-      : currentModalKey;
-    selectedIds.clear();
-    selectedIds.add(pillId);
-    renderPills();
-  }
 
   closeModal();
-  setTimeout(() => executarBusca(), 100);
-}
-
-async function runDirectSearch(eps, label, iconSvg) {
-  const area = document.getElementById('result-area');
-  area.innerHTML = '';
-  const contEl = document.createElement('div');
-  contEl.className = 'status-bar loading';
-  contEl.innerHTML = `<span class="spinner"></span><span id="contador"> Consultando ${label}...</span>`;
-  area.prepend(contEl);
-
-  const allResults = [];
-  await Promise.allSettled(eps.map(ep => fetchComTimeout(ep).then(res => {
-    allResults.push(res);
-  })));
-
-  contEl.className = 'status-bar success';
-  contEl.innerHTML = `${allResults.length} consulta finalizada`;
-
-  const successResults = allResults.filter(r => r && r.ok);
-  if (typeof logSearch === 'function') logSearch(label, label, successResults.length);
-  if (successResults.length > 0) openDossie(allResults, label.toUpperCase(), iconSvg);
+  executarBusca();
 }
