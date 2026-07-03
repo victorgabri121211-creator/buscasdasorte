@@ -85,10 +85,12 @@ async function submitPixForm() {
   if (!name)          { _pixMsg('Informe seu nome completo.');      return; }
   if (cpf.length !== 11) { _pixMsg('CPF inválido — 11 dígitos.'); return; }
 
-  let amount, description;
+  let amount, description, productId, category;
   if (_pixMode === 'reseller') {
     if (!_resellerPkg) return;
     amount      = _resellerPkg.price;
+    category    = 'reseller';
+    productId   = _resellerPkg.unlimited ? 'unlimited' : String(_resellerPkg.logins);
     description = _resellerPkg.unlimited
       ? 'BuscasDasorte - Pacote crédito infinito'
       : 'BuscasDasorte - Pacote ' + _resellerPkg.logins + ' logins';
@@ -96,6 +98,8 @@ async function submitPixForm() {
     const plan = PIX_PLANS[_pixPlan];
     if (!plan) return;
     amount      = plan.amount;
+    category    = 'plan';
+    productId   = _pixPlan;
     description = 'BuscasDasorte - Plano ' + plan.label;
   }
 
@@ -116,6 +120,8 @@ async function submitPixForm() {
         payerDocument: cpf,
         transactionId: txId,
         description,
+        productId,
+        category,
       }),
     });
 

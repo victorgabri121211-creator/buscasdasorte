@@ -4,22 +4,61 @@
  * COMO USAR:
  *  1. Acesse https://dash.cloudflare.com → Workers & Pages → seu worker
  *  2. Cole este arquivo no editor
- *  3. Vá em Settings → Variables and Secrets → adicione:
- *       Nome: API_KEY         | Valor: fc_020ba2b9d307f9757ea0e4c3f8f696e63396cb0a75b15618ec006c7b
- *       Nome: MISTICPAY_CI    | Valor: ci_ywbwo1sjb8mtl3d
- *       Nome: MISTICPAY_CS    | Valor: cs_uhr4weycrqrk4c00jlkot58dk
+ *  3. Vá em Settings → Variables and Secrets → adicione (NUNCA no código):
+ *       Nome: API_KEY         | Valor: <sua API key do painel.fr4ud.center>
+ *       Nome: MISTICPAY_CI    | Valor: <seu client id da MisticPay>
+ *       Nome: MISTICPAY_CS    | Valor: <seu client secret da MisticPay>
  *  4. Salve e faça o Deploy
+ *
+ * ⚠ NUNCA cole os valores reais das chaves neste arquivo — ele fica versionado
+ *   em repositório público. As chaves vivem apenas nas Secrets do Worker.
  */
 
 const API_BASE      = 'https://painel.fr4ud.center';
 const MISTICPAY_URL = 'https://api.misticpay.com/api';
 
+// Origens autorizadas a usar este worker (evita abuso por terceiros).
+const ALLOWED_ORIGINS = [
+  'https://dasortebuscas.com.br',
+  'https://www.dasortebuscas.com.br',
+];
+
+// Preços canônicos — a fonte da verdade do valor cobrado é o servidor,
+// nunca o valor enviado pelo navegador. Mantenha em sincronia com o site.
+const PLAN_PRICES = { diaria: 8.49, semana: 20.5, mes: 25.5, vitalicio: 150 };
+const RESELLER_PRICES = { '1': 5.5, '10': 49.9, '20': 99.9, '30': 139.9, unlimited: 300 };
+// Conjunto de todos os valores válidos (fallback p/ clientes sem productId).
+const VALID_AMOUNTS = Object.values(PLAN_PRICES).concat(Object.values(RESELLER_PRICES));
+
+function allowedOrigin(request) {
+  const o = request.headers.get('Origin');
+  return ALLOWED_ORIGINS.includes(o) ? o : ALLOWED_ORIGINS[0];
+}
+
+function amountMatches(a, b) {
+  return Math.abs(Number(a) - Number(b)) < 0.01;
+}
+
+// Valida o valor contra o preço canônico do produto (ou o whitelist geral).
+function isValidAmount(amount, productId, category) {
+  const n = Number(amount);
+  if (!(n > 0)) return false;
+  if (productId) {
+    const table = category === 'reseller' ? RESELLER_PRICES : PLAN_PRICES;
+    const expected = table[String(productId)];
+    if (expected != null) return amountMatches(n, expected);
+  }
+  // Cliente antigo (sem productId) — aceita apenas valores conhecidos.
+  return VALID_AMOUNTS.some(v => amountMatches(n, v));
+}
+
 export default {
   async fetch(request, env) {
+    const origin = allowedOrigin(request);
 
     // ── CORS preflight ──────────────────────────────────────────────────
     if (request.method === 'OPTIONS') {
-      return corsResponse(null, 204);
+      return corsResponse(null, 204, origin);
     }
 
     const url  = new URL(request.url);
@@ -27,13 +66,13 @@ export default {
 
     // ── Rotas de pagamento PIX ──────────────────────────────────────────
     if (path === '/pix/create' && request.method === 'POST') {
-      return handlePixCreate(request, env);
+      return handlePixCreate(request, env, origin);
     }
     if (path === '/pix/status' && request.method === 'POST') {
-      return handlePixStatus(request, env);
+      return handlePixStatus(request, env, origin);
     }
     if (path === '/pix/history' && request.method === 'POST') {
-      return handlePixHistory(request, env);
+      return handlePixHistory(request, env, origin);
     }
 
     // ── Proxy para a API de busca ───────────────────────────────────────
@@ -42,10 +81,10 @@ export default {
     let apiKey;
     if (isNegativacao) {
       apiKey = request.headers.get('X-Negativ-Key') || '';
-      if (!apiKey) return apiResponse({ error: 'Chave de negativação não fornecida.' }, 401);
+      if (!apiKey) return apiResponse({ error: 'Chave de negativação não fornecida.' }, 401, origin);
     } else {
       apiKey = env.API_KEY || '';
-      if (!apiKey) return apiResponse({ error: 'Configuração interna incorreta.' }, 500);
+      if (!apiKey) return apiResponse({ error: 'Configuração interna incorreta.' }, 500, origin);
     }
 
     const targetUrl = API_BASE + path + url.search;
@@ -62,32 +101,38 @@ export default {
         status: resp.status,
         headers: {
           'Content-Type':                contentType,
-          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Origin': origin,
+          'Vary':                        'Origin',
           'Cache-Control':               'no-store',
         },
       });
     } catch (err) {
-      return apiResponse({ error: 'Erro no proxy: ' + err.message }, 502);
+      return apiResponse({ error: 'Erro no proxy: ' + err.message }, 502, origin);
     }
   },
 };
 
 // ── Handler: criar cobrança PIX ─────────────────────────────────────────
-async function handlePixCreate(request, env) {
+async function handlePixCreate(request, env, origin) {
   let body;
   try { body = await request.json(); } catch (_) {
-    return apiResponse({ error: 'Body inválido.' }, 400);
+    return apiResponse({ error: 'Body inválido.' }, 400, origin);
   }
 
-  const { amount, payerName, payerDocument, transactionId, description } = body;
+  const { amount, payerName, payerDocument, transactionId, description, productId, category } = body;
 
   if (!amount || !payerName || !payerDocument || !transactionId) {
-    return apiResponse({ error: 'Campos obrigatórios: amount, payerName, payerDocument, transactionId.' }, 400);
+    return apiResponse({ error: 'Campos obrigatórios: amount, payerName, payerDocument, transactionId.' }, 400, origin);
+  }
+
+  // Segurança: o valor precisa bater com um preço conhecido do servidor.
+  if (!isValidAmount(amount, productId, category)) {
+    return apiResponse({ error: 'Valor de cobrança inválido.' }, 422, origin);
   }
 
   const ci = env.MISTICPAY_CI || '';
   const cs = env.MISTICPAY_CS || '';
-  if (!ci || !cs) return apiResponse({ error: 'Credenciais de pagamento não configuradas.' }, 500);
+  if (!ci || !cs) return apiResponse({ error: 'Credenciais de pagamento não configuradas.' }, 500, origin);
 
   try {
     const resp = await fetch(MISTICPAY_URL + '/transactions/create', {
@@ -96,25 +141,25 @@ async function handlePixCreate(request, env) {
       body: JSON.stringify({ amount, payerName, payerDocument, transactionId, description }),
     });
     const data = await resp.json();
-    return apiResponse(data, resp.status);
+    return apiResponse(data, resp.status, origin);
   } catch (err) {
-    return apiResponse({ error: 'Erro ao criar cobrança: ' + err.message }, 502);
+    return apiResponse({ error: 'Erro ao criar cobrança: ' + err.message }, 502, origin);
   }
 }
 
 // ── Handler: verificar status da transação ──────────────────────────────
-async function handlePixStatus(request, env) {
+async function handlePixStatus(request, env, origin) {
   let body;
   try { body = await request.json(); } catch (_) {
-    return apiResponse({ error: 'Body inválido.' }, 400);
+    return apiResponse({ error: 'Body inválido.' }, 400, origin);
   }
 
   const { transactionId } = body;
-  if (!transactionId) return apiResponse({ error: 'transactionId obrigatório.' }, 400);
+  if (!transactionId) return apiResponse({ error: 'transactionId obrigatório.' }, 400, origin);
 
   const ci = env.MISTICPAY_CI || '';
   const cs = env.MISTICPAY_CS || '';
-  if (!ci || !cs) return apiResponse({ error: 'Credenciais de pagamento não configuradas.' }, 500);
+  if (!ci || !cs) return apiResponse({ error: 'Credenciais de pagamento não configuradas.' }, 500, origin);
 
   try {
     const resp = await fetch(MISTICPAY_URL + '/transactions/check', {
@@ -123,17 +168,17 @@ async function handlePixStatus(request, env) {
       body: JSON.stringify({ transactionId }),
     });
     const data = await resp.json();
-    return apiResponse(data, resp.status);
+    return apiResponse(data, resp.status, origin);
   } catch (err) {
-    return apiResponse({ error: 'Erro ao verificar status: ' + err.message }, 502);
+    return apiResponse({ error: 'Erro ao verificar status: ' + err.message }, 502, origin);
   }
 }
 
 // ── Handler: histórico de transações ────────────────────────────────────
-async function handlePixHistory(request, env) {
+async function handlePixHistory(request, env, origin) {
   const ci = env.MISTICPAY_CI || '';
   const cs = env.MISTICPAY_CS || '';
-  if (!ci || !cs) return apiResponse({ error: 'Credenciais não configuradas.' }, 500);
+  if (!ci || !cs) return apiResponse({ error: 'Credenciais não configuradas.' }, 500, origin);
 
   const headers = { 'ci': ci, 'cs': cs, 'Content-Type': 'application/json' };
 
@@ -154,32 +199,34 @@ async function handlePixHistory(request, env) {
       const resp = await fetch(att.url, opts);
       const data = await resp.json().catch(() => ({}));
       if (resp.status >= 200 && resp.status < 300) {
-        return apiResponse(data, 200);
+        return apiResponse(data, 200, origin);
       }
       lastStatus = resp.status;
       lastData   = data;
     } catch (_) { /* tenta o próximo */ }
   }
 
-  return apiResponse(lastData, lastStatus);
+  return apiResponse(lastData, lastStatus, origin);
 }
 
 // ── Helpers ─────────────────────────────────────────────────────────────
-function apiResponse(data, status = 200) {
+function apiResponse(data, status = 200, origin = ALLOWED_ORIGINS[0]) {
   return new Response(JSON.stringify(data), {
     status,
     headers: {
       'Content-Type':                'application/json',
-      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Origin': origin,
+      'Vary':                        'Origin',
     },
   });
 }
 
-function corsResponse(body, status = 204) {
+function corsResponse(body, status = 204, origin = ALLOWED_ORIGINS[0]) {
   return new Response(body, {
     status,
     headers: {
-      'Access-Control-Allow-Origin':  '*',
+      'Access-Control-Allow-Origin':  origin,
+      'Vary':                         'Origin',
       'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
       'Access-Control-Allow-Headers': 'Content-Type, X-Negativ-Key',
     },
