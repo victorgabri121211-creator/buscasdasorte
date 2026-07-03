@@ -2404,6 +2404,165 @@ body.user-reseller-client #view-loja {
   border-color: var(--border2);
 }
 
+/* ── Ferramentas da busca (histórico / lote) ── */
+.view-search-tools { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.search-tool-btn {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 8px 13px; border-radius: 10px;
+  border: 1px solid var(--border); background: var(--card);
+  color: var(--text2); font-size: 13px; font-family: inherit; cursor: pointer;
+  transition: color 0.2s, border-color 0.2s, background 0.2s;
+}
+.search-tool-btn svg { width: 15px; height: 15px; }
+.search-tool-btn:hover { color: var(--green-bright); border-color: rgba(34,197,94,0.35); background: rgba(34,197,94,0.06); }
+
+/* ── Overlay/painel de histórico (compartilhado com busca em lote) ── */
+.hist-overlay {
+  position: fixed; inset: 0; z-index: 300;
+  background: rgba(0,0,0,0.66);
+  backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+  display: flex; align-items: center; justify-content: center;
+  padding: 16px; opacity: 0; pointer-events: none; transition: opacity 0.22s;
+}
+.hist-overlay.open { opacity: 1; pointer-events: auto; }
+.hist-box {
+  width: 100%; max-width: 560px; max-height: 82vh;
+  display: flex; flex-direction: column;
+  background: var(--card, #111); border: 1px solid var(--border);
+  border-radius: 18px; overflow: hidden;
+  box-shadow: 0 30px 80px rgba(0,0,0,0.6);
+  transform: translateY(10px) scale(0.98); transition: transform 0.22s var(--ease, ease);
+}
+.hist-overlay.open .hist-box { transform: none; }
+.hist-header {
+  display: flex; align-items: center; gap: 12px;
+  padding: 16px 18px; border-bottom: 1px solid var(--border);
+}
+.hist-header-icon {
+  width: 40px; height: 40px; border-radius: 12px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(74,222,128,0.1); border: 1px solid rgba(74,222,128,0.2);
+}
+.hist-header-icon svg { width: 19px; height: 19px; stroke: #4ade80; }
+.hist-title-wrap { flex: 1; min-width: 0; }
+.hist-title { font-size: 16px; font-weight: 800; color: var(--text); margin: 0; letter-spacing: -0.2px; }
+.hist-sub { font-size: 12px; color: var(--text2); margin: 2px 0 0; }
+.hist-close {
+  width: 30px; height: 30px; border-radius: 50%; flex-shrink: 0;
+  background: rgba(255,255,255,0.06); border: none; color: var(--text2);
+  font-size: 14px; cursor: pointer; transition: background 0.15s, color 0.15s;
+}
+.hist-close:hover { background: rgba(255,69,58,0.15); color: #ff453a; }
+
+.hist-tabs { display: flex; align-items: center; gap: 6px; padding: 12px 18px 0; }
+.hist-tab {
+  font-family: inherit; font-size: 12px; font-weight: 700;
+  padding: 7px 13px; border-radius: 9px; border: 1px solid var(--border);
+  background: transparent; color: var(--text2); cursor: pointer;
+  transition: color 0.15s, background 0.15s, border-color 0.15s;
+}
+.hist-tab:hover:not(.active) { color: var(--text); }
+.hist-tab.active { background: rgba(74,222,128,0.14); color: #4ade80; border-color: rgba(74,222,128,0.3); }
+.hist-clear {
+  margin-left: auto; font-family: inherit; font-size: 12px; font-weight: 600;
+  padding: 7px 12px; border-radius: 9px; border: 1px solid rgba(255,69,58,0.2);
+  background: rgba(255,69,58,0.08); color: rgba(255,69,58,0.8); cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.hist-clear:hover { background: rgba(255,69,58,0.16); color: #ff453a; }
+
+.hist-body { overflow-y: auto; padding: 12px 18px 18px; }
+.hist-empty { text-align: center; color: var(--text3); font-size: 13px; padding: 30px 0; margin: 0; }
+.hist-list { display: flex; flex-direction: column; gap: 4px; }
+.hist-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px; border-radius: 12px; border: 1px solid transparent;
+  transition: background 0.12s, border-color 0.12s;
+}
+.hist-row:hover { background: rgba(255,255,255,0.03); border-color: var(--border); }
+.hist-fav {
+  width: 30px; height: 30px; flex-shrink: 0; border-radius: 8px;
+  background: transparent; border: none; cursor: pointer;
+  color: var(--text3); display: flex; align-items: center; justify-content: center;
+  transition: color 0.15s;
+}
+.hist-fav svg { width: 16px; height: 16px; }
+.hist-fav:hover { color: #fbbf24; }
+.hist-fav.on { color: #fbbf24; }
+.hist-main { flex: 1; min-width: 0; cursor: pointer; }
+.hist-line { display: flex; align-items: center; gap: 8px; }
+.hist-label { font-size: 13px; font-weight: 700; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hist-count { font-size: 10px; font-weight: 700; color: #4ade80; background: rgba(74,222,128,0.12); padding: 1px 7px; border-radius: 999px; white-space: nowrap; }
+.hist-term { font-size: 12px; color: var(--text2); font-family: 'SF Mono', ui-monospace, monospace; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hist-tail { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+.hist-time { font-size: 11px; color: var(--text3); white-space: nowrap; margin-right: 2px; }
+.hist-rerun, .hist-del {
+  width: 28px; height: 28px; border-radius: 8px; border: 1px solid var(--border);
+  background: var(--card); color: var(--text2); cursor: pointer; font-size: 13px;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+}
+.hist-rerun:hover { color: #4ade80; border-color: rgba(74,222,128,0.35); background: rgba(74,222,128,0.06); }
+.hist-del:hover { color: #ff453a; border-color: rgba(255,69,58,0.3); background: rgba(255,69,58,0.08); }
+
+/* ── Busca em lote ── */
+.batch-modal-body { padding: 16px 18px 18px; }
+.batch-textarea {
+  width: 100%; min-height: 130px; resize: vertical;
+  background: var(--bg3, #141414); border: 1px solid var(--border); border-radius: 12px;
+  padding: 12px 14px; color: var(--text); font-size: 15px; font-family: 'SF Mono', ui-monospace, monospace;
+  outline: none; transition: border-color 0.15s;
+}
+.batch-textarea:focus { border-color: rgba(74,222,128,0.4); }
+.batch-submit {
+  margin-top: 12px; width: 100%; padding: 12px; border-radius: 12px; border: none;
+  background: linear-gradient(135deg, #43e06a, #23b84a); color: #032b0f;
+  font-size: 14px; font-weight: 800; font-family: inherit; cursor: pointer;
+  transition: filter 0.15s, transform 0.15s;
+}
+.batch-submit:hover { filter: brightness(1.05); transform: translateY(-1px); }
+
+.batch-panel {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 16px; padding: 16px; animation: cardIn 0.3s var(--ease, ease);
+}
+.batch-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 4px; }
+.batch-title { font-size: 14px; font-weight: 800; color: var(--text); }
+.batch-clear {
+  font-family: inherit; font-size: 12px; font-weight: 600; padding: 6px 11px; border-radius: 8px;
+  border: 1px solid rgba(255,69,58,0.2); background: rgba(255,69,58,0.08); color: rgba(255,69,58,0.8); cursor: pointer;
+}
+.batch-clear:hover { background: rgba(255,69,58,0.16); color: #ff453a; }
+.batch-note { font-size: 12px; color: var(--text3); margin: 0 0 12px; }
+.batch-list { display: flex; flex-direction: column; gap: 6px; }
+.batch-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 12px; border-radius: 11px;
+  background: rgba(255,255,255,0.02); border: 1px solid var(--border);
+}
+.batch-row.is-done { opacity: 0.62; }
+.batch-idx {
+  width: 22px; height: 22px; flex-shrink: 0; border-radius: 6px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 800; background: rgba(255,255,255,0.05); color: var(--text2);
+}
+.batch-cpf { flex: 1; font-size: 14px; font-family: 'SF Mono', ui-monospace, monospace; color: var(--text); }
+.batch-badge {
+  font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 999px;
+  background: rgba(255,255,255,0.06); color: var(--text2); white-space: nowrap;
+}
+.batch-badge.done { background: rgba(74,222,128,0.14); color: #4ade80; }
+.batch-go {
+  padding: 6px 13px; border-radius: 8px; border: 1px solid rgba(74,222,128,0.3);
+  background: rgba(74,222,128,0.1); color: #4ade80; font-size: 12px; font-weight: 700;
+  font-family: inherit; cursor: pointer; transition: background 0.15s;
+}
+.batch-go:hover { background: rgba(74,222,128,0.2); }
+
+@media (max-width: 560px) {
+  .hist-term { white-space: normal; }
+  .hist-time { display: none; }
+}
+
 .topbar-brand {
   cursor: pointer;
   transition: opacity 0.2s;

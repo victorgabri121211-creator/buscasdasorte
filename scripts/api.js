@@ -385,6 +385,17 @@ function runSearchBatch(toSearch, meta) {
     dossieOpened = true;
   }
 
+  // Captura o campo/valor primário preenchido para o histórico e re-execução.
+  let _histField = '', _histTerm = '';
+  try {
+    const _f = document.querySelector('.field-input');
+    const _filled = Array.prototype.find.call(
+      document.querySelectorAll('.field-input'),
+      el => el.value && el.value.trim()
+    );
+    if (_filled) { _histField = _filled.id; _histTerm = _filled.value.trim(); }
+  } catch (_) {}
+
   const finalize = () => {
     clearInterval(_msgTimer);
     try {
@@ -392,6 +403,10 @@ function runSearchBatch(toSearch, meta) {
         typeof isSearchSuccess === 'function' ? isSearchSuccess(r) : (r && r.ok)
       );
       const okCount = successList.length;
+
+      if (_histTerm && typeof SearchHistory !== 'undefined') {
+        SearchHistory.record({ term: _histTerm, field: _histField, label: label, count: okCount });
+      }
       contEl.className = okCount ? 'status-bar success' : 'status-bar error';
       contEl.innerHTML = okCount
         ? `${okCount} de ${total} consulta${okCount !== 1 ? 's' : ''} com dados`

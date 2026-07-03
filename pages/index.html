@@ -12,7 +12,7 @@
 <link rel="stylesheet" href="../styles/modal.css"/>
 <link rel="stylesheet" href="../styles/dossie.css"/>
 <link rel="stylesheet" href="../styles/negativ.css"/>
-<link rel="stylesheet" href="../styles/modules.css?v=2"/>
+<link rel="stylesheet" href="../styles/modules.css?v=3"/>
 <link rel="stylesheet" href="../styles/admin.css?v=4"/>
 <link rel="stylesheet" href="../styles/payment.css"/>
 </head>
@@ -506,7 +506,17 @@
     <div id="view-search" class="app-view">
     <div class="view-search-header">
       <div class="section-label" style="margin:0">Busca avançada</div>
-      <button type="button" class="view-search-back" onclick="showAppView('modules')">← Voltar aos módulos</button>
+      <div class="view-search-tools">
+        <button type="button" class="search-tool-btn" onclick="openBatchModal()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+          Busca em lote
+        </button>
+        <button type="button" class="search-tool-btn" onclick="openHistoryPanel()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v5h5"/><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"/><path d="M12 7v5l4 2"/></svg>
+          Histórico
+        </button>
+        <button type="button" class="view-search-back" onclick="showAppView('modules')">← Voltar aos módulos</button>
+      </div>
     </div>
     <div class="search-card">
       <div class="search-grid">
@@ -742,7 +752,8 @@ document.getElementById('login-user').addEventListener('keydown',e=>{if(e.key===
 <script src="../scripts/db.js?v=3"></script>
 <script src="../scripts/clovers.js?v=3"></script>
 <script src="../scripts/auth.js?v=3"></script>
-<script src="../scripts/api.js?v=4"></script>
+<script src="../scripts/history.js?v=1"></script>
+<script src="../scripts/api.js?v=5"></script>
 <script src="../scripts/modal.js?v=5"></script>
 <script src="../scripts/sales.js?v=5"></script>
 <script src="../scripts/plans.js?v=4"></script>
