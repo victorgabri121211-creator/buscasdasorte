@@ -45,6 +45,7 @@ const SECTION_TITLE_MAP = {
   telefones: 'TELEFONES',
   telefone: 'TELEFONES',
   phones: 'TELEFONES',
+  datasus_phones: 'TELEFONES (DATASUS)',
   vehicles: 'VEÍCULOS',
   veiculos: 'VEÍCULOS',
   receita: 'RECEITA FEDERAL',
@@ -171,6 +172,7 @@ const FIELD_LABEL_MAP = {
   address: 'ENDEREÇO',
   status: 'SITUAÇÃO',
   vinculo: 'VÍNCULO',
+  datasus_phones: 'TELEFONE',
   numero: 'NÚMERO',
   bairro: 'BAIRRO',
   logradouro: 'LOGRADOURO',
@@ -256,6 +258,7 @@ const HIDDEN_SECTION_KEYS = new Set([
   'data_quality', 'quality', 'qualidade_dos_dados', 'qualidade',
   'data_coverage', 'coverage', 'cobertura_de_dados', 'cobertura',
   'completeness', 'completude', 'data_completeness',
+  'contact_summary', 'resumo_de_contato',
   'meta', 'metadata', 'debug', '_debug', 'raw', '_raw', 'internal', '_internal',
 ]);
 
