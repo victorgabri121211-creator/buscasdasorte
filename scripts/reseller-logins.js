@@ -525,7 +525,9 @@ function copyResellerLoginCreated() {
   const name = document.getElementById('reseller-created-name')?.textContent || '';
   const pass = document.getElementById('reseller-created-pass')?.textContent || '';
   const days = document.getElementById('reseller-created-days')?.textContent || '';
+  const site = (typeof location !== 'undefined' && location.origin) ? location.origin : 'https://dasortebuscas.com.br';
   const text =
+    '🌐 SITE: ' + site + '\n' +
     '👤 NOME: ' + name + '\n' +
     '🔒 SENHA: ' + pass + '\n' +
     '📅 DIAS DE PUXADA: ' + days;

@@ -948,7 +948,8 @@ function openResellerCredsModal(item) {
       const u = document.getElementById('rc-username')?.textContent || '';
       const p = document.getElementById('rc-password')?.textContent || '';
       const d = document.getElementById('rc-days')?.textContent || '';
-      const text = '👤 Usuário: ' + u + '\n🔒 Senha: ' + p + '\n📅 Dias: ' + d;
+      const site = (typeof location !== 'undefined' && location.origin) ? location.origin : 'https://dasortebuscas.com.br';
+      const text = '🌐 SITE: ' + site + '\n👤 Usuário: ' + u + '\n🔒 Senha: ' + p + '\n📅 Dias: ' + d;
       navigator.clipboard.writeText(text).then(() => {
         const btn = document.getElementById('rc-copy-all');
         const prev = btn.textContent; btn.textContent = '✓ Tudo copiado!';
