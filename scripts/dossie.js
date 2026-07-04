@@ -1064,12 +1064,52 @@ function isExportPhotoField(f) {
   return isBase64ImageValue(raw) || (isPhotoFieldKey(f.key) && raw.length > 200);
 }
 
+// Escolhe um emoji que lembra o assunto do título/campo (usado na cópia).
+function pickEmoji(label) {
+  const s = String(label).normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase();
+  const has = (...w) => w.some(x => s.indexOf(x) !== -1);
+  if (has('CPF') || /\bRG\b/.test(s)) return '🪪';
+  if (has('CNS', 'CARTAO SUS', 'SAUDE')) return '🏥';
+  if (/\bMAE\b/.test(s)) return '👩';
+  if (/\bPAI\b/.test(s)) return '👨';
+  if (has('PARENTE', 'PARENTESCO', 'VINCULO', 'CONJUGE')) return '👪';
+  if (has('VIZINHO')) return '🏘️';
+  if (has('NASCIMENTO', 'ANIVERS') || /\bIDADE\b/.test(s)) return '🎂';
+  if (has('GENERO', 'SEXO')) return '⚧️';
+  if (has('OBITO', 'FALECID')) return '⚰️';
+  if (has('ESTADO CIVIL', 'CASAD', 'SOLTEIR', 'VIUV', 'DIVORC')) return '💍';
+  if (has('NOME')) return '👤';
+  if (has('EMAIL', 'E-MAIL')) return '📧';
+  if (has('TELEFONE', 'PHONE', 'CELULAR', 'DDD', 'OPERADORA')) return '📞';
+  if (has('CEP')) return '📮';
+  if (has('LOGRADOURO', 'RUA', 'AVENIDA')) return '🛣️';
+  if (has('BAIRRO')) return '🏘️';
+  if (has('MUNICIPIO', 'CIDADE', 'NATAL')) return '🏙️';
+  if (has('ENDERECO')) return '🏠';
+  if (has('NUMERO')) return '🔢';
+  if (has('NACIONALIDADE', 'PAIS')) return '🌎';
+  if (/\bUF\b/.test(s) || has('ESTADO ')) return '🗺️';
+  if (has('FONTE', 'SOURCE')) return '📌';
+  if (has('VEICULO', 'PLACA', 'RENAVAM', 'CHASSI', 'CARRO')) return '🚗';
+  if (has('MARCA', 'MODELO')) return '🚙';
+  if (has('SCORE')) return '📊';
+  if (has('PODER AQUISITIVO', 'RENDA', 'SALARIO', 'VALOR')) return '💰';
+  if (has('CLASSE', 'MOSAIC')) return '🏷️';
+  if (has('RECEITA', 'FEDERAL')) return '🏛️';
+  if (has('OCUPACAO', 'PROFISSAO', 'CBO', 'TRABALHO')) return '💼';
+  if (has('DATA')) return '📅';
+  if (has('CONTATO', 'RESUMO')) return '📇';
+  if (has('SITUACAO', 'STATUS')) return 'ℹ️';
+  if (has('TOTAL', 'QUANTIDADE', 'FAIXA', 'COD', 'TIPO', 'CATEGORIA')) return '🏷️';
+  return '🔹';
+}
+
 function exportFieldsToLines(fields, indent, lines) {
   partitionFields(fields).withVal.forEach(f => {
     if (isExportPhotoField(f)) return; // não despeja base64 de foto
     const label = formatFieldLabel(f.key);
     const val = translateFieldValue(String(f.val).trim(), f.key);
-    lines.push(indent + label + ': ' + val);
+    lines.push(indent + pickEmoji(label) + ' ' + label + ': ' + val);
   });
 }
 
@@ -1077,9 +1117,10 @@ function exportSectionsToLines(root, lines) {
   splitPayloadIntoSections(root).forEach(sec => {
     if (sec.groups) {
       lines.push('');
-      lines.push((sec.title || 'ITENS') + ' (' + sec.groups.length + ')');
+      const t = sec.title || 'ITENS';
+      lines.push(pickEmoji(t) + ' ' + t + ' (' + sec.groups.length + ')');
       sec.groups.forEach(g => {
-        lines.push('  ' + g.label);
+        lines.push('  ' + pickEmoji(g.label) + ' ' + g.label);
         exportFieldsToLines(g.fields, '    ', lines);
       });
       return;
@@ -1087,7 +1128,7 @@ function exportSectionsToLines(root, lines) {
     const { withVal } = partitionFields(sec.fields);
     if (!withVal.some(f => !isExportPhotoField(f))) return; // só foto/vazio: pula
     lines.push('');
-    if (sec.title) lines.push(sec.title);
+    if (sec.title) lines.push(pickEmoji(sec.title) + ' ' + sec.title);
     exportFieldsToLines(sec.fields, sec.title ? '  ' : '', lines);
   });
 }
