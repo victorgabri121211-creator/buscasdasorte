@@ -107,9 +107,10 @@ async function jwtVerify(token, secret) {
   try { return JSON.parse(b64urlDecodeToStr(b)); } catch (_) { return null; }
 }
 
-async function sbRpc(env, fn, params) {
+async function sbRpc(env, fn, params, useService) {
   const url = (env.SUPABASE_URL || SB_URL_DEFAULT) + '/rest/v1/rpc/' + fn;
-  const key = env.SUPABASE_ANON_KEY || '';
+  // Funções de pedido/pagamento usam a service key (privilegiada); o resto usa anon.
+  const key = useService ? (env.SUPABASE_SERVICE_KEY || '') : (env.SUPABASE_ANON_KEY || '');
   if (!key) return null;
   try {
     const r = await fetch(url, {
@@ -218,6 +219,10 @@ export default {
     if (path === '/pix/history' && request.method === 'POST') {
       return handlePixHistory(request, env, origin);
     }
+    // Webhook da MisticPay: confirma pagamento no servidor mesmo com o app fechado.
+    if (path === '/pix/webhook' && request.method === 'POST') {
+      return handlePixWebhook(request, env, origin);
+    }
 
     // -- Autenticação (emissão/renovação de token) --
     if (path === '/auth/login' && request.method === 'POST') {
@@ -263,6 +268,66 @@ export default {
   },
 };
 
+// -- Confirmacao de pagamento no servidor (concede plano/creditos) --
+const PIX_PAID = new Set(['APPROVED','COMPLETO','PAID','COMPLETED','PAGO','CONCLUIDO','CONCLUÍDA','SUCCESS','SUCESSO','DONE','AUTHORIZED','AUTORIZADO']);
+
+function pixStatusOf(obj, depth) {
+  if (!obj || typeof obj !== 'object' || (depth || 0) > 4) return '';
+  for (const k of ['status', 'state', 'situation', 'payment_status', 'transaction_status']) {
+    if (typeof obj[k] === 'string') return obj[k].toUpperCase();
+  }
+  for (const k of Object.keys(obj)) {
+    if (obj[k] && typeof obj[k] === 'object') {
+      const s = pixStatusOf(obj[k], (depth || 0) + 1);
+      if (s) return s;
+    }
+  }
+  return '';
+}
+function pixIsPaid(data) { return PIX_PAID.has(pixStatusOf(data, 0)); }
+
+// Acha o nosso transactionId ('bds...') dentro do payload do webhook.
+function pixFindTxId(obj, depth) {
+  if (!obj || typeof obj !== 'object' || (depth || 0) > 5) return '';
+  for (const k of ['transactionId', 'transaction_id', 'externalId', 'external_id', 'reference', 'external_reference', 'txid', 'id']) {
+    if (typeof obj[k] === 'string' && /^bds[a-z0-9]{6,}$/i.test(obj[k])) return obj[k];
+  }
+  for (const k of Object.keys(obj)) {
+    const v = obj[k];
+    if (typeof v === 'string' && /^bds[a-z0-9]{6,}$/i.test(v)) return v;
+    if (v && typeof v === 'object') { const r = pixFindTxId(v, (depth || 0) + 1); if (r) return r; }
+  }
+  return '';
+}
+
+// Confere o pagamento na MisticPay e, se pago, concede no servidor (idempotente).
+async function pixConfirmAndFulfill(env, transactionId) {
+  const ci = env.MISTICPAY_CI || '', cs = env.MISTICPAY_CS || '';
+  if (!ci || !cs || !transactionId) return false;
+  try {
+    const r = await fetch(MISTICPAY_URL + '/transactions/check', {
+      method: 'POST', headers: { 'ci': ci, 'cs': cs, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ transactionId }),
+    });
+    const d = await r.json().catch(() => null);
+    if (pixIsPaid(d)) {
+      await sbRpc(env, 'bds_fulfill_order', { p_tx_id: transactionId }, true);
+      return true;
+    }
+  } catch (_) {}
+  return false;
+}
+
+// -- Handler: webhook da MisticPay (pagamento confirmado, mesmo com o app fechado) --
+async function handlePixWebhook(request, env, origin) {
+  let body;
+  try { body = await request.json(); } catch (_) { body = {}; }
+  const txId = pixFindTxId(body, 0);
+  if (txId) { await pixConfirmAndFulfill(env, txId); }
+  // Sempre 200 para a MisticPay não reenviar em loop.
+  return apiResponse({ ok: true }, 200, origin);
+}
+
 // -- Handler: criar cobranca PIX --
 async function handlePixCreate(request, env, origin) {
   let body;
@@ -292,6 +357,19 @@ async function handlePixCreate(request, env, origin) {
       body: JSON.stringify({ amount, payerName, payerDocument, transactionId, description }),
     });
     const data = await resp.json();
+    // Guarda o pedido pendente para o servidor conceder no pagamento (sem
+    // depender do navegador). Best-effort: se falhar, a cobrança segue normal.
+    if (resp.ok) {
+      await sbRpc(env, 'bds_order_create', {
+        p_tx_id: transactionId,
+        p_username: String(body.username || ''),
+        p_category: category || 'plan',
+        p_product_id: String(productId || ''),
+        p_amount: Number(amount) || 0,
+        p_label: String(body.label || description || ''),
+        p_ref: body.ref || null,
+      }, true);
+    }
     return apiResponse(data, resp.status, origin);
   } catch (err) {
     return apiResponse({ error: 'Erro ao criar cobranca: ' + err.message }, 502, origin);
@@ -319,6 +397,9 @@ async function handlePixStatus(request, env, origin) {
       body: JSON.stringify({ transactionId }),
     });
     const data = await resp.json();
+    // Se já pagou, concede no servidor (idempotente) — corrige o caso do
+    // navegador que completou mas a gravação server-side falhava.
+    if (pixIsPaid(data)) { await sbRpc(env, 'bds_fulfill_order', { p_tx_id: transactionId }, true); }
     return apiResponse(data, resp.status, origin);
   } catch (err) {
     return apiResponse({ error: 'Erro ao verificar status: ' + err.message }, 502, origin);

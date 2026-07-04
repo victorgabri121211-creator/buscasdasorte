@@ -85,23 +85,29 @@ async function submitPixForm() {
   if (!name)          { _pixMsg('Informe seu nome completo.');      return; }
   if (cpf.length !== 11) { _pixMsg('CPF inválido — 11 dígitos.'); return; }
 
-  let amount, description, productId, category;
+  let amount, description, productId, category, label;
   if (_pixMode === 'reseller') {
     if (!_resellerPkg) return;
     amount      = _resellerPkg.price;
     category    = 'reseller';
     productId   = _resellerPkg.unlimited ? 'unlimited' : String(_resellerPkg.logins);
-    description = _resellerPkg.unlimited
-      ? 'BuscasDasorte - Pacote crédito infinito'
-      : 'BuscasDasorte - Pacote ' + _resellerPkg.logins + ' logins';
+    label       = _resellerPkg.unlimited ? 'Crédito infinito' : _resellerPkg.logins + ' logins';
+    description = 'BuscasDasorte - Pacote ' + (_resellerPkg.unlimited ? 'crédito infinito' : _resellerPkg.logins + ' logins');
   } else {
     const plan = PIX_PLANS[_pixPlan];
     if (!plan) return;
     amount      = plan.amount;
     category    = 'plan';
     productId   = _pixPlan;
+    label       = 'Plano ' + plan.label;
     description = 'BuscasDasorte - Plano ' + plan.label;
   }
+
+  // Dados para o servidor conceder o plano/crédito no pagamento (sem depender
+  // do navegador ficar aberto).
+  const buyer = (typeof getSession === 'function' ? getSession() : '') || '';
+  let affRef = null;
+  try { affRef = localStorage.getItem('bds_affiliate_ref') || null; } catch (e) {}
 
   const btn = document.getElementById('pix-submit-btn');
   if (btn) { btn.disabled = true; btn.textContent = 'Gerando…'; }
@@ -122,6 +128,9 @@ async function submitPixForm() {
         description,
         productId,
         category,
+        username:      buyer,
+        label:         label,
+        ref:           affRef,
       }),
     });
 
