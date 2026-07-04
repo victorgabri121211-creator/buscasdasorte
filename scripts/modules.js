@@ -948,7 +948,7 @@ function openResellerCredsModal(item) {
       const u = document.getElementById('rc-username')?.textContent || '';
       const p = document.getElementById('rc-password')?.textContent || '';
       const d = document.getElementById('rc-days')?.textContent || '';
-      const text = 'Usuário: ' + u + '\nSenha: ' + p + '\nDias: ' + d;
+      const text = '👤 Usuário: ' + u + '\n🔒 Senha: ' + p + '\n📅 Dias: ' + d;
       navigator.clipboard.writeText(text).then(() => {
         const btn = document.getElementById('rc-copy-all');
         const prev = btn.textContent; btn.textContent = '✓ Tudo copiado!';

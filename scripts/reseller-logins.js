@@ -526,9 +526,9 @@ function copyResellerLoginCreated() {
   const pass = document.getElementById('reseller-created-pass')?.textContent || '';
   const days = document.getElementById('reseller-created-days')?.textContent || '';
   const text =
-    'NOME: ' + name + '\n' +
-    'SENHA: ' + pass + '\n' +
-    'DIAS DE PUXADA: ' + days;
+    '👤 NOME: ' + name + '\n' +
+    '🔒 SENHA: ' + pass + '\n' +
+    '📅 DIAS DE PUXADA: ' + days;
 
   if (navigator.clipboard && navigator.clipboard.writeText) {
     navigator.clipboard.writeText(text).then(() => {
