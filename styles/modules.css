@@ -1071,6 +1071,11 @@ body.user-reseller-client #view-loja {
   }
 }
 
+/* Cabeçalho do painel: permite os botões (comprar/voltar) descerem em vez de
+   estourar a largura da tela quando não cabem. */
+#reseller-dashboard-root .sdash-header { flex-wrap: wrap; }
+#reseller-dashboard-root .sdash-header-left { flex: 1 1 auto; min-width: 0; }
+
 @media (max-width: 560px) {
   .rdash-stats {
     grid-template-columns: 1fr;
@@ -1081,9 +1086,24 @@ body.user-reseller-client #view-loja {
   .rdash-form-action {
     grid-column: unset;
   }
+
+  #reseller-dashboard-root .rdash-header-right { width: 100%; }
+  #reseller-dashboard-root .rdash-buy-btn-top { flex: 1; justify-content: center; }
+
+  /* Linha de cliente empilhada: nome + status em cima, ações + dias embaixo.
+     Evita 4 itens espremidos numa linha só no celular. */
   .rdash-row-main {
-    grid-template-columns: 1fr auto auto;
+    grid-template-columns: 1fr auto;
+    grid-template-areas:
+      "identity status"
+      "actions  days";
+    gap: 10px 12px;
+    align-items: center;
   }
+  .rdash-row-identity { grid-area: identity; }
+  .rdash-row-status   { grid-area: status; justify-self: end; }
+  .rdash-row-actions  { grid-area: actions; justify-self: start; flex-wrap: wrap; }
+  .rdash-row-days     { grid-area: days; flex-direction: row; align-items: center; gap: 8px; justify-self: end; min-width: 0; }
   .rdash-row-pass { display: none; }
 }
 
