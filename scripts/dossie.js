@@ -419,8 +419,21 @@ function createAlvoHeader(idx, sourceLabel) {
   return head;
 }
 
+// Marcadores de "campo vazio" que a API retorna como texto (ex.: "[empty]").
+// Tratados como sem valor: não aparecem no dossiê nem na exportação.
+const EMPTY_VALUE_STRINGS = new Set([
+  '', 'null', 'undefined', 'nan', 'n/a', 'na', '[empty]', 'empty',
+  '[vazio]', 'vazio', '[null]', '-', '--', '---', '...',
+]);
+
+function isEmptyFieldValue(val) {
+  if (val == null) return true;
+  if (typeof val === 'object') return false;
+  return EMPTY_VALUE_STRINGS.has(String(val).trim().toLowerCase());
+}
+
 function hasFieldValue(f) {
-  return f.val != null && f.val !== '' && f.val !== 'null' && f.val !== undefined;
+  return !isEmptyFieldValue(f.val);
 }
 
 function formatSectionTitle(key) {
@@ -431,7 +444,8 @@ function formatSectionTitle(key) {
 
 // Rótulo singular numerado para cada item de uma lista: PARENTES -> "PARENTE 01".
 function singularItemLabel(key, i) {
-  let t = formatSectionTitle(key);
+  // Usa só a última palavra do título ("OUTROS ENDEREÇOS" -> "ENDEREÇO").
+  let t = formatSectionTitle(key).split(' ').pop();
   if (/S$/.test(t) && !/SS$/.test(t)) t = t.slice(0, -1); // PARENTES -> PARENTE
   return t + ' ' + String(i + 1).padStart(2, '0');
 }
