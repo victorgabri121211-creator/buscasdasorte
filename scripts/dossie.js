@@ -186,10 +186,41 @@ const FIELD_ORDER = [
   'email', 'telefone', 'phone', 'cep', 'endereco', 'placa', 'rg', 'score',
 ];
 
+// Tradução palavra-a-palavra: pega chaves em inglês não mapeadas acima
+// (ex.: "vehicle_brand" -> "VEÍCULO MARCA", "has_phone" -> "TEM TELEFONE").
+const WORD_PT = {
+  name: 'Nome', first: 'Primeiro', last: 'Último', full: 'Completo', middle: 'Meio',
+  phone: 'Telefone', phones: 'Telefones', mobile: 'Celular', cell: 'Celular',
+  telephone: 'Telefone', number: 'Número', numbers: 'Números',
+  address: 'Endereço', addresses: 'Endereços', street: 'Logradouro', avenue: 'Avenida',
+  city: 'Cidade', state: 'UF', zip: 'CEP', code: 'Código', postal: 'Postal',
+  country: 'País', neighborhood: 'Bairro', district: 'Bairro', complement: 'Complemento',
+  region: 'Região', location: 'Localização', coordinates: 'Coordenadas',
+  birth: 'Nascimento', birthday: 'Nascimento', date: 'Data', age: 'Idade',
+  gender: 'Gênero', sex: 'Sexo', mother: 'Mãe', father: 'Pai', parent: 'Responsável',
+  email: 'E-mail', emails: 'E-mails', mail: 'E-mail',
+  income: 'Renda', salary: 'Salário', wage: 'Salário', money: 'Valor',
+  status: 'Situação', type: 'Tipo', kind: 'Tipo', category: 'Categoria',
+  source: 'Fonte', sources: 'Fontes', count: 'Quantidade', quantity: 'Quantidade',
+  value: 'Valor', total: 'Total', amount: 'Valor', score: 'Score', level: 'Nível',
+  vehicle: 'Veículo', vehicles: 'Veículos', car: 'Carro', brand: 'Marca',
+  model: 'Modelo', color: 'Cor', year: 'Ano', plate: 'Placa', owner: 'Proprietário',
+  chassis: 'Chassi', renavam: 'Renavam', fuel: 'Combustível',
+  marital: 'Estado', occupation: 'Ocupação', job: 'Profissão', profession: 'Profissão',
+  company: 'Empresa', employer: 'Empregador', work: 'Trabalho',
+  nationality: 'Nacionalidade', national: 'Nacional', naturalness: 'Naturalidade',
+  death: 'Óbito', deceased: 'Falecido', relationship: 'Parentesco', relative: 'Parente',
+  neighbor: 'Vizinho', neighbors: 'Vizinhos', bank: 'Banco', card: 'Cartão',
+  operator: 'Operadora', carrier: 'Operadora', social: 'Social', class: 'Classe',
+  has: 'Tem', is: 'É', updated: 'Atualizado', created: 'Criado', registration: 'Registro',
+  document: 'Documento', flag: 'Indicador', description: 'Descrição', info: 'Informação',
+  contact: 'Contato', summary: 'Resumo', title: 'Título', voter: 'Eleitor',
+};
+
 function formatFieldLabel(key) {
   const bare = key.replace(/^\./, '').split('.').pop().toLowerCase();
   if (FIELD_LABEL_MAP[bare]) return FIELD_LABEL_MAP[bare];
-  return bare.replace(/_/g, ' ').toUpperCase();
+  return bare.split(/[_\s]+/).map(w => WORD_PT[w] || w).join(' ').toUpperCase();
 }
 
 function fieldSortKey(key) {
@@ -216,23 +247,36 @@ const VIZINHOS_KEYS = new Set(['vizinhos', 'neighbors']);
 // Seções meta ("dados sobre os dados") que não interessam ao usuário: escondidas.
 const HIDDEN_SECTION_KEYS = new Set([
   'data_quality', 'quality', 'qualidade_dos_dados', 'qualidade',
+  'data_coverage', 'coverage', 'cobertura_de_dados', 'cobertura',
+  'completeness', 'completude', 'data_completeness',
+  'meta', 'metadata', 'debug', '_debug', 'raw', '_raw', 'internal', '_internal',
 ]);
 
 // Tradução de valores em inglês retornados pela API para português.
 const VALUE_TRANSLATE = {
-  'TRUE': 'Sim', 'FALSE': 'Não', 'YES': 'Sim', 'NO': 'Não',
-  'MALE': 'Masculino', 'FEMALE': 'Feminino',
+  'TRUE': 'Sim', 'FALSE': 'Não', 'YES': 'Sim', 'NO': 'Não', 'Y': 'Sim', 'N': 'Não',
+  'MALE': 'Masculino', 'FEMALE': 'Feminino', 'M': 'Masculino', 'F': 'Feminino',
   'MARRIED': 'Casado(a)', 'SINGLE': 'Solteiro(a)', 'DIVORCED': 'Divorciado(a)',
-  'WIDOWED': 'Viúvo(a)', 'SEPARATED': 'Separado(a)',
-  'ACTIVE': 'Ativo', 'INACTIVE': 'Inativo', 'REGULAR': 'Regular',
+  'WIDOWED': 'Viúvo(a)', 'SEPARATED': 'Separado(a)', 'STABLE UNION': 'União Estável',
+  'ACTIVE': 'Ativo', 'INACTIVE': 'Inativo', 'REGULAR': 'Regular', 'IRREGULAR': 'Irregular',
   'CANCELED': 'Cancelado', 'CANCELLED': 'Cancelado', 'SUSPENDED': 'Suspenso',
-  'PENDING': 'Pendente', 'DECEASED': 'Falecido', 'ALIVE': 'Vivo', 'LIVING': 'Vivo',
+  'PENDING': 'Pendente', 'BLOCKED': 'Bloqueado', 'VALID': 'Válido', 'INVALID': 'Inválido',
+  'DECEASED': 'Falecido', 'ALIVE': 'Vivo', 'LIVING': 'Vivo', 'DEAD': 'Falecido',
+  'HIGH': 'Alto', 'MEDIUM': 'Médio', 'LOW': 'Baixo', 'VERY HIGH': 'Muito Alto', 'VERY LOW': 'Muito Baixo',
   'UNKNOWN': 'Desconhecido', 'NOT INFORMED': 'Não informado', 'NOT FOUND': 'Não encontrado',
+  'NATIONAL': 'Nacional', 'FOREIGN': 'Estrangeiro', 'BRAZILIAN': 'Brasileiro',
+  'NEW': 'Novo', 'USED': 'Usado', 'OWNER': 'Proprietário',
 };
 
-function translateFieldValue(raw) {
+// Tradução de valores: só age em textos curtos que casam exatamente com o mapa.
+// Valores de 1 letra (M/F/Y/N) só traduzem se o campo for de gênero/booleano.
+const SINGLE_CHAR_KEYS = /(genero|gender|sexo|sex|obito|death|falecido|deceased|ativo|active)/i;
+
+function translateFieldValue(raw, key) {
   if (raw == null) return raw;
-  const t = VALUE_TRANSLATE[String(raw).trim().toUpperCase()];
+  const up = String(raw).trim().toUpperCase();
+  if (up.length === 1 && !SINGLE_CHAR_KEYS.test(String(key || ''))) return raw;
+  const t = VALUE_TRANSLATE[up];
   return t != null ? t : raw;
 }
 
@@ -527,7 +571,7 @@ function formatFieldValueHtml(f) {
       '</div>'
     );
   }
-  return '<div class="dossie-field-val">' + escHtml(translateFieldValue(raw)) + '</div>';
+  return '<div class="dossie-field-val">' + escHtml(translateFieldValue(raw, f.key)) + '</div>';
 }
 
 function createFieldGrid(fields, muted) {
