@@ -345,31 +345,80 @@
   .dossie-tactical-grid { grid-template-columns: 1fr; }
 }
 
-.dossie-field,
-.dossie-tactical-cell {
-  background: rgba(4, 14, 10, 0.75);
-  border: 1px solid rgba(34, 197, 94, 0.18);
-  border-radius: 10px;
-  padding: 12px 14px;
-  min-height: 68px;
+/* ── Listas de pessoas (parentes, vizinhos) em sub-cartões ── */
+.dossie-grouped-section .dossie-person-list {
   display: flex;
   flex-direction: column;
-  justify-content: flex-start;
-  transition: border-color 0.2s, box-shadow 0.2s;
+  gap: 10px;
+}
+
+.dossie-person-card {
+  border: 1px solid rgba(34, 197, 94, 0.16);
+  border-left: 3px solid rgba(34, 197, 94, 0.55);
+  border-radius: 11px;
+  padding: 12px 13px 13px;
+  background: rgba(6, 18, 12, 0.55);
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.dossie-person-card:hover {
+  border-color: rgba(74, 222, 128, 0.3);
+  border-left-color: rgba(74, 222, 128, 0.85);
+  background: rgba(8, 24, 16, 0.7);
+}
+
+.dossie-person-label {
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #4ade80;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.dossie-person-label::before {
+  content: "";
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: #4ade80;
+  box-shadow: 0 0 8px rgba(74, 222, 128, 0.7);
+  flex-shrink: 0;
+}
+
+.dossie-person-card .dossie-grid,
+.dossie-person-card .dossie-tactical-grid {
+  gap: 8px;
+}
+
+.dossie-field,
+.dossie-tactical-cell {
+  background: rgba(4, 14, 10, 0.6);
+  border: 1px solid rgba(34, 197, 94, 0.14);
+  border-radius: 9px;
+  padding: 9px 12px;
+  min-height: 50px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 3px;
+  transition: border-color 0.2s, background 0.2s;
 }
 
 .dossie-field:hover,
 .dossie-tactical-cell:hover {
-  border-color: rgba(74, 222, 128, 0.4);
-  box-shadow: 0 0 20px rgba(34, 197, 94, 0.1);
+  border-color: rgba(74, 222, 128, 0.35);
+  background: rgba(8, 22, 15, 0.75);
 }
 
 .dossie-field-key {
-  font-size: 10px; font-weight: 700;
-  color: #4ade80;
+  font-size: 9.5px; font-weight: 700;
+  color: rgba(74, 222, 128, 0.82);
   text-transform: uppercase;
-  letter-spacing: 0.1em;
-  margin-bottom: 8px;
+  letter-spacing: 0.08em;
+  margin-bottom: 0;
   line-height: 1.2;
 }
 
@@ -378,7 +427,7 @@
   color: #f1f5f9;
   font-weight: 600;
   word-break: break-word;
-  line-height: 1.4;
+  line-height: 1.35;
   letter-spacing: 0.01em;
 }
 

@@ -347,6 +347,13 @@ function formatSectionTitle(key) {
   return bare.replace(/_/g, ' ').toUpperCase();
 }
 
+// Rótulo singular numerado para cada item de uma lista: PARENTES -> "PARENTE 01".
+function singularItemLabel(key, i) {
+  let t = formatSectionTitle(key);
+  if (/S$/.test(t) && !/SS$/.test(t)) t = t.slice(0, -1); // PARENTES -> PARENTE
+  return t + ' ' + String(i + 1).padStart(2, '0');
+}
+
 function partitionFields(fields) {
   const withVal = fields.filter(hasFieldValue).sort((a, b) => fieldSortKey(a.key) - fieldSortKey(b.key));
   const nullFields = fields.filter(f => !hasFieldValue(f)).sort((a, b) => fieldSortKey(a.key) - fieldSortKey(b.key));
@@ -363,6 +370,10 @@ function resultDataSortKey(res) {
   let sectionsOnlyEmpty = 0;
 
   splitPayloadIntoSections(root).forEach(sec => {
+    if (sec.groups) {
+      sec.groups.forEach(g => { withVal += partitionFields(g.fields).withVal.length; });
+      return;
+    }
     const p = partitionFields(sec.fields);
     withVal += p.withVal.length;
     empty += p.nullFields.length;
@@ -405,8 +416,27 @@ function splitPayloadIntoSections(root) {
   }
 
   sectionKeys.forEach(k => {
+    const v = root[k];
+
+    // Lista de objetos (parentes, vizinhos, endereços...): agrupa cada item
+    // num sub-cartão próprio, em vez de achatar tudo num grid confuso.
+    if (Array.isArray(v) && v.some(x => x && typeof x === 'object' && !Array.isArray(x))) {
+      let items = v;
+      if (VIZINHOS_KEYS.has(k.toLowerCase()) && items.length > VIZINHOS_MAX) {
+        items = items.slice(0, VIZINHOS_MAX);
+      }
+      const groups = [];
+      items.forEach((item, i) => {
+        if (item == null || typeof item !== 'object') return;
+        const fields = [];
+        collectResultFields(item, '', fields);
+        if (fields.length) groups.push({ label: singularItemLabel(k, i), fields });
+      });
+      if (groups.length) { sections.push({ title: formatSectionTitle(k), groups }); return; }
+    }
+
     const fields = [];
-    collectResultFields(root[k], k, fields);
+    collectResultFields(v, k, fields);
     if (fields.length) sections.push({ title: formatSectionTitle(k), fields });
   });
 
@@ -486,20 +516,53 @@ function createFieldGrid(fields, muted) {
   return grid;
 }
 
-function createSourceSection(title, fields, muted) {
-  const wrap = document.createElement('div');
-  wrap.className = 'dossie-source-section' + (muted ? ' dossie-source-section-muted' : '');
-
+function createSourceHead(title) {
   const head = document.createElement('div');
   head.className = 'dossie-source-head';
   head.innerHTML =
     '<span class="dossie-source-icon">' + FOLDER_SVG + '</span>' +
     '<span class="dossie-source-title">' + escHtml(title) + '</span>';
-  wrap.appendChild(head);
+  return head;
+}
+
+function createSourceSection(title, fields, muted) {
+  const wrap = document.createElement('div');
+  wrap.className = 'dossie-source-section' + (muted ? ' dossie-source-section-muted' : '');
+  wrap.appendChild(createSourceHead(title));
 
   const inner = document.createElement('div');
   inner.className = 'dossie-source-inner';
   inner.appendChild(createFieldGrid(fields, muted));
+  wrap.appendChild(inner);
+  return wrap;
+}
+
+// Sub-cartão de uma pessoa/item de lista (parente, vizinho...).
+function createPersonCard(label, fields) {
+  const { withVal, nullFields } = partitionFields(fields);
+  const shown = withVal.length ? withVal : nullFields;
+
+  const card = document.createElement('div');
+  card.className = 'dossie-person-card';
+
+  const head = document.createElement('div');
+  head.className = 'dossie-person-label';
+  head.textContent = label;
+  card.appendChild(head);
+
+  card.appendChild(createFieldGrid(shown, !withVal.length));
+  return card;
+}
+
+// Seção com vários itens (cada um num sub-cartão): PARENTES, VIZINHOS...
+function createGroupedSection(title, groups) {
+  const wrap = document.createElement('div');
+  wrap.className = 'dossie-source-section dossie-grouped-section';
+  wrap.appendChild(createSourceHead(title + ' (' + groups.length + ')'));
+
+  const inner = document.createElement('div');
+  inner.className = 'dossie-person-list';
+  groups.forEach(g => inner.appendChild(createPersonCard(g.label, g.fields)));
   wrap.appendChild(inner);
   return wrap;
 }
@@ -780,19 +843,29 @@ function buildResultPanel(result, idx) {
     return panel;
   }
 
+  const secWithCount = sec => sec.groups
+    ? sec.groups.reduce((n, g) => n + partitionFields(g.fields).withVal.length, 0)
+    : partitionFields(sec.fields).withVal.length;
+
   const sections = splitPayloadIntoSections(root).slice().sort((a, b) => {
-    const pa = partitionFields(a.fields);
-    const pb = partitionFields(b.fields);
-    const aHas = pa.withVal.length > 0 ? 0 : 1;
-    const bHas = pb.withVal.length > 0 ? 0 : 1;
+    const av = secWithCount(a), bv = secWithCount(b);
+    const aHas = av > 0 ? 0 : 1;
+    const bHas = bv > 0 ? 0 : 1;
     if (aHas !== bHas) return aHas - bHas;
-    return pb.withVal.length - pa.withVal.length;
+    return bv - av;
   });
 
   const parts = [];
   let hasRendered = false;
 
   sections.forEach(sec => {
+    // Seção agrupada (parentes, vizinhos...): cada pessoa num sub-cartão.
+    if (sec.groups) {
+      parts.push({ priority: 0, node: createGroupedSection(sec.title, sec.groups) });
+      hasRendered = true;
+      return;
+    }
+
     const { withVal, nullFields } = partitionFields(sec.fields);
     if (!withVal.length && !nullFields.length) return;
 
