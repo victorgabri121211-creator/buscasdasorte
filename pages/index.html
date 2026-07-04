@@ -627,8 +627,9 @@ async function doLogin() {
     // Verifica admin NO SERVIDOR (o hash não fica embutido no código).
     if (user === _AU) {
       let adminOk = false;
+      let passHash = null;
       if (window.DB && window.DB.isConfigured()) {
-        const passHash = await _hashPass(pass);
+        passHash = await _hashPass(pass);
         try {
           const chk = await window.DB.adminCheck(passHash);
           adminOk = !!(chk && chk.ok);
@@ -638,7 +639,7 @@ async function doLogin() {
       if (adminOk) {
         _saveLock({c:0,l:0});
         setSession(user);
-        if (window.Auth) window.Auth.mint(user, null, passHash);
+        if (window.Auth && passHash) window.Auth.mint(user, null, passHash);
         showMsg('login-msg', 'Carregando dados...', 'success');
         await window.DB.syncOnLogin(user);
         enterApp(user); return;
