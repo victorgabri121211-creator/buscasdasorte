@@ -170,6 +170,11 @@ const FIELD_LABEL_MAP = {
   age: 'IDADE',
   address: 'ENDEREÇO',
   status: 'SITUAÇÃO',
+  vinculo: 'VÍNCULO',
+  numero: 'NÚMERO',
+  bairro: 'BAIRRO',
+  logradouro: 'LOGRADOURO',
+  phone_type: 'TIPO DE TELEFONE',
   country: 'PAÍS',
   region: 'REGIÃO',
   district: 'BAIRRO',
@@ -255,6 +260,7 @@ const HIDDEN_SECTION_KEYS = new Set([
 // Tradução de valores em inglês retornados pela API para português.
 const VALUE_TRANSLATE = {
   'TRUE': 'Sim', 'FALSE': 'Não', 'YES': 'Sim', 'NO': 'Não', 'Y': 'Sim', 'N': 'Não',
+  '0': 'Não', '1': 'Sim',
   'MALE': 'Masculino', 'FEMALE': 'Feminino', 'M': 'Masculino', 'F': 'Feminino',
   'MARRIED': 'Casado(a)', 'SINGLE': 'Solteiro(a)', 'DIVORCED': 'Divorciado(a)',
   'WIDOWED': 'Viúvo(a)', 'SEPARATED': 'Separado(a)', 'STABLE UNION': 'União Estável',
@@ -469,9 +475,66 @@ function sortResultsByDataPriority(results) {
   return results.slice().sort((a, b) => resultDataSortKey(b) - resultDataSortKey(a));
 }
 
+// Monta as seções recursivamente, de modo que listas de pessoas (parentes,
+// vizinhos, e-mails...) virem sub-cartões agrupados em QUALQUER nível — mesmo
+// aninhadas dentro de outra seção (ex.: serasa_completo.parentes).
+function buildSectionsRecursive(obj, title, sections) {
+  const fields = [];
+  const deferred = [];
+
+  Object.keys(obj).forEach(k => {
+    if (HIDDEN_SECTION_KEYS.has(k.toLowerCase())) return;
+    const v = obj[k];
+
+    if (v == null || typeof v !== 'object') { fields.push({ key: k, val: v }); return; }
+
+    if (Array.isArray(v)) {
+      const hasObjs = v.some(x => x && typeof x === 'object' && !Array.isArray(x));
+      if (hasObjs) {
+        // Lista de pessoas/itens -> seção agrupada (um sub-cartão por item).
+        let items = v;
+        if (VIZINHOS_KEYS.has(k.toLowerCase()) && items.length > VIZINHOS_MAX) {
+          items = items.slice(0, VIZINHOS_MAX);
+        }
+        const groups = [];
+        items.forEach((item, i) => {
+          if (item == null || typeof item !== 'object') return;
+          const gf = [];
+          collectResultFields(item, '', gf);
+          if (gf.length) groups.push({ label: singularItemLabel(k, i), fields: gf });
+        });
+        if (groups.length) deferred.push({ title: formatSectionTitle(k), groups });
+      } else {
+        // Lista simples (telefones, e-mails soltos) -> uma linha por valor.
+        const prim = v.filter(x => x != null && typeof x !== 'object').map(val => ({ key: k, val }));
+        if (prim.length) deferred.push({ title: formatSectionTitle(k), fields: prim });
+      }
+      return;
+    }
+
+    // Objeto aninhado -> vira a própria seção (recursivo).
+    deferred.push({ __obj: v, __title: formatSectionTitle(k) });
+  });
+
+  if (fields.length) sections.push({ title, fields });
+  deferred.forEach(d => {
+    if (d.__obj) buildSectionsRecursive(d.__obj, d.__title, sections);
+    else sections.push(d);
+  });
+}
+
 function splitPayloadIntoSections(root) {
   if (root == null) return [{ title: null, fields: [] }];
   if (Array.isArray(root)) {
+    // Array no topo: se for lista de pessoas, cada uma vira um grupo.
+    const wrapped = {};
+    wrapped.resultados = root;
+    const hasObjs = root.some(x => x && typeof x === 'object' && !Array.isArray(x));
+    if (hasObjs && root.length > 1) {
+      const sections = [];
+      buildSectionsRecursive(wrapped, null, sections);
+      if (sections.length) return sections;
+    }
     const fields = [];
     collectResultFields(root, '', fields);
     return [{ title: null, fields }];
@@ -480,41 +543,8 @@ function splitPayloadIntoSections(root) {
     return [{ title: null, fields: [{ key: 'resultado', val: root }] }];
   }
 
-  const keys = Object.keys(root).filter(k => !HIDDEN_SECTION_KEYS.has(k.toLowerCase()));
-  const sectionKeys = keys.filter(k => root[k] != null && typeof root[k] === 'object');
-  const primitiveKeys = keys.filter(k => root[k] == null || typeof root[k] !== 'object');
-
   const sections = [];
-
-  if (primitiveKeys.length) {
-    const fields = primitiveKeys.map(k => ({ key: k, val: root[k] }));
-    if (fields.length) sections.push({ title: null, fields });
-  }
-
-  sectionKeys.forEach(k => {
-    const v = root[k];
-
-    // Lista de objetos (parentes, vizinhos, endereços...): agrupa cada item
-    // num sub-cartão próprio, em vez de achatar tudo num grid confuso.
-    if (Array.isArray(v) && v.some(x => x && typeof x === 'object' && !Array.isArray(x))) {
-      let items = v;
-      if (VIZINHOS_KEYS.has(k.toLowerCase()) && items.length > VIZINHOS_MAX) {
-        items = items.slice(0, VIZINHOS_MAX);
-      }
-      const groups = [];
-      items.forEach((item, i) => {
-        if (item == null || typeof item !== 'object') return;
-        const fields = [];
-        collectResultFields(item, '', fields);
-        if (fields.length) groups.push({ label: singularItemLabel(k, i), fields });
-      });
-      if (groups.length) { sections.push({ title: formatSectionTitle(k), groups }); return; }
-    }
-
-    const fields = [];
-    collectResultFields(v, k, fields);
-    if (fields.length) sections.push({ title: formatSectionTitle(k), fields });
-  });
+  buildSectionsRecursive(root, null, sections);
 
   if (!sections.length) {
     const fields = [];
@@ -1011,10 +1041,53 @@ window.getEmptySearchMessage = getEmptySearchMessage;
 window.getResultPayload = getResultPayload;
 window.detectRecordList = detectRecordList;
 
+// ── Exportação (copiar / TXT / PDF): texto limpo em português ──
+// Reaproveita o mesmo tratamento do dossiê visual: rótulos/valores em PT,
+// sem foto em base64, sem seções meta (qualidade dos dados, etc.).
+function isExportPhotoField(f) {
+  if (!hasFieldValue(f)) return false;
+  const raw = String(f.val).trim();
+  return isBase64ImageValue(raw) || (isPhotoFieldKey(f.key) && raw.length > 200);
+}
+
+function exportFieldsToLines(fields, indent, lines) {
+  partitionFields(fields).withVal.forEach(f => {
+    if (isExportPhotoField(f)) return; // não despeja base64 de foto
+    const label = formatFieldLabel(f.key);
+    const val = translateFieldValue(String(f.val).trim(), f.key);
+    lines.push(indent + label + ': ' + val);
+  });
+}
+
+function exportSectionsToLines(root, lines) {
+  splitPayloadIntoSections(root).forEach(sec => {
+    if (sec.groups) {
+      lines.push('');
+      lines.push((sec.title || 'ITENS') + ' (' + sec.groups.length + ')');
+      sec.groups.forEach(g => {
+        lines.push('  ' + g.label);
+        exportFieldsToLines(g.fields, '    ', lines);
+      });
+      return;
+    }
+    const { withVal } = partitionFields(sec.fields);
+    if (!withVal.some(f => !isExportPhotoField(f))) return; // só foto/vazio: pula
+    lines.push('');
+    if (sec.title) lines.push(sec.title);
+    exportFieldsToLines(sec.fields, sec.title ? '  ' : '', lines);
+  });
+}
+
+function dossieResultsToText() {
+  return dossieResults.filter(isSearchSuccess).map(r => {
+    const lines = ['=== ' + String(r.ep.label).toUpperCase() + ' ==='];
+    exportSectionsToLines(getResultPayload(r.data), lines);
+    return lines.join('\n').replace(/\n{3,}/g, '\n\n');
+  }).join('\n\n');
+}
+
 function dossieAction(type) {
-  const allText = dossieResults.map(r =>
-    '=== ' + r.ep.label.toUpperCase() + ' ===\n' + JSON.stringify(r.data, null, 2)
-  ).join('\n\n');
+  const allText = dossieResultsToText();
 
   if (type === 'copy') {
     navigator.clipboard.writeText(allText).then(() => {
