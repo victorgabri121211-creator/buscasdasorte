@@ -199,11 +199,22 @@ function getResultPayload(data) {
   return data;
 }
 
+// Máximo de vizinhos exibidos no dossiê. A API costuma devolver uma lista longa;
+// mostramos só os primeiros para não poluir o perfil.
+const VIZINHOS_MAX = 2;
+const VIZINHOS_KEYS = new Set(['vizinhos', 'neighbors']);
+
 function collectResultFields(obj, prefix, out) {
   if (obj == null) return;
   if (Array.isArray(obj)) {
-    obj.forEach((item, i) => {
-      const next = prefix + (obj.length > 1 ? '[' + i + ']' : '');
+    // Limita a quantidade de vizinhos (a chave da lista é o último segmento do prefixo).
+    let items = obj;
+    const bare = String(prefix || '').split('.').pop().replace(/\[\d+\]$/, '').toLowerCase();
+    if (VIZINHOS_KEYS.has(bare) && items.length > VIZINHOS_MAX) {
+      items = items.slice(0, VIZINHOS_MAX);
+    }
+    items.forEach((item, i) => {
+      const next = prefix + (items.length > 1 ? '[' + i + ']' : '');
       collectResultFields(item, next, out);
     });
     return;
