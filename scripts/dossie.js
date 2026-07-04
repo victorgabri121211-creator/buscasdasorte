@@ -44,8 +44,8 @@ const SECTION_TITLE_MAP = {
   address: 'ENDEREÇO',
   telefones: 'TELEFONES',
   telefone: 'TELEFONES',
-  phones: 'DATASUS PHONES',
-  vehicles: 'VEHICLES',
+  phones: 'TELEFONES',
+  vehicles: 'VEÍCULOS',
   veiculos: 'VEÍCULOS',
   receita: 'RECEITA FEDERAL',
   dados_cadastrais: 'DADOS CADASTRAIS',
@@ -85,9 +85,9 @@ const FIELD_LABEL_MAP = {
   genero: 'GÊNERO',
   gender: 'GÊNERO',
   sexo: 'GÊNERO',
-  birth_date: 'BIRTH DATE',
-  data_nascimento: 'BIRTH DATE',
-  nascimento: 'BIRTH DATE',
+  birth_date: 'NASCIMENTO',
+  data_nascimento: 'DATA DE NASCIMENTO',
+  nascimento: 'NASCIMENTO',
   nome_mae: 'NOME DA MÃE',
   mother_name: 'NOME DA MÃE',
   mae: 'NOME DA MÃE',
@@ -167,6 +167,15 @@ const FIELD_LABEL_MAP = {
   pis: 'PIS',
   tse: 'TÍTULO (TSE)',
   status_date: 'DATA DA SITUAÇÃO',
+  age: 'IDADE',
+  address: 'ENDEREÇO',
+  status: 'SITUAÇÃO',
+  country: 'PAÍS',
+  region: 'REGIÃO',
+  district: 'BAIRRO',
+  birthday: 'NASCIMENTO',
+  relationship: 'PARENTESCO',
+  parentesco: 'PARENTESCO',
 };
 
 const FIELD_ORDER = [
@@ -203,6 +212,29 @@ function getResultPayload(data) {
 // mostramos só os primeiros para não poluir o perfil.
 const VIZINHOS_MAX = 2;
 const VIZINHOS_KEYS = new Set(['vizinhos', 'neighbors']);
+
+// Seções meta ("dados sobre os dados") que não interessam ao usuário: escondidas.
+const HIDDEN_SECTION_KEYS = new Set([
+  'data_quality', 'quality', 'qualidade_dos_dados', 'qualidade',
+]);
+
+// Tradução de valores em inglês retornados pela API para português.
+const VALUE_TRANSLATE = {
+  'TRUE': 'Sim', 'FALSE': 'Não', 'YES': 'Sim', 'NO': 'Não',
+  'MALE': 'Masculino', 'FEMALE': 'Feminino',
+  'MARRIED': 'Casado(a)', 'SINGLE': 'Solteiro(a)', 'DIVORCED': 'Divorciado(a)',
+  'WIDOWED': 'Viúvo(a)', 'SEPARATED': 'Separado(a)',
+  'ACTIVE': 'Ativo', 'INACTIVE': 'Inativo', 'REGULAR': 'Regular',
+  'CANCELED': 'Cancelado', 'CANCELLED': 'Cancelado', 'SUSPENDED': 'Suspenso',
+  'PENDING': 'Pendente', 'DECEASED': 'Falecido', 'ALIVE': 'Vivo', 'LIVING': 'Vivo',
+  'UNKNOWN': 'Desconhecido', 'NOT INFORMED': 'Não informado', 'NOT FOUND': 'Não encontrado',
+};
+
+function translateFieldValue(raw) {
+  if (raw == null) return raw;
+  const t = VALUE_TRANSLATE[String(raw).trim().toUpperCase()];
+  return t != null ? t : raw;
+}
 
 function collectResultFields(obj, prefix, out) {
   if (obj == null) return;
@@ -404,7 +436,7 @@ function splitPayloadIntoSections(root) {
     return [{ title: null, fields: [{ key: 'resultado', val: root }] }];
   }
 
-  const keys = Object.keys(root);
+  const keys = Object.keys(root).filter(k => !HIDDEN_SECTION_KEYS.has(k.toLowerCase()));
   const sectionKeys = keys.filter(k => root[k] != null && typeof root[k] === 'object');
   const primitiveKeys = keys.filter(k => root[k] == null || typeof root[k] !== 'object');
 
@@ -495,7 +527,7 @@ function formatFieldValueHtml(f) {
       '</div>'
     );
   }
-  return '<div class="dossie-field-val">' + escHtml(raw) + '</div>';
+  return '<div class="dossie-field-val">' + escHtml(translateFieldValue(raw)) + '</div>';
 }
 
 function createFieldGrid(fields, muted) {
