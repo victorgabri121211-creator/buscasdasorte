@@ -2,6 +2,58 @@
 // A API Key principal está no Cloudflare Worker (não no navegador).
 // Veja worker.js para configuração.
 const PROXY = 'https://ancient-glitter-ad86.victorgabri121211.workers.dev';
+
+// ── Crachá de acesso (token do worker) ──────────────────────────────────────
+// Emitido no login (usuário logado + plano ativo) e enviado em toda consulta.
+// O worker valida antes de chamar a API paga. Sem token válido (em modo
+// estrito) a consulta é recusada.
+const AUTH_TOKEN_KEY = 'bds_auth_token';
+let _authToken = null;
+try { _authToken = localStorage.getItem(AUTH_TOKEN_KEY) || null; } catch (e) {}
+
+function _setAuthToken(t) {
+  _authToken = t || null;
+  try {
+    if (t) localStorage.setItem(AUTH_TOKEN_KEY, t);
+    else localStorage.removeItem(AUTH_TOKEN_KEY);
+  } catch (e) {}
+}
+
+// Emite um token no login. adminHash para o admin; senha para os demais.
+async function authMint(username, password, adminHash) {
+  try {
+    const body = adminHash ? { username: username, adminHash: adminHash }
+                           : { username: username, password: password };
+    const r = await fetch(PROXY + '/auth/login', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
+    });
+    const d = await r.json().catch(() => null);
+    if (d && d.ok && d.token) { _setAuthToken(d.token); return true; }
+  } catch (e) {}
+  return false;
+}
+
+// Renova o token (sem senha) usando o token atual; reconfirma o plano no worker.
+async function authRefresh() {
+  if (!_authToken) return false;
+  try {
+    const r = await fetch(PROXY + '/auth/refresh', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token: _authToken })
+    });
+    const d = await r.json().catch(() => null);
+    if (d && d.ok && d.token) { _setAuthToken(d.token); return true; }
+    if (r.status === 401) _setAuthToken(null);
+  } catch (e) {}
+  return false;
+}
+
+function authLogout() { _setAuthToken(null); }
+
+if (typeof window !== 'undefined') {
+  window.Auth = { mint: authMint, refresh: authRefresh, logout: authLogout, getToken: function () { return _authToken; } };
+  // Ao carregar com sessão já ativa, renova o crachá em background.
+  try { if (_authToken) setTimeout(function () { authRefresh(); }, 800); } catch (e) {}
+}
 const CONSULT_TIPOS = ['serasa','spc','receita','tse','denatran'];
 const FETCH_TIMEOUT_MS = 20000;
 const CACHE_TTL_MS = 60 * 60 * 1000;
@@ -23,11 +75,14 @@ function cacheKey(path, suffix) { return path + '\0' + suffix; }
 function getHeadersForEp(ep) {
   // Main endpoints: sem chave (o Cloudflare Worker injeta a API Key automaticamente)
   // Negativação: envia a chave do usuário via X-Negativ-Key
+  const h = {};
   if (ep.isNegativacao) {
     const nk = getNegativKey();
-    return nk ? { 'X-Negativ-Key': nk } : {};
+    if (nk) h['X-Negativ-Key'] = nk;
   }
-  return {};
+  // Crachá de acesso: o worker exige (em modo estrito) para liberar a consulta.
+  if (_authToken) h['Authorization'] = 'Bearer ' + _authToken;
+  return h;
 }
 
 /** A API não expõe /search/email/{@}. E-mails vêm por CPF via Consult Center. */
