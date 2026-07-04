@@ -22,7 +22,7 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: github-pages
-      url: ${{ steps.deploy1.outputs.page_url || steps.deploy2.outputs.page_url }}
+      url: ${{ steps.deploy1.outputs.page_url || steps.deploy2.outputs.page_url || steps.deploy3.outputs.page_url }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -49,10 +49,24 @@ jobs:
         if: steps.deploy1.outcome == 'failure'
         run: sleep 25
 
-      # 2ª tentativa automática só se a 1ª falhou — evita o commit-vazio manual.
+      # 2ª tentativa (o backend do Pages às vezes falha 2x seguidas).
       - name: Deploy (tentativa 2)
         id: deploy2
         if: steps.deploy1.outcome == 'failure'
+        continue-on-error: true
+        uses: actions/deploy-pages@v4
+        with:
+          timeout: 600000
+          error_count: 10
+
+      - name: Aguardar antes da ultima tentativa
+        if: steps.deploy1.outcome == 'failure' && steps.deploy2.outcome == 'failure'
+        run: sleep 40
+
+      # 3ª e última tentativa — evita de vez o commit-vazio manual.
+      - name: Deploy (tentativa 3)
+        id: deploy3
+        if: steps.deploy1.outcome == 'failure' && steps.deploy2.outcome == 'failure'
         uses: actions/deploy-pages@v4
         with:
           timeout: 600000
