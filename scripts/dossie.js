@@ -956,6 +956,110 @@ function createRecordListView(items) {
   return wrap;
 }
 
+// ── Cabeçalho de perfil (hero): foto + nome + CPF + chips de destaque ──
+const HERO_NAME_KEYS   = ['nome_completo', 'full_name', 'name', 'nome', 'razao_social', 'nomecompleto'];
+const HERO_BIRTH_KEYS  = ['birth_date', 'data_nascimento', 'nascimento', 'dt_nascimento', 'nasc'];
+const HERO_CITY_KEYS   = ['city', 'cidade', 'municipio', 'birth_city'];
+const HERO_STATUS_KEYS = ['federal_status', 'situacao_receita', 'status_receita_federal'];
+const HERO_MOTHER_KEYS = ['mother_name', 'nome_mae', 'mae'];
+
+// Busca em profundidade o 1º valor primitivo de uma das chaves, pulando as
+// sub-listas (parentes/vizinhos) para o hero não pegar dado de terceiros.
+function deepFindField(obj, keys, depth) {
+  if (obj == null || typeof obj !== 'object' || (depth || 0) > 5) return null;
+  if (Array.isArray(obj)) {
+    for (const it of obj) { const r = deepFindField(it, keys, (depth || 0) + 1); if (r != null) return r; }
+    return null;
+  }
+  for (const k of Object.keys(obj)) {
+    if (keys.indexOf(k.toLowerCase()) !== -1) {
+      const v = obj[k];
+      if (v != null && typeof v !== 'object' && !isEmptyFieldValue(v)) return String(v).trim();
+    }
+  }
+  for (const k of Object.keys(obj)) {
+    if (REC_SUBLIST_KEYS.has(k.toLowerCase())) continue;
+    const v = obj[k];
+    if (v && typeof v === 'object') { const r = deepFindField(v, keys, (depth || 0) + 1); if (r != null) return r; }
+  }
+  return null;
+}
+
+function deepFindPhoto(obj, depth) {
+  if (obj == null || typeof obj !== 'object' || (depth || 0) > 5) return null;
+  if (Array.isArray(obj)) {
+    for (const it of obj) { const r = deepFindPhoto(it, (depth || 0) + 1); if (r) return r; }
+    return null;
+  }
+  for (const k of Object.keys(obj)) {
+    if (REC_SUBLIST_KEYS.has(k.toLowerCase())) continue;
+    const v = obj[k];
+    if (typeof v === 'string' && isBase64ImageValue(v)) return base64ToDataUrl(v.trim());
+    if ((isPhotoFieldKey(k)) && typeof v === 'string' && v.length > 200 && /^[A-Za-z0-9+/=]+$/.test(v.slice(0, 120))) {
+      return base64ToDataUrl(v.trim());
+    }
+  }
+  for (const k of Object.keys(obj)) {
+    if (REC_SUBLIST_KEYS.has(k.toLowerCase())) continue;
+    const v = obj[k];
+    if (v && typeof v === 'object') { const r = deepFindPhoto(v, (depth || 0) + 1); if (r) return r; }
+  }
+  return null;
+}
+
+function deepFindCpf(obj, depth) {
+  if (obj == null || typeof obj !== 'object' || (depth || 0) > 5) return null;
+  if (!Array.isArray(obj)) {
+    const c = recFindCpf(obj);
+    if (c) return c;
+    for (const k of Object.keys(obj)) {
+      if (REC_SUBLIST_KEYS.has(k.toLowerCase())) continue;
+      const v = obj[k];
+      if (v && typeof v === 'object') { const r = deepFindCpf(v, (depth || 0) + 1); if (r) return r; }
+    }
+  }
+  return null;
+}
+
+function buildProfileHero(root) {
+  if (!root || typeof root !== 'object') return null;
+  const name = deepFindField(root, HERO_NAME_KEYS);
+  if (!name) return null; // sem nome não faz sentido um hero
+
+  const cpf    = deepFindCpf(root, 0);
+  const photo  = deepFindPhoto(root, 0);
+  const birth  = deepFindField(root, HERO_BIRTH_KEYS);
+  const city   = deepFindField(root, HERO_CITY_KEYS);
+  const status = deepFindField(root, HERO_STATUS_KEYS);
+  const mother = deepFindField(root, HERO_MOTHER_KEYS);
+
+  const chips = [];
+  if (birth)  chips.push({ label: 'Nascimento', val: birth });
+  if (city)   chips.push({ label: 'Cidade', val: city });
+  if (status) chips.push({ label: 'Receita', val: translateFieldValue(status, 'federal_status') });
+  if (mother) chips.push({ label: 'Mãe', val: mother });
+
+  const el = document.createElement('div');
+  el.className = 'dossie-hero-card';
+  const initials = name.trim().split(/\s+/).slice(0, 2).map(w => w.charAt(0)).join('').toUpperCase();
+  const avatar = photo
+    ? '<div class="dossie-hero-photo"><img src="' + photo.replace(/"/g, '&quot;') + '" alt="Foto" loading="lazy" decoding="async"/></div>'
+    : '<div class="dossie-hero-photo dossie-hero-photo-empty">' + escHtml(initials || '?') + '</div>';
+
+  el.innerHTML =
+    avatar +
+    '<div class="dossie-hero-id">' +
+      '<div class="dossie-hero-name">' + escHtml(name) + '</div>' +
+      (cpf ? '<div class="dossie-hero-cpf">CPF ' + escHtml(formatCpfMask(cpf)) + '</div>' : '') +
+      (chips.length
+        ? '<div class="dossie-hero-chips">' + chips.map(c =>
+            '<span class="dossie-hero-chip"><span class="dossie-hero-chip-k">' + escHtml(c.label) + '</span>' + escHtml(c.val) + '</span>'
+          ).join('') + '</div>'
+        : '') +
+    '</div>';
+  return el;
+}
+
 function buildResultPanel(result, idx) {
   const panel = document.createElement('div');
   const data = result.data;
@@ -972,6 +1076,10 @@ function buildResultPanel(result, idx) {
     panel.appendChild(block);
     return panel;
   }
+
+  // Cabeçalho de perfil (foto + nome + destaques) quando for uma pessoa.
+  const hero = buildProfileHero(root);
+  if (hero) block.appendChild(hero);
 
   const secWithCount = sec => sec.groups
     ? sec.groups.reduce((n, g) => n + partitionFields(g.fields).withVal.length, 0)

@@ -22,7 +22,7 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+      url: ${{ steps.deploy1.outputs.page_url || steps.deploy2.outputs.page_url }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -35,8 +35,24 @@ jobs:
         with:
           path: '.'
 
-      - name: Deploy to GitHub Pages
-        id: deployment
+      # 1ª tentativa. O Pages às vezes retorna "Deployment failed, try again
+      # later" (flakiness do backend do GitHub), então não falhamos aqui.
+      - name: Deploy (tentativa 1)
+        id: deploy1
+        continue-on-error: true
+        uses: actions/deploy-pages@v4
+        with:
+          timeout: 600000
+          error_count: 10
+
+      - name: Aguardar antes de retentar
+        if: steps.deploy1.outcome == 'failure'
+        run: sleep 25
+
+      # 2ª tentativa automática só se a 1ª falhou — evita o commit-vazio manual.
+      - name: Deploy (tentativa 2)
+        id: deploy2
+        if: steps.deploy1.outcome == 'failure'
         uses: actions/deploy-pages@v4
         with:
           timeout: 600000
