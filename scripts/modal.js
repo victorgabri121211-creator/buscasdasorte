@@ -244,35 +244,54 @@ async function enrichFromCpf(cpf, primaryKey) {
   }
 }
 
-// Procura um CPF (11 digitos em campo cuja chave contem "cpf") no resultado.
+// Sub-listas que pertencem a OUTRAS pessoas (parentes, vizinhos...). Nunca
+// devem fornecer o CPF do titular no enriquecimento automático.
+const CPF_SKIP_KEYS = new Set([
+  'parentes', 'vizinhos', 'neighbors', 'familiares', 'contatos', 'socios',
+  'sócios', 'empresas', 'relacionados', 'related',
+]);
+
+// Procura o CPF do TITULAR no resultado. Usa busca em largura (nível a nível)
+// e prefere a chave exatamente "cpf" mais rasa, ignorando as sub-listas de
+// parentes/vizinhos — assim o enriquecimento não consulta um CPF aleatório.
 function extractCpfFromData(data) {
   const payload = (typeof getResultPayload === 'function')
     ? getResultPayload(data)
     : (data && (data.body || data.data || data));
   if (!payload || typeof payload !== 'object') return null;
 
-  function scan(obj, depth) {
-    if (!obj || typeof obj !== 'object' || depth > 6) return null;
+  const isCpf = d => d && d.length === 11;
+  const queue = [payload];
+  let fallback = null;
+
+  while (queue.length) {
+    const obj = queue.shift();
+    if (!obj || typeof obj !== 'object') continue;
+
     if (Array.isArray(obj)) {
-      for (const it of obj) { const r = scan(it, depth + 1); if (r) return r; }
-      return null;
+      obj.forEach(it => { if (it && typeof it === 'object') queue.push(it); });
+      continue;
     }
+
+    // 1) Neste nível, procura o CPF do titular (chave exatamente "cpf").
     for (const k of Object.keys(obj)) {
       const v = obj[k];
-      if (typeof v === 'string' || typeof v === 'number') {
-        const digits = String(v).replace(/\D/g, '');
-        const kl = k.toLowerCase();
-        if (digits.length === 11 && (kl.includes('cpf') || kl === 'documento' || kl === 'doc')) {
-          return digits;
-        }
-      } else if (v && typeof v === 'object') {
-        const found = scan(v, depth + 1);
-        if (found) return found;
-      }
+      if (typeof v !== 'string' && typeof v !== 'number') continue;
+      const d = String(v).replace(/\D/g, '');
+      const kl = k.toLowerCase();
+      if (!isCpf(d)) continue;
+      if (kl === 'cpf' || kl === 'cpf_titular' || kl === 'documento') return d;
+      if ((kl.includes('cpf') || kl === 'doc') && !fallback) fallback = d;
     }
-    return null;
+
+    // 2) Enfileira filhos para o próximo nível, pulando sub-listas de terceiros.
+    for (const k of Object.keys(obj)) {
+      if (CPF_SKIP_KEYS.has(k.toLowerCase())) continue;
+      const v = obj[k];
+      if (v && typeof v === 'object') queue.push(v);
+    }
   }
-  return scan(payload, 0);
+  return fallback;
 }
 
 // Mantido para compatibilidade (buscas diretas por lista de endpoints).
