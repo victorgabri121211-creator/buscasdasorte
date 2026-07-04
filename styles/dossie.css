@@ -1,9 +1,9 @@
 /* ===== DOSSIÊ DE RESULTADOS ===== */
 .dossie-overlay {
   position: fixed; inset: 0; z-index: 300;
-  background: rgba(0, 0, 0, 0.85);
-  backdrop-filter: blur(24px) saturate(1.2);
-  -webkit-backdrop-filter: blur(24px) saturate(1.2);
+  /* Fundo quase opaco em vez de backdrop-filter: blur de fundo sobre conteúdo
+     rolável alto trava o celular. Mantém o visual escuro sem o custo. */
+  background: rgba(0, 0, 0, 0.92);
   display: flex; align-items: center; justify-content: center;
   padding: 20px;
   opacity: 0; pointer-events: none;
@@ -15,14 +15,13 @@
 .dossie-box {
   width: 100%; max-width: 820px;
   max-height: 88vh;
-  background: rgba(4, 12, 8, 0.92);
+  /* Opaca: dispensa backdrop-filter (que empilhado com o do overlay travava). */
+  background: #060f0b;
   border: 1px solid rgba(22, 101, 52, 0.35);
   border-radius: 22px;
   display: flex; flex-direction: column;
   transform: translateY(24px) scale(0.96);
   transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
-  backdrop-filter: blur(36px) saturate(1.4);
-  -webkit-backdrop-filter: blur(36px) saturate(1.4);
   box-shadow:
     0 0 100px rgba(34, 197, 94, 0.1),
     0 40px 100px rgba(0, 0, 0, 0.8),
@@ -38,8 +37,6 @@
   border-bottom: 1px solid var(--border);
   background: rgba(20, 83, 45, 0.15);
   flex-shrink: 0;
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
 }
 
 .dossie-header-icon {
@@ -70,8 +67,6 @@
   font-weight: 600; cursor: pointer; font-family: inherit;
   display: flex; align-items: center; gap: 5px;
   transition: all 0.2s; border: 1px solid;
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
 }
 
 .dossie-btn-copy {
@@ -477,8 +472,6 @@
   background: rgba(0, 0, 0, 0.4);
   border: 1px solid var(--border);
   border-radius: 11px; padding: 16px;
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
 }
 
 .dossie-raw pre {
@@ -503,8 +496,6 @@
   font-size: 13px; font-weight: 700; font-family: inherit;
   letter-spacing: 0.1em; text-transform: uppercase;
   cursor: pointer; transition: all 0.22s;
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
 }
 
 .dossie-btn-nova:hover {
@@ -521,8 +512,6 @@
   background: rgba(0, 0, 0, 0.3);
   color: var(--text2);
   transition: all 0.2s; font-family: inherit; font-weight: 500;
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
 }
 
 .dossie-tab.active {

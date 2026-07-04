@@ -248,6 +248,8 @@ function getResultPayload(data) {
 // mostramos só os primeiros para não poluir o perfil.
 const VIZINHOS_MAX = 2;
 const VIZINHOS_KEYS = new Set(['vizinhos', 'neighbors']);
+// Teto geral de itens exibidos por lista (evita travar em listas enormes).
+const LIST_ITEM_MAX = 10;
 
 // Seções meta ("dados sobre os dados") que não interessam ao usuário: escondidas.
 const HIDDEN_SECTION_KEYS = new Set([
@@ -506,10 +508,8 @@ function buildSectionsRecursive(obj, title, sections) {
       const hasObjs = v.some(x => x && typeof x === 'object' && !Array.isArray(x));
       if (hasObjs) {
         // Lista de pessoas/itens -> seção agrupada (um sub-cartão por item).
-        let items = v;
-        if (VIZINHOS_KEYS.has(k.toLowerCase()) && items.length > VIZINHOS_MAX) {
-          items = items.slice(0, VIZINHOS_MAX);
-        }
+        const cap = VIZINHOS_KEYS.has(k.toLowerCase()) ? VIZINHOS_MAX : LIST_ITEM_MAX;
+        const items = v.length > cap ? v.slice(0, cap) : v;
         const groups = [];
         items.forEach((item, i) => {
           if (item == null || typeof item !== 'object') return;
@@ -603,7 +603,7 @@ function formatFieldValueHtml(f) {
     const src = base64ToDataUrl(raw);
     return (
       '<div class="dossie-field-val dossie-field-photo">' +
-        '<img class="dossie-photo-img" src="' + src.replace(/"/g, '&quot;') + '" alt="Foto retornada pela consulta" loading="lazy"/>' +
+        '<img class="dossie-photo-img" src="' + src.replace(/"/g, '&quot;') + '" alt="Foto retornada pela consulta" loading="lazy" decoding="async"/>' +
       '</div>'
     );
   }
@@ -611,7 +611,7 @@ function formatFieldValueHtml(f) {
     const src = base64ToDataUrl(raw);
     return (
       '<div class="dossie-field-val dossie-field-photo">' +
-        '<img class="dossie-photo-img" src="' + src.replace(/"/g, '&quot;') + '" alt="Imagem retornada pela consulta" loading="lazy"/>' +
+        '<img class="dossie-photo-img" src="' + src.replace(/"/g, '&quot;') + '" alt="Imagem retornada pela consulta" loading="lazy" decoding="async"/>' +
       '</div>'
     );
   }
