@@ -235,7 +235,7 @@ export default {
     // modo SUAVE (não bloqueia) para não derrubar clientes durante a migração.
     const auth = await authFromRequest(request, env);
     if (env.AUTH_ENFORCE === 'true' && !auth) {
-      return apiResponse({ error: 'Acesso nao autorizado. Faca login com um plano ativo.' }, 401, origin);
+      return apiResponse({ error: 'Acesso nao autorizado. Faca login com um plano ativo.', code: 'no_auth' }, 401, origin);
     }
 
     const targetUrl = API_BASE + path + url.search;

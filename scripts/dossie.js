@@ -363,6 +363,13 @@ function getSearchErrorMessage(res) {
     return 'Serviço de consultas temporariamente indisponível. Tente novamente em alguns minutos.';
   }
 
+  // Bloqueio por acesso: sem plano ativo / sessão expirada (o worker recusa).
+  if (status === 401) {
+    const code = String((d && d.code) || '');
+    if (code === 'no_auth' || raw.indexOf('autoriza') !== -1 || raw.indexOf('plano') !== -1 || raw.indexOf('login') !== -1) {
+      return 'Seu plano expirou ou não está ativo. Renove seu acesso na aba "Planos" para voltar a consultar. Se você acabou de renovar, saia e entre de novo.';
+    }
+  }
   // Não autorizado (ex.: chave da API com problema)
   if (status === 401 || status === 403) {
     return 'A consulta não foi autorizada no momento. Se continuar, avise o administrador.';

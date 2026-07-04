@@ -341,7 +341,7 @@ function getCached(path, suffix) {
   return null;
 }
 
-function fetchComTimeout(ep){
+function _fetchCore(ep){
   const ckSuffix = ep.isNegativacao ? 'n_' + getNegativKey() : 'main';
   const ck = cacheKey(ep.path, ckSuffix);
   const cached = responseCache.get(ck);
@@ -399,6 +399,19 @@ function fetchComTimeout(ep){
 
   inflightRequests.set(ck, promise);
   return promise;
+}
+
+// Envolve _fetchCore: se o worker recusar por falta de token (401), tenta
+// renovar o crachá uma vez e refaz a consulta. Assim, um cliente com plano
+// válido nunca vê erro só porque o token de 24h venceu no meio da sessão.
+// Só quando a renovação falha (plano realmente inativo) é que o 401 aparece.
+async function fetchComTimeout(ep) {
+  const res = await _fetchCore(ep);
+  if (res && res.status === 401 && !ep.__authRetried && _authToken) {
+    const renewed = await authRefresh();
+    if (renewed) return _fetchCore(Object.assign({}, ep, { __authRetried: true }));
+  }
+  return res;
 }
 
 function getSearchMeta(toSearch) {
