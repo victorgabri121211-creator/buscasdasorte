@@ -600,6 +600,76 @@ function _loadResellerCommissions(reseller) {
   });
 }
 
+// ── Ranking de revendedores (top por clientes criados) ─────────────────────
+function _resellerRankingHtml() {
+  return '<div class="rdash-earn rdash-rank" id="rdash-rank">' +
+    '<div class="rdash-earn-head">' +
+      '<h4 class="rdash-earn-title">🏆 Ranking de Revendedores</h4>' +
+      '<span class="rdash-earn-hint">Top 10 por clientes criados</span>' +
+    '</div>' +
+    '<div id="rdash-rank-body" class="rdash-comm-body">' +
+      '<div class="rdash-comm-loading"><span class="spinner"></span> Carregando…</div>' +
+    '</div>' +
+  '</div>';
+}
+
+// Busca o ranking no servidor e preenche o bloco. `reseller` (opcional) marca
+// a linha "você"; passe null na visão do admin.
+function _loadResellerRanking(reseller) {
+  var body = document.getElementById('rdash-rank-body');
+  if (!body) return;
+  var esc = typeof escAdmin === 'function' ? escAdmin : function (s) { return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); };
+
+  var neutral = '<p class="rdash-comm-empty">O ranking aparece aqui quando o servidor está conectado.</p>';
+  if (typeof DB === 'undefined' || typeof DB.isConfigured !== 'function' || !DB.isConfigured() || typeof DB.getResellerRanking !== 'function') {
+    body.innerHTML = neutral;
+    return;
+  }
+
+  DB.getResellerRanking().then(function (r) {
+    var el = document.getElementById('rdash-rank-body');
+    if (!el) return;
+    if (!r || !r.ok) { el.innerHTML = neutral; return; }
+
+    var list = Array.isArray(r.ranking) ? r.ranking : [];
+    if (!list.length) {
+      el.innerHTML = '<p class="rdash-comm-empty">Nenhum revendedor criou clientes ainda. Seja o primeiro do ranking!</p>';
+      return;
+    }
+
+    var meKey = String(reseller || '').trim().toLowerCase();
+    var medals = ['🥇', '🥈', '🥉'];
+    var inTop = false;
+
+    var rows = list.map(function (item, i) {
+      var name = String(item.reseller || '');
+      var isMe = meKey && name.trim().toLowerCase() === meKey;
+      if (isMe) inTop = true;
+      var pos = i < 3 ? medals[i] : (i + 1) + 'º';
+      return '<div class="rdash-rank-row' + (isMe ? ' rdash-rank-row--me' : '') + (i < 3 ? ' rdash-rank-row--top' + (i + 1) : '') + '">' +
+        '<span class="rdash-rank-pos">' + pos + '</span>' +
+        '<span class="rdash-rank-name">' + esc(name) + (isMe ? '<span class="rdash-rank-me-badge">você</span>' : '') + '</span>' +
+        '<span class="rdash-rank-stat"><strong>' + (Number(item.total) || 0) + '</strong> cliente' + (Number(item.total) === 1 ? '' : 's') + '</span>' +
+        '<span class="rdash-rank-stat rdash-rank-stat-30">+' + (Number(item.last30) || 0) + ' em 30d</span>' +
+        '<span class="rdash-rank-stat rdash-rank-stat-active">' + (Number(item.active) || 0) + ' ativo' + (Number(item.active) === 1 ? '' : 's') + '</span>' +
+      '</div>';
+    }).join('');
+
+    var footer = '';
+    if (meKey && !inTop) {
+      var mine = typeof getResellerStats === 'function' ? (getResellerStats(reseller).loginsCreated || 0) : 0;
+      footer = '<p class="rdash-rank-footer">Você tem <strong>' + mine + '</strong> cliente' + (mine === 1 ? '' : 's') + ' criado' + (mine === 1 ? '' : 's') + ' — crie mais acessos para entrar no top 10! 🚀</p>';
+    }
+
+    el.innerHTML = '<div class="rdash-rank-list">' + rows + '</div>' + footer;
+  }).catch(function () {
+    var el = document.getElementById('rdash-rank-body');
+    if (el) el.innerHTML = neutral;
+  });
+}
+window._resellerRankingHtml = _resellerRankingHtml;
+window._loadResellerRanking = _loadResellerRanking;
+
 // Painel de ganhos + preços de revenda por duração + link de afiliado.
 function _resellerEarningsHtml(reseller, readOnly) {
   const esc = typeof escAdmin === 'function' ? escAdmin : (s) => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
@@ -791,6 +861,8 @@ function renderResellerDashboard() {
 
       _resellerCommissionsHtml() +
 
+      _resellerRankingHtml() +
+
       formHtml +
 
       '<div class="sdash-recent">' +
@@ -804,6 +876,7 @@ function renderResellerDashboard() {
     '</div>';
 
   _loadResellerCommissions(reseller);
+  _loadResellerRanking(reseller);
 
   const backBtn = document.getElementById('reseller-dash-back');
   if (backBtn) backBtn.addEventListener('click', closeResellerPanelView);

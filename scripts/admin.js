@@ -638,12 +638,15 @@ function renderAdminResellers() {
         '<div class="admin-resellers-legend-item"><span class="admin-resellers-legend-dot"></span><span><strong>Créditos</strong> — cada unidade permite gerar 1 login de cliente.</span></div>' +
         '<div class="admin-resellers-legend-item"><span class="admin-resellers-legend-dot"></span><span><strong>Revenda ativa</strong> — o usuário vê o menu Revendedor ao entrar.</span></div>' +
       '</div>' +
+      (typeof _resellerRankingHtml === 'function' ? _resellerRankingHtml() : '') +
       '<div class="admin-search-wrap">' +
         '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>' +
         '<input class="admin-search-input admin-resellers-search-input" type="text" placeholder="Buscar revendedor..." value="' + escAdmin(searchTerm) + '" autocomplete="off"/>' +
       '</div>' +
       listHtml +
     '</div>';
+
+  if (typeof _loadResellerRanking === 'function') _loadResellerRanking(null);
 
   const searchEl = root.querySelector('.admin-resellers-search-input');
   if (searchEl) {

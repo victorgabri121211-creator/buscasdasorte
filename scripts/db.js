@@ -232,6 +232,12 @@
     return _rpc('bds_get_affiliate_report', { p_reseller: reseller });
   }
 
+  // Ranking de revendedores por clientes criados (só agregados; ver
+  // supabase-reseller-ranking.sql).
+  function getResellerRanking() {
+    return _rpc('bds_get_reseller_ranking', {});
+  }
+
   // ── Revendedor: logins ─────────────────────────────────────────────────────
 
   function createResellerLogin(reseller, username, password, days) {
@@ -328,6 +334,7 @@
     deleteResellerLogin: deleteResellerLogin,
     recordSale: recordSale,
     getAffiliateReport: getAffiliateReport,
+    getResellerRanking: getResellerRanking,
     syncSales: syncSales
   };
 

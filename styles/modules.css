@@ -3005,3 +3005,28 @@ body.user-reseller-client #view-loja {
   .rdash-comm-row { grid-template-columns: auto 1fr auto; }
   .rdash-comm-buyer { display: none; }
 }
+
+/* ── Ranking de revendedores ── */
+.rdash-rank-list { display: flex; flex-direction: column; gap: 4px; }
+.rdash-rank-row {
+  display: grid; grid-template-columns: 40px 1fr auto auto auto; align-items: center; gap: 10px;
+  padding: 9px 12px; border-radius: 10px;
+  background: rgba(255,255,255,0.02); border: 1px solid var(--border);
+  font-size: 12px;
+}
+.rdash-rank-row--top1 { border-color: rgba(250,204,21,0.35); background: rgba(250,204,21,0.06); }
+.rdash-rank-row--top2 { border-color: rgba(203,213,225,0.30); background: rgba(203,213,225,0.05); }
+.rdash-rank-row--top3 { border-color: rgba(217,119,6,0.30); background: rgba(217,119,6,0.06); }
+.rdash-rank-row--me { outline: 1px solid rgba(74,222,128,0.5); }
+.rdash-rank-pos { font-size: 14px; font-weight: 800; color: var(--text2); text-align: center; font-variant-numeric: tabular-nums; }
+.rdash-rank-name { color: var(--text); font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: flex; align-items: center; gap: 6px; }
+.rdash-rank-me-badge { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em; color: #4ade80; background: rgba(74,222,128,0.12); border: 1px solid rgba(74,222,128,0.35); border-radius: 999px; padding: 1px 7px; }
+.rdash-rank-stat { color: var(--text2); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.rdash-rank-stat strong { color: var(--text); }
+.rdash-rank-stat-30 { color: #fbbf24; }
+.rdash-rank-stat-active { color: #4ade80; }
+.rdash-rank-footer { font-size: 12px; color: var(--text2); margin: 12px 0 0; line-height: 1.5; }
+@media (max-width: 560px) {
+  .rdash-rank-row { grid-template-columns: 34px 1fr auto; }
+  .rdash-rank-stat-30, .rdash-rank-stat-active { display: none; }
+}
