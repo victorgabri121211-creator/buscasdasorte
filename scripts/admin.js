@@ -116,7 +116,12 @@ function setResellerEnabled(username, enabled) {
 function canAccessRevendedor() {
   const user = typeof getSession === 'function' ? getSession() : null;
   if (!user) return false;
-  return isResellerEnabled(user);
+  if (isResellerEnabled(user)) return true;
+  // Quem comprou plano direto na loja ganha a área de revenda automaticamente.
+  // Contas criadas por revendedor continuam sem acesso.
+  if (typeof isResellerClientUser === 'function' && isResellerClientUser(user)) return false;
+  const plan = typeof window.getActivePlanForUser === 'function' ? window.getActivePlanForUser(user) : null;
+  return !!(plan && plan.id !== 'reseller' && plan.id !== 'admin');
 }
 
 function adminGetPlansStore() {
