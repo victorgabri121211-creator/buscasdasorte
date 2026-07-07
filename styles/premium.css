@@ -136,8 +136,69 @@
   background-image: linear-gradient(165deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0) 45%);
 }
 
+/* ── Login: entrada cinematográfica ── */
+@keyframes bdsAuthIn {
+  from { opacity: 0; transform: translateY(26px) scale(0.96); filter: blur(8px); }
+  to   { opacity: 1; transform: none; filter: none; }
+}
+.auth-card { animation: bdsAuthIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) both; }
+
+/* Halo de luz respirando atrás do card */
+@keyframes bdsAuthHalo {
+  0%, 100% { opacity: 0.5; transform: scale(1); }
+  50%      { opacity: 1;   transform: scale(1.06); }
+}
+.auth-card::after {
+  content: '';
+  position: absolute;
+  inset: -70px;
+  z-index: -1;
+  border-radius: 50%;
+  pointer-events: none;
+  background: radial-gradient(ellipse 60% 55% at 50% 42%,
+    rgba(34, 197, 94, 0.16) 0%,
+    rgba(34, 197, 94, 0.06) 45%,
+    transparent 72%);
+  filter: blur(10px);
+  animation: bdsAuthHalo 5.5s ease-in-out infinite;
+}
+
+/* Nome com brilho que desliza (shimmer) no "Dasorte" */
+@keyframes bdsBrandShimmer {
+  0%   { background-position: 130% 0; }
+  100% { background-position: -30% 0; }
+}
+.auth-logo .brand {
+  background: linear-gradient(180deg, #ffffff 30%, #cdeeda 90%);
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.auth-logo .dot {
+  background: linear-gradient(110deg,
+    #4ade80 20%, #d3ffe4 40%, #4ade80 60%, #22c55e 85%);
+  background-size: 220% 100%;
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: bdsBrandShimmer 4.5s ease-in-out infinite;
+}
+
+/* Tagline entra depois do card */
+@keyframes bdsFadeIn { from { opacity: 0; } to { opacity: 1; } }
+.auth-logo .tagline { animation: bdsFadeIn 0.9s ease 0.45s both; }
+
+/* Inputs do login: vidro sutil + foco mais vivo */
+#auth-screen .input-wrap input {
+  transition: border-color 0.25s, box-shadow 0.25s, background 0.25s;
+}
+#auth-screen .input-wrap input:hover { border-color: rgba(34, 197, 94, 0.3); }
+#auth-screen .input-wrap input:focus {
+  border-color: rgba(74, 222, 128, 0.55);
+  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.16), 0 0 26px rgba(34, 197, 94, 0.14);
+}
+
 /* ── Acessibilidade: quem prefere menos movimento, sem animação ── */
 @media (prefers-reduced-motion: reduce) {
-  .app-view.active, .mod-card, .store-plan-card-featured { animation: none !important; }
+  .app-view.active, .mod-card, .store-plan-card-featured,
+  .auth-card, .auth-card::after, .auth-logo .dot, .auth-logo .tagline { animation: none !important; }
   .mod-card:hover, .store-plan-card:hover, .reseller-package-card:hover { transform: none; }
 }
