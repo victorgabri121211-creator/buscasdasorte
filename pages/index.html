@@ -719,6 +719,18 @@ async function doLogin() {
       if (res && res.ok) {
         _saveLock({c:0,l:0});
         setSession(user);
+        // Guarda a marca "conta criada por revendedor" ANTES de entrar no app,
+        // para o menu ocultar Loja/Avisos já no primeiro carregamento (sem
+        // esperar o sync do plano chegar).
+        try {
+          if (res.created_by_reseller) {
+            const users = getUsers();
+            const rec = users.find(u => u.user === user);
+            if (rec) rec.createdByReseller = rec.createdByReseller || res.created_by_reseller;
+            else users.push({ user: user, pass: '', createdAt: Date.now(), createdByReseller: res.created_by_reseller });
+            saveUsers(users);
+          }
+        } catch (e) {}
         if (window.Auth) window.Auth.mint(user, pass, null);
         await window.DB.syncOnLogin(user);
         enterApp(user); return;
