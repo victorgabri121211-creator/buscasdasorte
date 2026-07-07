@@ -322,6 +322,9 @@
     <div class="sidebar-body">
     <div class="sidebar-section" id="sidebar-user-menu">
       <div class="sidebar-section-title">Menu</div>
+      <div class="sidebar-item" id="nav-avisos" onclick="showAppView('avisos');closeSidebar()">
+        <div class="s-icon" style="background:rgba(96,165,250,0.12);border-color:rgba(96,165,250,0.25)"><svg viewBox="0 0 24 24" style="stroke:#60a5fa"><path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg></div>AVISOS
+      </div>
       <div class="sidebar-item active" id="nav-modulos" onclick="showAppView('modules');closeSidebar()">
         <div class="s-icon"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></div>Módulos
       </div>
@@ -384,6 +387,46 @@
           <p>Escolha abaixo o tipo de consulta que deseja realizar.</p>
         </div>
         <div id="modules-categories"></div>
+      </div>
+    </div>
+
+    <div id="view-avisos" class="app-view">
+      <div class="service-page">
+        <button type="button" class="view-search-back" onclick="showAppView('modules')">← Voltar aos módulos</button>
+        <div class="service-page-header">
+          <div class="service-page-icon">
+            <svg viewBox="0 0 24 24"><path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg>
+          </div>
+          <div>
+            <h2>Avisos</h2>
+            <p>Novidades e como aproveitar melhor a plataforma.</p>
+          </div>
+        </div>
+        <div class="service-info-card">
+          <h3>🛍️ Comprou um plano? Seu painel de revenda já está liberado!</h3>
+          <ul>
+            <li>Ao comprar <strong>qualquer plano direto na loja</strong> (diária, semanal, mensal ou vitalício), assim que o pagamento é confirmado o menu <strong>Revendedor</strong> e o <strong>🏆 Ranking</strong> aparecem automaticamente na sua conta</li>
+            <li>Não precisa pedir liberação nem esperar: <strong>comprou, virou revendedor</strong> — o acesso vale enquanto seu plano estiver ativo</li>
+            <li>Contas criadas por um revendedor não têm essa área — a revenda é exclusiva de quem compra direto na plataforma</li>
+          </ul>
+        </div>
+        <div class="service-info-card">
+          <h3>💼 Como funciona a revenda</h3>
+          <ul>
+            <li><strong>Compre um pacote de créditos</strong> na área do Revendedor — cada crédito gera (ou renova) 1 acesso de cliente. Quanto maior o pacote, menor o custo por login</li>
+            <li><strong>Crie o login do seu cliente</strong> em segundos, escolhendo a duração do acesso — você define o preço que cobra e o lucro é todo seu</li>
+            <li><strong>Gerencie tudo no painel</strong>: créditos restantes, clientes ativos, vencimentos, renovação e relatório de ganhos</li>
+            <li><strong>Divulgue seu link de afiliado</strong>: cada plano comprado por ele te dá <strong>20% de comissão</strong></li>
+            <li>Os melhores revendedores aparecem no <strong>🏆 Ranking</strong> — top 5 por clientes criados</li>
+          </ul>
+        </div>
+        <div class="reseller-panel-entry">
+          <div class="reseller-panel-entry-text">
+            <h3>Quer começar agora?</h3>
+            <p>Veja os pacotes de créditos e monte sua base de clientes.</p>
+          </div>
+          <button type="button" class="service-cta service-cta-green" onclick="showAppView(typeof canAccessRevendedor==='function'&&canAccessRevendedor()?'revendedor':'loja')">Ir para a revenda</button>
+        </div>
       </div>
     </div>
 
@@ -785,7 +828,7 @@ document.getElementById('login-user').addEventListener('keydown',e=>{if(e.key===
 <script src="../scripts/sales.js?v=5"></script>
 <script src="../scripts/plans.js?v=4"></script>
 <script src="../scripts/reseller-logins.js?v=9"></script>
-<script src="../scripts/modules.js?v=19"></script>
+<script src="../scripts/modules.js?v=20"></script>
 <script src="../scripts/admin.js?v=11"></script>
 <script src="../scripts/dossie.js?v=20"></script>
 <script src="../scripts/negativ.js?v=3"></script>

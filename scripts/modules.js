@@ -101,6 +101,18 @@ function isResellerClientAccount() {
 
 function applyResellerClientNavigation() {
   const hideStore = isResellerClientAccount();
+  // Avisos fala de loja/revenda — some junto para conta criada por revendedor.
+  const navAvisos = document.getElementById('nav-avisos');
+  if (navAvisos) {
+    navAvisos.hidden = hideStore;
+    navAvisos.setAttribute('aria-hidden', hideStore ? 'true' : 'false');
+    if (hideStore) {
+      navAvisos.style.display = 'none';
+      navAvisos.classList.remove('active');
+    } else {
+      navAvisos.style.removeProperty('display');
+    }
+  }
   const navLoja = document.getElementById('nav-loja');
   const viewLoja = document.getElementById('view-loja');
   if (navLoja) {
@@ -413,10 +425,13 @@ const MODULE_CATEGORIES = [
 
 const CATEGORY_ICON = '<path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/>';
 
-const APP_VIEWS = ['modules', 'search', 'revendedor', 'revendedor-painel', 'ranking', 'loja', 'admin-dashboard', 'admin-clientes', 'admin-revendedores'];
+const APP_VIEWS = ['avisos', 'modules', 'search', 'revendedor', 'revendedor-painel', 'ranking', 'loja', 'admin-dashboard', 'admin-clientes', 'admin-revendedores'];
 
 function showAppView(view) {
   if (view === 'loja' && isResellerClientAccount()) {
+    view = 'modules';
+  }
+  if (view === 'avisos' && isResellerClientAccount()) {
     view = 'modules';
   }
   if (view === 'revendedor' && typeof canAccessRevendedor === 'function' && !canAccessRevendedor()) {
@@ -459,6 +474,7 @@ function showAppView(view) {
 
 function setUserNavActive(view) {
   const map = {
+    avisos: 'nav-avisos',
     modules: 'nav-modulos',
     revendedor: 'nav-revendedor',
     'revendedor-painel': 'nav-revendedor',
