@@ -272,14 +272,15 @@ function updatePlanBanner() {
   }
 }
 
-const REVENDER_REF_PER_LOGIN = 6;
+// Referência p/ "Economize": o preço do crédito avulso.
+const REVENDER_REF_PER_LOGIN = 8.49;
 
 const REVENDER_PACKAGES = [
   { logins: null, unlimited: true, price: 300, tag: 'Crédito infinito', badge: 'Ilimitado', featured: true },
   { logins: 30, price: 139.9, tag: 'Máximo volume',   badge: 'Maior lucro',  featured: false },
   { logins: 20, price: 99.9,  tag: 'Melhor custo',    badge: 'Mais vendido', featured: true  },
   { logins: 10, price: 49.9,  tag: 'Para começar',    badge: null,          featured: false },
-  { logins: 1,  price: 5.5,   tag: 'Crédito avulso', badge: null,          featured: false },
+  { logins: 1,  price: 8.49,  tag: 'Crédito avulso', badge: null,          featured: false },
 ];
 
 function formatMoneyBr(value) {
@@ -511,8 +512,8 @@ function renderResellerPackages() {
       const savings = getResellerSavings(pkg);
       if (savings >= 1) {
         savingsHtml = '<span class="reseller-save">Economize R$ ' + formatMoneyBr(savings) + '</span>';
-      } else if (pkg.logins === 10) {
-        savingsHtml = '<span class="reseller-save">Preço de entrada</span>';
+      } else if (pkg.logins === 1) {
+        savingsHtml = '<span class="reseller-save">Para testar a revenda</span>';
       } else {
         savingsHtml = '<span class="reseller-save">Custo reduzido por login</span>';
       }
@@ -530,7 +531,7 @@ function renderResellerPackages() {
       : '<div class="reseller-package-per">R$ ' + formatMoneyBr(getResellerPerLogin(pkg)) + ' / login</div>';
     const perksLine = pkg.unlimited
       ? '<li>Logins ilimitados para revender</li><li>Sem recarga de créditos</li>'
-      : '<li>' + pkg.logins + ' acessos para revender</li><li>Margem na revenda</li>';
+      : '<li>' + pkg.logins + ' acesso' + (pkg.logins === 1 ? '' : 's') + ' para revender</li><li>Margem na revenda</li>';
 
     card.innerHTML =
       badgeHtml +
