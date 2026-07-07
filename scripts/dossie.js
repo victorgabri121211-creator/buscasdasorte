@@ -367,6 +367,10 @@ function getSearchErrorMessage(res) {
   if (status === 401) {
     const code = String((d && d.code) || '');
     if (code === 'no_auth' || raw.indexOf('autoriza') !== -1 || raw.indexOf('plano') !== -1 || raw.indexOf('login') !== -1) {
+      // Sem crachá no navegador = sessão antiga, não plano vencido.
+      if (typeof window !== 'undefined' && window.Auth && !window.Auth.getToken()) {
+        return 'Sua sessão precisa ser renovada. Saia da conta e entre de novo para voltar a consultar.';
+      }
       return 'Seu plano expirou ou não está ativo. Renove seu acesso na aba "Planos" para voltar a consultar. Se você acabou de renovar, saia e entre de novo.';
     }
   }

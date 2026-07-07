@@ -49,10 +49,30 @@ async function authRefresh() {
 
 function authLogout() { _setAuthToken(null); }
 
+// Sessão antiga sem crachá (logada antes do sistema de token): re-emite
+// silenciosamente com as credenciais guardadas neste dispositivo, sem exigir
+// que o usuário saia e entre de novo.
+async function authEnsure() {
+  if (_authToken) return true;
+  let user = null;
+  try { user = localStorage.getItem('bds_session'); } catch (e) {}
+  if (!user) return false;
+  try {
+    if (user === atob('RGFzb3J0ZQ==')) {
+      const h = localStorage.getItem('bds_admin_h');
+      return h ? await authMint(user, null, h) : false;
+    }
+    const users = JSON.parse(localStorage.getItem('bds_users')) || [];
+    const rec = users.find(function (u) { return u.user === user && u.pass && u.pass !== '(supabase)'; });
+    if (rec) return await authMint(user, rec.pass, null);
+  } catch (e) {}
+  return false;
+}
+
 if (typeof window !== 'undefined') {
-  window.Auth = { mint: authMint, refresh: authRefresh, logout: authLogout, getToken: function () { return _authToken; } };
-  // Ao carregar com sessão já ativa, renova o crachá em background.
-  try { if (_authToken) setTimeout(function () { authRefresh(); }, 800); } catch (e) {}
+  window.Auth = { mint: authMint, refresh: authRefresh, ensure: authEnsure, logout: authLogout, getToken: function () { return _authToken; } };
+  // Ao carregar com sessão já ativa, renova (ou re-emite) o crachá em background.
+  try { setTimeout(function () { if (_authToken) authRefresh(); else authEnsure(); }, 800); } catch (e) {}
 }
 const CONSULT_TIPOS = ['serasa','spc','receita','tse','denatran'];
 const FETCH_TIMEOUT_MS = 20000;
@@ -407,8 +427,9 @@ function _fetchCore(ep){
 // Só quando a renovação falha (plano realmente inativo) é que o 401 aparece.
 async function fetchComTimeout(ep) {
   const res = await _fetchCore(ep);
-  if (res && res.status === 401 && !ep.__authRetried && _authToken) {
-    const renewed = await authRefresh();
+  if (res && res.status === 401 && !ep.__authRetried) {
+    // Com token: tenta renovar. Sem token (sessão antiga): tenta re-emitir.
+    const renewed = _authToken ? await authRefresh() : await authEnsure();
     if (renewed) return _fetchCore(Object.assign({}, ep, { __authRetried: true }));
   }
   return res;
