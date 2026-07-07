@@ -136,6 +136,138 @@
   background-image: linear-gradient(165deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0) 45%);
 }
 
+/* ── Página do Ranking: pódio ── */
+.rank-page { margin-top: 10px; }
+.rank-podium {
+  display: flex; align-items: flex-end; justify-content: center;
+  gap: 14px; margin: 20px 0 22px;
+}
+.rank-pod {
+  flex: 1; max-width: 220px;
+  text-align: center;
+  padding: 20px 14px 18px;
+  border-radius: 18px;
+  border: 1px solid var(--border);
+  background: linear-gradient(170deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0) 45%), var(--card);
+  animation: bdsCardIn 0.55s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.rank-pod-2 { animation-delay: 0.08s; border-color: rgba(203, 213, 225, 0.28); }
+.rank-pod-3 { animation-delay: 0.16s; border-color: rgba(217, 119, 6, 0.35); }
+@keyframes bdsPod1Glow {
+  0%, 100% { box-shadow: 0 0 24px rgba(250, 204, 21, 0.12), 0 0 0 1px rgba(250, 204, 21, 0.25); }
+  50%      { box-shadow: 0 0 46px rgba(250, 204, 21, 0.28), 0 0 0 1px rgba(253, 224, 71, 0.45); }
+}
+.rank-pod-1 {
+  max-width: 250px;
+  padding: 26px 16px 24px;
+  border-color: rgba(250, 204, 21, 0.4);
+  background: linear-gradient(170deg, rgba(250, 204, 21, 0.09), rgba(250, 204, 21, 0) 50%), var(--card);
+  animation: bdsCardIn 0.55s cubic-bezier(0.16, 1, 0.3, 1) both, bdsPod1Glow 3.2s ease-in-out 0.6s infinite;
+}
+.rank-pod-medal { font-size: 30px; line-height: 1; margin-bottom: 8px; filter: drop-shadow(0 0 12px rgba(250, 204, 21, 0.45)); }
+.rank-pod-1 .rank-pod-medal { font-size: 38px; }
+.rank-pod-avatar {
+  width: 54px; height: 54px; margin: 0 auto 10px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px; font-weight: 800;
+  color: var(--green-bright);
+  background: rgba(34, 197, 94, 0.12);
+  border: 1px solid rgba(34, 197, 94, 0.35);
+  box-shadow: 0 0 18px rgba(34, 197, 94, 0.18);
+}
+.rank-pod-1 .rank-pod-avatar {
+  width: 66px; height: 66px; font-size: 27px;
+  color: #fde047;
+  background: rgba(250, 204, 21, 0.1);
+  border-color: rgba(250, 204, 21, 0.45);
+  box-shadow: 0 0 26px rgba(250, 204, 21, 0.25);
+}
+.rank-pod-name {
+  font-weight: 800; font-size: 14px; color: var(--text);
+  margin-bottom: 8px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.rank-pod-total { font-size: 34px; font-weight: 800; line-height: 1; color: var(--green-bright); font-variant-numeric: tabular-nums; }
+.rank-pod-1 .rank-pod-total { font-size: 44px; color: #fde047; text-shadow: 0 0 26px rgba(250, 204, 21, 0.45); }
+.rank-pod-sub { font-size: 11px; color: var(--text3); margin: 4px 0 12px; }
+.rank-pod-chips { display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; }
+.rank-pod-chip {
+  font-size: 10px; font-weight: 700;
+  padding: 3px 9px; border-radius: 999px;
+  border: 1px solid var(--border2);
+  color: var(--text2);
+  background: rgba(255, 255, 255, 0.03);
+  white-space: nowrap;
+}
+.rank-chip-30 { color: #fbbf24; border-color: rgba(251, 191, 36, 0.3); }
+.rank-chip-on { color: #4ade80; border-color: rgba(74, 222, 128, 0.3); }
+.rank-pod--me { outline: 1px solid rgba(74, 222, 128, 0.55); }
+.rank-rest { max-width: 640px; margin: 0 auto; }
+.rank-page .rdash-rank-footer { text-align: center; margin-top: 16px; }
+@media (max-width: 640px) {
+  .rank-podium { flex-direction: column; align-items: stretch; gap: 10px; }
+  .rank-pod, .rank-pod-1 { max-width: none; }
+  .rank-pod-1 { order: -1; }
+}
+
+/* ── Avisos: comunicados premium ── */
+.aviso-card {
+  position: relative;
+  border-radius: 18px;
+  border: 1px solid var(--border);
+  background: linear-gradient(170deg, rgba(255, 255, 255, 0.035), rgba(255, 255, 255, 0) 45%), var(--card);
+  padding: 22px;
+  margin-bottom: 16px;
+  overflow: hidden;
+  animation: bdsCardIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.aviso-card + .aviso-card { animation-delay: 0.1s; }
+.aviso-card-destaque { border-color: rgba(34, 197, 94, 0.35); }
+.aviso-card-destaque::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: radial-gradient(460px circle at 0% 0%, rgba(34, 197, 94, 0.13), transparent 62%);
+  pointer-events: none;
+}
+.aviso-head { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; position: relative; }
+.aviso-icon {
+  width: 48px; height: 48px; flex-shrink: 0;
+  border-radius: 14px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 23px;
+  background: rgba(34, 197, 94, 0.1);
+  border: 1px solid rgba(34, 197, 94, 0.3);
+  box-shadow: 0 0 20px rgba(34, 197, 94, 0.15), inset 0 0 12px rgba(34, 197, 94, 0.06);
+}
+.aviso-title-wrap h3 { font-size: 16.5px; font-weight: 800; color: var(--text); line-height: 1.3; margin: 0; }
+.aviso-badge {
+  display: inline-block;
+  font-size: 9px; font-weight: 800;
+  letter-spacing: 0.09em; text-transform: uppercase;
+  color: #022c15;
+  background: linear-gradient(135deg, #4ade80, #22c55e);
+  padding: 3px 9px; border-radius: 999px;
+  margin-bottom: 6px;
+  box-shadow: 0 0 14px rgba(34, 197, 94, 0.45);
+}
+.aviso-lead { font-size: 13.5px; color: var(--text2); line-height: 1.6; margin: 0 0 14px; position: relative; }
+.aviso-lead strong, .aviso-list strong, .aviso-steps strong { color: var(--text); }
+.aviso-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; position: relative; }
+.aviso-list li { position: relative; padding-left: 24px; font-size: 13px; color: var(--text2); line-height: 1.55; }
+.aviso-list li::before { content: '✓'; position: absolute; left: 2px; top: 0; color: var(--green-bright); font-weight: 800; }
+.aviso-steps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 14px; position: relative; }
+.aviso-steps li { display: flex; gap: 12px; align-items: flex-start; font-size: 13px; color: var(--text2); line-height: 1.55; }
+.aviso-step-num {
+  width: 27px; height: 27px; flex-shrink: 0;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 800;
+  color: #022c15;
+  background: linear-gradient(135deg, #4ade80, #16a34a);
+  box-shadow: 0 0 14px rgba(34, 197, 94, 0.35);
+}
+
 /* ── Login: entrada cinematográfica ── */
 @keyframes bdsAuthIn {
   from { opacity: 0; transform: translateY(26px) scale(0.96); filter: blur(8px); }

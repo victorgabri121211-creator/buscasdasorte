@@ -639,9 +639,52 @@ function _resellerRankingHtml() {
   '</div>';
 }
 
+// Pódio (página do ranking): top 3 em destaque + 4º/5º em linhas.
+function _rankPodiumHtml(list, meKey) {
+  var esc = typeof escAdmin === 'function' ? escAdmin : function (s) { return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); };
+  var medals = ['👑', '🥈', '🥉'];
+  var podium = '';
+  [1, 0, 2].forEach(function (idx) { // ordem visual: 2º, 1º (centro), 3º
+    var item = list[idx];
+    if (!item) return;
+    var name = String(item.reseller || '');
+    var isMe = meKey && name.trim().toLowerCase() === meKey;
+    var active = Number(item.active) || 0;
+    podium +=
+      '<div class="rank-pod rank-pod-' + (idx + 1) + (isMe ? ' rank-pod--me' : '') + '">' +
+        '<div class="rank-pod-medal">' + medals[idx] + '</div>' +
+        '<div class="rank-pod-avatar">' + esc(name.charAt(0).toUpperCase()) + '</div>' +
+        '<div class="rank-pod-name">' + esc(name) + (isMe ? ' <span class="rdash-rank-me-badge">você</span>' : '') + '</div>' +
+        '<div class="rank-pod-total">' + (Number(item.total) || 0) + '</div>' +
+        '<div class="rank-pod-sub">cliente' + (Number(item.total) === 1 ? '' : 's') + ' criado' + (Number(item.total) === 1 ? '' : 's') + '</div>' +
+        '<div class="rank-pod-chips">' +
+          '<span class="rank-pod-chip rank-chip-30">+' + (Number(item.last30) || 0) + ' em 30d</span>' +
+          '<span class="rank-pod-chip rank-chip-on">' + active + ' ativo' + (active === 1 ? '' : 's') + '</span>' +
+        '</div>' +
+      '</div>';
+  });
+  var rows = '';
+  list.slice(3).forEach(function (item, i) {
+    var name = String(item.reseller || '');
+    var isMe = meKey && name.trim().toLowerCase() === meKey;
+    var active = Number(item.active) || 0;
+    rows +=
+      '<div class="rdash-rank-row' + (isMe ? ' rdash-rank-row--me' : '') + '">' +
+        '<span class="rdash-rank-pos">' + (i + 4) + 'º</span>' +
+        '<span class="rdash-rank-name">' + esc(name) + (isMe ? '<span class="rdash-rank-me-badge">você</span>' : '') + '</span>' +
+        '<span class="rdash-rank-stat"><strong>' + (Number(item.total) || 0) + '</strong> cliente' + (Number(item.total) === 1 ? '' : 's') + '</span>' +
+        '<span class="rdash-rank-stat rdash-rank-stat-30">+' + (Number(item.last30) || 0) + ' em 30d</span>' +
+        '<span class="rdash-rank-stat rdash-rank-stat-active">' + active + ' ativo' + (active === 1 ? '' : 's') + '</span>' +
+      '</div>';
+  });
+  return '<div class="rank-podium">' + podium + '</div>' +
+         (rows ? '<div class="rdash-rank-list rank-rest">' + rows + '</div>' : '');
+}
+
 // Busca o ranking no servidor e preenche o bloco. `reseller` (opcional) marca
-// a linha "você"; passe null na visão do admin.
-function _loadResellerRanking(reseller) {
+// a linha "você"; passe null na visão do admin. opts.podium usa o layout de
+// pódio (página do ranking).
+function _loadResellerRanking(reseller, opts) {
   var body = document.getElementById('rdash-rank-body');
   if (!body) return;
   var esc = typeof escAdmin === 'function' ? escAdmin : function (s) { return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); };
@@ -664,13 +707,26 @@ function _loadResellerRanking(reseller) {
     }
 
     var meKey = String(reseller || '').trim().toLowerCase();
+    var inTop = list.some(function (item) {
+      return meKey && String(item.reseller || '').trim().toLowerCase() === meKey;
+    });
+
+    var footer = '';
+    if (meKey && !inTop) {
+      var mine = typeof getResellerStats === 'function' ? (getResellerStats(reseller).loginsCreated || 0) : 0;
+      footer = '<p class="rdash-rank-footer">Você tem <strong>' + mine + '</strong> cliente' + (mine === 1 ? '' : 's') + ' criado' + (mine === 1 ? '' : 's') + ' — crie mais acessos para entrar no top 5! 🚀</p>';
+    }
+
+    if (opts && opts.podium) {
+      el.innerHTML = _rankPodiumHtml(list, meKey) + footer;
+      return;
+    }
+
     var medals = ['🥇', '🥈', '🥉'];
-    var inTop = false;
 
     var rows = list.map(function (item, i) {
       var name = String(item.reseller || '');
       var isMe = meKey && name.trim().toLowerCase() === meKey;
-      if (isMe) inTop = true;
       var pos = i < 3 ? medals[i] : (i + 1) + 'º';
       return '<div class="rdash-rank-row' + (isMe ? ' rdash-rank-row--me' : '') + (i < 3 ? ' rdash-rank-row--top' + (i + 1) : '') + '">' +
         '<span class="rdash-rank-pos">' + pos + '</span>' +
@@ -680,12 +736,6 @@ function _loadResellerRanking(reseller) {
         '<span class="rdash-rank-stat rdash-rank-stat-active">' + (Number(item.active) || 0) + ' ativo' + (Number(item.active) === 1 ? '' : 's') + '</span>' +
       '</div>';
     }).join('');
-
-    var footer = '';
-    if (meKey && !inTop) {
-      var mine = typeof getResellerStats === 'function' ? (getResellerStats(reseller).loginsCreated || 0) : 0;
-      footer = '<p class="rdash-rank-footer">Você tem <strong>' + mine + '</strong> cliente' + (mine === 1 ? '' : 's') + ' criado' + (mine === 1 ? '' : 's') + ' — crie mais acessos para entrar no top 5! 🚀</p>';
-    }
 
     el.innerHTML = '<div class="rdash-rank-list">' + rows + '</div>' + footer;
   }).catch(function () {
@@ -716,12 +766,14 @@ function renderRankingView() {
       '</div>' +
       '<button type="button" class="view-search-back" id="ranking-view-back">← Voltar</button>' +
     '</div>' +
-    _resellerRankingHtml();
+    '<div class="rank-page" id="rdash-rank-body">' +
+      '<div class="rdash-comm-loading"><span class="spinner"></span> Carregando…</div>' +
+    '</div>';
 
   const back = document.getElementById('ranking-view-back');
   if (back) back.addEventListener('click', () => showAppView('modules'));
 
-  _loadResellerRanking(adminUser ? null : user);
+  _loadResellerRanking(adminUser ? null : user, { podium: true });
 }
 window.renderRankingView = renderRankingView;
 

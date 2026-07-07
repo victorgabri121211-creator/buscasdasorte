@@ -16,7 +16,7 @@
 <link rel="stylesheet" href="../styles/modules.css?v=8"/>
 <link rel="stylesheet" href="../styles/admin.css?v=5"/>
 <link rel="stylesheet" href="../styles/payment.css"/>
-<link rel="stylesheet" href="../styles/premium.css?v=2"/>
+<link rel="stylesheet" href="../styles/premium.css?v=3"/>
 </head>
 <body>
 
@@ -403,24 +403,36 @@
             <p>Novidades e como aproveitar melhor a plataforma.</p>
           </div>
         </div>
-        <div class="service-info-card">
-          <h3>🛍️ Comprou um plano? Seu painel de revenda já está liberado!</h3>
-          <ul>
-            <li>Ao comprar <strong>qualquer plano direto na loja</strong> (diária, semanal, mensal ou vitalício), assim que o pagamento é confirmado o menu <strong>Revendedor</strong> e o <strong>🏆 Ranking</strong> aparecem automaticamente na sua conta</li>
-            <li>Não precisa pedir liberação nem esperar: <strong>comprou, virou revendedor</strong> — o acesso vale enquanto seu plano estiver ativo</li>
-            <li>Contas criadas por um revendedor não têm essa área — a revenda é exclusiva de quem compra direto na plataforma</li>
+        <article class="aviso-card aviso-card-destaque">
+          <div class="aviso-head">
+            <div class="aviso-icon">🛍️</div>
+            <div class="aviso-title-wrap">
+              <span class="aviso-badge">Novo</span>
+              <h3>Comprou um plano? Você já é revendedor!</h3>
+            </div>
+          </div>
+          <p class="aviso-lead">Agora, <strong>qualquer plano comprado direto na loja</strong> (diária, semanal, mensal ou vitalício) libera o painel de revenda na hora em que o pagamento é confirmado.</p>
+          <ul class="aviso-list">
+            <li>O menu <strong>Revendedor</strong> e o <strong>🏆 Ranking</strong> aparecem automaticamente na sua conta — sem pedir liberação, sem esperar</li>
+            <li>O acesso vale enquanto seu plano estiver ativo</li>
+            <li>Contas criadas por um revendedor não têm essa área — a revenda é exclusiva de quem compra direto</li>
           </ul>
-        </div>
-        <div class="service-info-card">
-          <h3>💼 Como funciona a revenda</h3>
-          <ul>
-            <li><strong>Compre um pacote de créditos</strong> na área do Revendedor — cada crédito gera (ou renova) 1 acesso de cliente. Quanto maior o pacote, menor o custo por login</li>
-            <li><strong>Crie o login do seu cliente</strong> em segundos, escolhendo a duração do acesso — você define o preço que cobra e o lucro é todo seu</li>
-            <li><strong>Gerencie tudo no painel</strong>: créditos restantes, clientes ativos, vencimentos, renovação e relatório de ganhos</li>
-            <li><strong>Divulgue seu link de afiliado</strong>: cada plano comprado por ele te dá <strong>20% de comissão</strong></li>
-            <li>Os melhores revendedores aparecem no <strong>🏆 Ranking</strong> — top 5 por clientes criados</li>
-          </ul>
-        </div>
+        </article>
+        <article class="aviso-card">
+          <div class="aviso-head">
+            <div class="aviso-icon">💼</div>
+            <div class="aviso-title-wrap">
+              <h3>Como funciona a revenda</h3>
+            </div>
+          </div>
+          <ol class="aviso-steps">
+            <li><span class="aviso-step-num">1</span><div><strong>Compre um pacote de créditos</strong> na área do Revendedor — cada crédito gera (ou renova) 1 acesso de cliente. Quanto maior o pacote, menor o custo por login</div></li>
+            <li><span class="aviso-step-num">2</span><div><strong>Crie o login do seu cliente</strong> em segundos, escolhendo a duração do acesso — você define o preço que cobra e o lucro é todo seu</div></li>
+            <li><span class="aviso-step-num">3</span><div><strong>Gerencie tudo no painel</strong>: créditos restantes, clientes ativos, vencimentos, renovação e relatório de ganhos</div></li>
+            <li><span class="aviso-step-num">4</span><div><strong>Divulgue seu link de afiliado</strong>: cada plano comprado por ele te dá <strong>20% de comissão</strong></div></li>
+            <li><span class="aviso-step-num">🏆</span><div><strong>Suba no Ranking</strong>: os 5 revendedores com mais clientes criados ganham destaque na plataforma</div></li>
+          </ol>
+        </article>
         <div class="reseller-panel-entry">
           <div class="reseller-panel-entry-text">
             <h3>Quer começar agora?</h3>
@@ -829,7 +841,7 @@ document.getElementById('login-user').addEventListener('keydown',e=>{if(e.key===
 <script src="../scripts/sales.js?v=5"></script>
 <script src="../scripts/plans.js?v=4"></script>
 <script src="../scripts/reseller-logins.js?v=9"></script>
-<script src="../scripts/modules.js?v=20"></script>
+<script src="../scripts/modules.js?v=21"></script>
 <script src="../scripts/admin.js?v=11"></script>
 <script src="../scripts/dossie.js?v=21"></script>
 <script src="../scripts/negativ.js?v=3"></script>
