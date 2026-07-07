@@ -267,6 +267,24 @@
   background: linear-gradient(135deg, #4ade80, #16a34a);
   box-shadow: 0 0 14px rgba(34, 197, 94, 0.35);
 }
+.aviso-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; position: relative; }
+@media (max-width: 640px) { .aviso-cols { grid-template-columns: 1fr; } }
+.aviso-col {
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 14px 16px;
+  background: rgba(255, 255, 255, 0.02);
+}
+.aviso-col-title {
+  font-size: 11px; font-weight: 800;
+  text-transform: uppercase; letter-spacing: 0.07em;
+  margin-bottom: 10px;
+}
+.aviso-col-title--sim { color: var(--green-bright); }
+.aviso-col-title--nao { color: #f87171; }
+.aviso-col:has(.aviso-col-title--sim) { border-color: rgba(34, 197, 94, 0.25); }
+.aviso-col:has(.aviso-col-title--nao) { border-color: rgba(248, 113, 113, 0.22); }
+.aviso-list--nao li::before { content: '✕'; color: #f87171; }
 
 /* ── Login: entrada cinematográfica ── */
 @keyframes bdsAuthIn {
