@@ -29,6 +29,10 @@ body.user-admin #view-revendedor-painel.app-view.active {
   display: none !important;
 }
 
+#nav-ranking[hidden] {
+  display: none !important;
+}
+
 #nav-revendedor.nav-revendedor--visible {
   display: flex !important;
 }

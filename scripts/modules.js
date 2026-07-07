@@ -413,7 +413,7 @@ const MODULE_CATEGORIES = [
 
 const CATEGORY_ICON = '<path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/>';
 
-const APP_VIEWS = ['modules', 'search', 'revendedor', 'revendedor-painel', 'loja', 'admin-dashboard', 'admin-clientes', 'admin-revendedores'];
+const APP_VIEWS = ['modules', 'search', 'revendedor', 'revendedor-painel', 'ranking', 'loja', 'admin-dashboard', 'admin-clientes', 'admin-revendedores'];
 
 function showAppView(view) {
   if (view === 'loja' && isResellerClientAccount()) {
@@ -425,6 +425,12 @@ function showAppView(view) {
   if (view === 'revendedor-painel') {
     const adminView = typeof isAdmin === 'function' && isAdmin() && window._resellerPanelUser;
     if (!adminView && typeof canAccessRevendedor === 'function' && !canAccessRevendedor()) {
+      view = 'modules';
+    }
+  }
+  if (view === 'ranking') {
+    const adminOk = typeof isAdmin === 'function' && isAdmin();
+    if (!adminOk && typeof canAccessRevendedor === 'function' && !canAccessRevendedor()) {
       view = 'modules';
     }
   }
@@ -442,6 +448,9 @@ function showAppView(view) {
   if (view === 'revendedor-painel' && typeof renderResellerDashboard === 'function') {
     renderResellerDashboard();
   }
+  if (view === 'ranking' && typeof renderRankingView === 'function') {
+    renderRankingView();
+  }
   if (view === 'modules') refreshClientPlanState();
   if (view === 'loja') renderPlansGrid();
   if (typeof setUserNavActive === 'function') setUserNavActive(view);
@@ -453,6 +462,7 @@ function setUserNavActive(view) {
     modules: 'nav-modulos',
     revendedor: 'nav-revendedor',
     'revendedor-painel': 'nav-revendedor',
+    ranking: 'nav-ranking',
     loja: 'nav-loja',
   };
   const activeId = map[view];
@@ -605,7 +615,7 @@ function _resellerRankingHtml() {
   return '<div class="rdash-earn rdash-rank" id="rdash-rank">' +
     '<div class="rdash-earn-head">' +
       '<h4 class="rdash-earn-title">🏆 Ranking de Revendedores</h4>' +
-      '<span class="rdash-earn-hint">Top 10 por clientes criados</span>' +
+      '<span class="rdash-earn-hint">Top 5 por clientes criados</span>' +
     '</div>' +
     '<div id="rdash-rank-body" class="rdash-comm-body">' +
       '<div class="rdash-comm-loading"><span class="spinner"></span> Carregando…</div>' +
@@ -631,7 +641,7 @@ function _loadResellerRanking(reseller) {
     if (!el) return;
     if (!r || !r.ok) { el.innerHTML = neutral; return; }
 
-    var list = Array.isArray(r.ranking) ? r.ranking : [];
+    var list = Array.isArray(r.ranking) ? r.ranking.slice(0, 5) : [];
     if (!list.length) {
       el.innerHTML = '<p class="rdash-comm-empty">Nenhum revendedor criou clientes ainda. Seja o primeiro do ranking!</p>';
       return;
@@ -658,7 +668,7 @@ function _loadResellerRanking(reseller) {
     var footer = '';
     if (meKey && !inTop) {
       var mine = typeof getResellerStats === 'function' ? (getResellerStats(reseller).loginsCreated || 0) : 0;
-      footer = '<p class="rdash-rank-footer">Você tem <strong>' + mine + '</strong> cliente' + (mine === 1 ? '' : 's') + ' criado' + (mine === 1 ? '' : 's') + ' — crie mais acessos para entrar no top 10! 🚀</p>';
+      footer = '<p class="rdash-rank-footer">Você tem <strong>' + mine + '</strong> cliente' + (mine === 1 ? '' : 's') + ' criado' + (mine === 1 ? '' : 's') + ' — crie mais acessos para entrar no top 5! 🚀</p>';
     }
 
     el.innerHTML = '<div class="rdash-rank-list">' + rows + '</div>' + footer;
@@ -669,6 +679,35 @@ function _loadResellerRanking(reseller) {
 }
 window._resellerRankingHtml = _resellerRankingHtml;
 window._loadResellerRanking = _loadResellerRanking;
+
+// Página do ranking (acessada pelo item "Ranking" do menu lateral).
+function renderRankingView() {
+  const root = document.getElementById('ranking-view-root');
+  if (!root) return;
+  const user = typeof getSession === 'function' ? getSession() : '';
+  const adminUser = typeof isAdmin === 'function' && isAdmin();
+
+  root.innerHTML =
+    '<div class="sdash-header">' +
+      '<div class="sdash-header-left">' +
+        '<div class="sdash-header-icon sdash-icon-orange">' +
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>' +
+        '</div>' +
+        '<div>' +
+          '<h3 class="sdash-title">Ranking de Revendedores</h3>' +
+          '<p class="sdash-sub">Os 5 melhores da plataforma em clientes criados</p>' +
+        '</div>' +
+      '</div>' +
+      '<button type="button" class="view-search-back" id="ranking-view-back">← Voltar</button>' +
+    '</div>' +
+    _resellerRankingHtml();
+
+  const back = document.getElementById('ranking-view-back');
+  if (back) back.addEventListener('click', () => showAppView('modules'));
+
+  _loadResellerRanking(adminUser ? null : user);
+}
+window.renderRankingView = renderRankingView;
 
 // Painel de ganhos + preços de revenda por duração + link de afiliado.
 function _resellerEarningsHtml(reseller, readOnly) {

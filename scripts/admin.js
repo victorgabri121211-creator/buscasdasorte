@@ -79,6 +79,12 @@ function syncRevendedorNav() {
   revNav.classList.toggle('nav-revendedor--visible', show);
   revNav.hidden = !show;
   revNav.setAttribute('aria-hidden', show ? 'false' : 'true');
+  // O item "Ranking" segue a mesma regra do menu Revendedor.
+  const rankNav = document.getElementById('nav-ranking');
+  if (rankNav) {
+    rankNav.hidden = !show;
+    rankNav.setAttribute('aria-hidden', show ? 'false' : 'true');
+  }
 }
 
 function setResellerEnabled(username, enabled) {
