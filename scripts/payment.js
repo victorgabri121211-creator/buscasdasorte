@@ -4,7 +4,7 @@ const PIX_PLANS = {
   diaria:    { label: 'Diária',    amount: 8.49 },
   semana:    { label: '1 Semana',  amount: 20.5 },
   mes:       { label: '1 Mês',     amount: 25.5 },
-  vitalicio: { label: 'Vitalício', amount: 150 },
+  vitalicio: { label: 'Vitalício', amount: 79.99 },
 };
 
 // Vitalício: ~100 anos (mesmo valor usado em plans.js) para o Date válido no banco.

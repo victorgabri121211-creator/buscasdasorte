@@ -32,7 +32,7 @@ const PLANS = [
     id: 'vitalicio',
     period: 'Vitalício',
     durationLabel: 'Acesso permanente',
-    price: 150,
+    price: 79.99,
     perDay: 0,
     lifetime: true,
     tag: 'Pague uma vez',

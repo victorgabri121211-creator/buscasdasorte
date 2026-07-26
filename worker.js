@@ -28,7 +28,7 @@ const ALLOWED_ORIGINS = [
 
 // Precos canonicos - a fonte da verdade do valor cobrado e o servidor,
 // nunca o valor enviado pelo navegador. Mantenha em sincronia com o site.
-const PLAN_PRICES = { diaria: 8.49, semana: 20.5, mes: 25.5, vitalicio: 150 };
+const PLAN_PRICES = { diaria: 8.49, semana: 20.5, mes: 25.5, vitalicio: 79.99 };
 const RESELLER_PRICES = { '1': 8.49, '10': 49.9, '20': 99.9, '30': 139.9, unlimited: 300 };
 // Conjunto de todos os valores validos (fallback p/ clientes sem productId).
 const VALID_AMOUNTS = Object.values(PLAN_PRICES).concat(Object.values(RESELLER_PRICES));
