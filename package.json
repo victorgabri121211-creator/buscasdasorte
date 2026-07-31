@@ -1,0 +1,12 @@
+{
+  "name": "buscasdasorte-site",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Site estático (GitHub Pages). Sem build no deploy — os scripts abaixo só servem para regenerar os arquivos .min.css/.min.js localmente após editar os fontes em styles/ e scripts/.",
+  "scripts": {
+    "minify": "node tools/minify.mjs"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.1"
+  }
+}
