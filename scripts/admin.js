@@ -263,9 +263,10 @@ function adminCloseResetModal() {
   _adminResetTarget = null;
 }
 
-function adminConfirmReset() {
+async function adminConfirmReset() {
   const msgEl = document.getElementById('admin-reset-msg');
   const input = document.getElementById('admin-reset-input');
+  const btn = document.getElementById('admin-reset-confirm-btn');
   const newPass = input ? input.value.trim() : '';
   if (!_adminResetTarget || !newPass) {
     if (msgEl) { msgEl.textContent = 'Informe a nova senha.'; msgEl.className = 'admin-reset-msg err'; }
@@ -275,16 +276,30 @@ function adminConfirmReset() {
     if (msgEl) { msgEl.textContent = 'Senha deve ter mínimo 6 caracteres.'; msgEl.className = 'admin-reset-msg err'; }
     return;
   }
+
+  if (!(typeof DB !== 'undefined' && DB.isConfigured())) {
+    if (msgEl) { msgEl.textContent = 'Banco indisponível — não é possível trocar a senha agora.'; msgEl.className = 'admin-reset-msg err'; }
+    return;
+  }
+
+  if (btn) { btn.disabled = true; btn.textContent = 'Salvando...'; }
+  let res = null;
+  try { res = await DB.resetUserPassword(_adminResetTarget, newPass); } catch (e) {}
+  if (btn) { btn.disabled = false; btn.textContent = 'Salvar senha'; }
+
+  if (!res || !res.ok) {
+    if (msgEl) { msgEl.textContent = (res && res.msg) || 'Falha ao trocar a senha no servidor.'; msgEl.className = 'admin-reset-msg err'; }
+    return;
+  }
+
   const usersKey = USERS_STORE_KEY;
   let users = [];
   try { users = JSON.parse(localStorage.getItem(usersKey)) || []; } catch { users = []; }
   const idx = users.findIndex(u => u.user === _adminResetTarget);
-  if (idx === -1) {
-    if (msgEl) { msgEl.textContent = 'Usuário não encontrado.'; msgEl.className = 'admin-reset-msg err'; }
-    return;
+  if (idx !== -1) {
+    users[idx].pass = newPass;
+    localStorage.setItem(usersKey, JSON.stringify(users));
   }
-  users[idx].pass = newPass;
-  localStorage.setItem(usersKey, JSON.stringify(users));
   if (msgEl) { msgEl.textContent = 'Senha atualizada com sucesso!'; msgEl.className = 'admin-reset-msg ok'; }
   if (typeof showToast === 'function') showToast('Senha de ' + _adminResetTarget + ' atualizada');
   setTimeout(adminCloseResetModal, 1400);

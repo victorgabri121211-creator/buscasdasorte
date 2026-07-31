@@ -202,6 +202,10 @@
     return _rpc('bds_admin_add_credits', { p_hash: _adminHash, p_username: username, p_amount: amount });
   }
 
+  function resetUserPassword(username, newPassword) {
+    return _rpc('bds_admin_reset_password', { p_hash: _adminHash, p_username: username, p_new_password: newPassword });
+  }
+
   // ── Vendas ────────────────────────────────────────────────────────────────
 
   function recordSale(sale) {
@@ -329,6 +333,7 @@
     clearUserPlan: clearUserPlan,
     setResellerAccess: setResellerAccess,
     addResellerCredits: addResellerCredits,
+    resetUserPassword: resetUserPassword,
     createResellerLogin: createResellerLogin,
     deactivateResellerLogin: deactivateResellerLogin,
     deleteResellerLogin: deleteResellerLogin,
