@@ -348,6 +348,11 @@ begin
   if v_ref is not null and p_category = 'plan' then
     v_commission := round(coalesce(p_amount, 0) * v_rate, 2);
   end if;
+  -- Conflito por id (aleatório) nunca pega duplicata real; se já existe uma
+  -- venda com esse tx_id (ex.: registrada pelo bds_fulfill_order), não insere de novo.
+  if p_tx_id is not null and exists(select 1 from bds_sales where tx_id = p_tx_id) then
+    return jsonb_build_object('ok', true, 'dup', true);
+  end if;
   insert into bds_sales(id, tx_id, ts, category, product_id, label, amount, buyer, ref, commission)
   values(p_id, p_tx_id, p_ts, p_category, p_product_id, p_label, p_amount, p_buyer, v_ref, v_commission)
   on conflict (id) do nothing;

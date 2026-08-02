@@ -86,9 +86,11 @@ function recordSale(sale) {
   };
   list.push(entry);
   saveSalesList(list);
-  if (typeof DB !== 'undefined' && DB.isConfigured()) {
-    DB.recordSale(entry).catch(function () {});
-  }
+  // Não chama DB.recordSale aqui: todo chamador atual (confirmação de PIX)
+  // já tem a venda registrada no servidor via bds_fulfill_order (worker,
+  // idempotente por tx_id — ver supabase-payment-webhook.sql). Chamar de
+  // novo aqui duplicava a linha em bds_sales (conflito é por id, não por
+  // tx_id, então não deduplicava).
 }
 
 
