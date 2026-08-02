@@ -395,3 +395,4 @@ grant execute on function bds_record_sale(text, text, bigint, text, text, text, 
 grant execute on function bds_get_affiliate_report(text) to anon;
 grant execute on function bds_deactivate_reseller_login(text, text) to anon;
 grant execute on function bds_delete_reseller_login(text, text) to anon;
+grant execute on function bds_renew_reseller_login(text, text, integer) to anon;
