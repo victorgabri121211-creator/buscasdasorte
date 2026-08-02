@@ -253,12 +253,24 @@ function getResellerStats(reseller) {
   };
 }
 
-function deactivateResellerClient(reseller, loginId) {
+async function deactivateResellerClient(reseller, loginId) {
   const store = getResellerLoginsStore();
   const list = store[reseller];
   if (!Array.isArray(list)) return { ok: false, msg: 'Login não encontrado.' };
   const item = list.find(l => l.id === loginId);
   if (!item) return { ok: false, msg: 'Login não encontrado.' };
+
+  if (typeof DB !== 'undefined' && DB.isConfigured()) {
+    let res = null;
+    try {
+      res = await DB.deactivateResellerLogin(reseller, loginId);
+    } catch (e) {
+      res = null; // erro de rede — cai no fallback local
+    }
+    if (res && !res.ok) {
+      return { ok: false, msg: res.msg || 'Erro ao desativar no servidor.' };
+    }
+  }
 
   const expired = Date.now() - 1;
   const plans = resellerGetPlansStore();
@@ -272,7 +284,7 @@ function deactivateResellerClient(reseller, loginId) {
   return { ok: true, msg: 'Cliente desativado.' };
 }
 
-function renewResellerClient(reseller, loginId, days) {
+async function renewResellerClient(reseller, loginId, days) {
   days = parseInt(days, 10);
   if (!days || days < 1 || days > 365) return { ok: false, msg: 'Informe dias válidos.' };
   if (getResellerCredits(reseller) < 1) return { ok: false, msg: 'Sem créditos. Compre um pacote.' };
@@ -282,6 +294,20 @@ function renewResellerClient(reseller, loginId, days) {
   if (!Array.isArray(list)) return { ok: false, msg: 'Login não encontrado.' };
   const item = list.find(l => l.id === loginId);
   if (!item) return { ok: false, msg: 'Login não encontrado.' };
+
+  // Sincroniza com o Supabase primeiro — sem isso, o cliente continua bloqueado
+  // no login real (bds_access_check), mesmo com o crédito debitado localmente.
+  if (typeof DB !== 'undefined' && DB.isConfigured()) {
+    let res = null;
+    try {
+      res = await DB.renewResellerLogin(reseller, loginId, days);
+    } catch (e) {
+      res = null; // erro de rede — cai no fallback local
+    }
+    if (res && !res.ok) {
+      return { ok: false, msg: res.msg || 'Erro ao renovar no servidor.' };
+    }
+  }
 
   const now = Date.now();
   const base = Math.max(item.expiresAt || now, now);
@@ -441,12 +467,24 @@ function captureAffiliateRef() {
   } catch (e) {}
 }
 
-function deleteResellerClient(reseller, loginId) {
+async function deleteResellerClient(reseller, loginId) {
   const store = getResellerLoginsStore();
   const list = store[reseller];
   if (!Array.isArray(list)) return { ok: false, msg: 'Login não encontrado.' };
   const item = list.find(l => l.id === loginId);
   if (!item) return { ok: false, msg: 'Login não encontrado.' };
+
+  if (typeof DB !== 'undefined' && DB.isConfigured()) {
+    let res = null;
+    try {
+      res = await DB.deleteResellerLogin(reseller, loginId);
+    } catch (e) {
+      res = null; // erro de rede — cai no fallback local
+    }
+    if (res && !res.ok) {
+      return { ok: false, msg: res.msg || 'Erro ao remover no servidor.' };
+    }
+  }
 
   store[reseller] = list.filter(l => l.id !== loginId);
   saveResellerLoginsStore(store);

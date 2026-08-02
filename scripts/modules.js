@@ -1065,19 +1065,24 @@ function renderResellerDashboard() {
   }
 
   root.querySelectorAll('[data-action]').forEach(btn => {
-    btn.addEventListener('click', () => {
+    btn.addEventListener('click', async () => {
       const id = btn.getAttribute('data-id');
       const action = btn.getAttribute('data-action');
       const item = logins.find(l => l.id === id);
       if (action === 'info' && item) { openResellerCredsModal(item); return; }
       if (action === 'renew' && item && !readOnly) { openResellerRenewModal(reseller, item, () => renderResellerDashboard()); return; }
       if (!id || readOnly) return;
+      let result = null;
       if (action === 'block') {
         if (!confirm('Desativar este cliente agora?')) return;
-        deactivateResellerClient(reseller, id);
+        result = await deactivateResellerClient(reseller, id);
       } else if (action === 'delete') {
         if (!confirm('Excluir este cliente permanentemente?')) return;
-        deleteResellerClient(reseller, id);
+        result = await deleteResellerClient(reseller, id);
+      }
+      if (result && !result.ok) {
+        if (typeof showToast === 'function') showToast(result.msg || 'Erro ao processar.');
+        return;
       }
       renderResellerDashboard();
     });
@@ -1179,12 +1184,15 @@ function openResellerRenewModal(reseller, item, cb) {
       });
     });
     document.getElementById('rr-cancel').addEventListener('click', () => overlay.classList.remove('open'));
-    document.getElementById('rr-confirm').addEventListener('click', () => {
+    document.getElementById('rr-confirm').addEventListener('click', async () => {
       const msgEl = document.getElementById('rr-msg');
+      const confirmBtn = document.getElementById('rr-confirm');
       if (!_renewReseller || !_renewItem) return;
+      if (confirmBtn) confirmBtn.disabled = true;
       const result = typeof renewResellerClient === 'function'
-        ? renewResellerClient(_renewReseller, _renewItem.id, _renewDays)
+        ? await renewResellerClient(_renewReseller, _renewItem.id, _renewDays)
         : { ok: false, msg: 'Função indisponível.' };
+      if (confirmBtn) confirmBtn.disabled = false;
       if (msgEl) { msgEl.textContent = result.msg; msgEl.className = 'reseller-renew-msg ' + (result.ok ? 'ok' : 'err'); }
       if (result.ok) {
         if (typeof showToast === 'function') showToast(result.msg);

@@ -254,6 +254,10 @@
     return _rpc('bds_deactivate_reseller_login', { p_reseller: reseller, p_login_id: loginId });
   }
 
+  function renewResellerLogin(reseller, loginId, days) {
+    return _rpc('bds_renew_reseller_login', { p_reseller: reseller, p_login_id: loginId, p_days: days });
+  }
+
   function deleteResellerLogin(reseller, loginId) {
     return _rpc('bds_delete_reseller_login', { p_reseller: reseller, p_login_id: loginId });
   }
@@ -336,6 +340,7 @@
     resetUserPassword: resetUserPassword,
     createResellerLogin: createResellerLogin,
     deactivateResellerLogin: deactivateResellerLogin,
+    renewResellerLogin: renewResellerLogin,
     deleteResellerLogin: deleteResellerLogin,
     recordSale: recordSale,
     getAffiliateReport: getAffiliateReport,

@@ -259,6 +259,37 @@ begin
   return jsonb_build_object('ok', true, 'msg', 'Cliente desativado.');
 end; $$;
 
+-- Revendedor: renovar cliente
+create or replace function bds_renew_reseller_login(p_reseller text, p_login_id text, p_days integer)
+returns jsonb language plpgsql security definer as $$
+declare
+  v_credits  integer := 0;
+  v_username text;
+  v_now      bigint := (extract(epoch from now()) * 1000)::bigint;
+  v_base     bigint;
+  v_expires  bigint;
+begin
+  if p_days is null or p_days < 1 or p_days > 365 then
+    return jsonb_build_object('ok', false, 'msg', 'Informe dias válidos.');
+  end if;
+  select credits into v_credits from bds_reseller_credits where lower(username) = lower(p_reseller);
+  if coalesce(v_credits, 0) < 1 then
+    return jsonb_build_object('ok', false, 'msg', 'Sem créditos. Compre um pacote.');
+  end if;
+  select username into v_username from bds_reseller_logins
+  where id = p_login_id and lower(reseller_username) = lower(p_reseller);
+  if not found then return jsonb_build_object('ok', false, 'msg', 'Login não encontrado.'); end if;
+
+  select greatest(coalesce(expires_at, v_now), v_now) into v_base
+  from bds_reseller_logins where id = p_login_id;
+  v_expires := v_base + (p_days::bigint * 86400000);
+
+  update bds_reseller_logins set expires_at = v_expires, days = coalesce(days, 0) + p_days where id = p_login_id;
+  update bds_plans set expires_at = v_expires where lower(username) = lower(v_username);
+  update bds_reseller_credits set credits = credits - 1 where lower(username) = lower(p_reseller);
+  return jsonb_build_object('ok', true, 'msg', 'Cliente renovado por +' || p_days || ' dia' || (case when p_days = 1 then '' else 's' end) || '.', 'expiresAt', v_expires);
+end; $$;
+
 -- Revendedor: deletar cliente
 create or replace function bds_delete_reseller_login(p_reseller text, p_login_id text)
 returns jsonb language plpgsql security definer as $$
