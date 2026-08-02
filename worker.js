@@ -198,7 +198,7 @@ async function authFromRequest(request, env) {
 }
 
 export default {
-  async fetch(request, env) {
+  async fetch(request, env, ctx) {
     const origin = allowedOrigin(request);
 
     // -- CORS preflight --
@@ -252,6 +252,13 @@ export default {
 
       const contentType = resp.headers.get('Content-Type') || 'application/json';
       const body        = await resp.arrayBuffer();
+
+      // Marca atividade real (para a limpeza de contas nunca usadas) — só
+      // com usuário confirmado pelo token, em background, sem atrasar a
+      // resposta da consulta.
+      if (auth && auth.sub && resp.ok && ctx && ctx.waitUntil) {
+        ctx.waitUntil(sbRpc(env, 'bds_touch_activity', { p_username: auth.sub }, true));
+      }
 
       return new Response(body, {
         status: resp.status,

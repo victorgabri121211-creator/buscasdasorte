@@ -469,7 +469,25 @@ function renderAdminClients(filter) {
       '</div>' +
       bulkBar +
       '<div class="admin-panel aclients-table-panel">' + tableHtml + '</div>' +
+      '<div class="admin-panel" style="margin-top:24px;">' +
+        '<div class="sdash-header">' +
+          '<div class="sdash-header-left">' +
+            '<div class="sdash-header-icon sdash-icon-purple">' +
+              '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>' +
+            '</div>' +
+            '<div>' +
+              '<h3 class="sdash-title">Contas inativas</h3>' +
+              '<p class="sdash-sub">Cadastradas há 7+ dias, nunca usaram nenhum módulo, sem plano/crédito ativo. Não inclui clientes criados por revendedor.</p>' +
+            '</div>' +
+          '</div>' +
+          '<button type="button" class="admin-sync-btn" id="admin-inactive-check-btn">Verificar</button>' +
+        '</div>' +
+        '<div id="admin-inactive-root"></div>' +
+      '</div>' +
     '</div>';
+
+  const inactiveCheckBtn = root.querySelector('#admin-inactive-check-btn');
+  if (inactiveCheckBtn) inactiveCheckBtn.addEventListener('click', loadInactiveAccounts);
 
   root.querySelectorAll('.admin-filter-btn').forEach(btn => {
     btn.addEventListener('click', () => renderAdminClients(btn.getAttribute('data-filter')));
@@ -536,6 +554,76 @@ function renderAdminClients(filter) {
   }
 
   bindAdminClientPlanActions(tablePanel, currentFilter);
+}
+
+async function loadInactiveAccounts() {
+  const root = document.getElementById('admin-inactive-root');
+  if (!root) return;
+  root.innerHTML = '<p class="admin-empty">Verificando...</p>';
+
+  if (typeof DB === 'undefined' || !DB.isConfigured()) {
+    root.innerHTML = '<p class="admin-empty">Indisponível offline.</p>';
+    return;
+  }
+  let res = null;
+  try { res = await DB.listInactiveAccounts(); } catch (e) { res = null; }
+  if (!res || !res.ok) {
+    root.innerHTML = '<p class="admin-empty">Erro ao verificar. Tente novamente.</p>';
+    return;
+  }
+  const accounts = res.accounts || [];
+  if (!accounts.length) {
+    root.innerHTML = '<p class="admin-empty">Nenhuma conta inativa encontrada.</p>';
+    return;
+  }
+
+  let rows = '';
+  accounts.forEach(a => {
+    const days = Math.floor((Date.now() - Number(a.createdAt)) / 86400000);
+    rows +=
+      '<tr>' +
+        '<td><input type="checkbox" class="admin-cb admin-inactive-cb" data-username="' + escAdmin(a.username) + '"/></td>' +
+        '<td><span class="admin-user-name">' + escAdmin(a.username) + '</span></td>' +
+        '<td class="admin-cell-muted">' + days + ' dias sem uso</td>' +
+      '</tr>';
+  });
+
+  root.innerHTML =
+    '<div class="admin-bulk-bar" style="display:flex;">' +
+      '<span class="admin-bulk-count">' + accounts.length + ' candidata(s)</span>' +
+      '<div class="admin-bulk-sep"></div>' +
+      '<button type="button" class="admin-bulk-btn danger" id="admin-inactive-delete-btn">Excluir selecionadas</button>' +
+    '</div>' +
+    '<div class="admin-table-wrap"><table class="admin-table"><thead><tr>' +
+      '<th><input type="checkbox" class="admin-cb" id="admin-inactive-cb-all" title="Selecionar todas"/></th>' +
+      '<th>Conta</th><th>Inatividade</th>' +
+    '</tr></thead><tbody>' + rows + '</tbody></table></div>';
+
+  const cbAll = document.getElementById('admin-inactive-cb-all');
+  if (cbAll) {
+    cbAll.addEventListener('change', () => {
+      root.querySelectorAll('.admin-inactive-cb').forEach(cb => { cb.checked = cbAll.checked; });
+    });
+  }
+
+  const delBtn = document.getElementById('admin-inactive-delete-btn');
+  if (delBtn) {
+    delBtn.addEventListener('click', async () => {
+      const selected = Array.from(root.querySelectorAll('.admin-inactive-cb:checked'))
+        .map(cb => cb.getAttribute('data-username'));
+      if (!selected.length) return;
+      if (!confirm('Excluir ' + selected.length + ' conta(s) permanentemente? Essa ação não pode ser desfeita.')) return;
+      delBtn.disabled = true;
+      const results = await Promise.all(selected.map(u => DB.deleteInactiveAccount(u).catch(() => ({ ok: false }))));
+      const okCount = results.filter(r => r && r.ok).length;
+      if (typeof showToast === 'function') {
+        showToast(okCount === selected.length
+          ? okCount + ' conta(s) removida(s).'
+          : okCount + ' de ' + selected.length + ' conta(s) removida(s) — alguma já não era mais elegível.');
+      }
+      loadInactiveAccounts();
+    });
+  }
 }
 
 function bindAdminClientPlanActions(tableEl, filter) {

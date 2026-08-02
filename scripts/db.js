@@ -219,6 +219,14 @@
     return _rpc('bds_admin_reset_password', { p_hash: _adminHash, p_username: username, p_new_password: newPassword });
   }
 
+  function listInactiveAccounts() {
+    return _rpc('bds_admin_list_inactive', { p_hash: _adminHash });
+  }
+
+  function deleteInactiveAccount(username) {
+    return _rpc('bds_admin_delete_inactive', { p_hash: _adminHash, p_username: username });
+  }
+
   // ── Vendas ────────────────────────────────────────────────────────────────
 
   function recordSale(sale) {
@@ -366,6 +374,8 @@
     setResellerAccess: setResellerAccess,
     addResellerCredits: addResellerCredits,
     resetUserPassword: resetUserPassword,
+    listInactiveAccounts: listInactiveAccounts,
+    deleteInactiveAccount: deleteInactiveAccount,
     createResellerLogin: createResellerLogin,
     deactivateResellerLogin: deactivateResellerLogin,
     renewResellerLogin: renewResellerLogin,

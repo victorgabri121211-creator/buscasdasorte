@@ -10,6 +10,9 @@ create table if not exists bds_users (
   created_at bigint default (extract(epoch from now()) * 1000)::bigint,
   created_by_reseller text
 );
+-- Última consulta real feita pelo usuário (null = nunca usou nenhum módulo).
+-- Usado pela limpeza de contas cadastradas e nunca usadas (ver bds_admin_list_inactive).
+alter table bds_users add column if not exists last_active_at bigint;
 
 create table if not exists bds_plans (
   username text primary key,
@@ -414,6 +417,89 @@ begin
     from bds_sales where lower(ref) = v_key
   );
 end; $$;
+
+-- ── Limpeza de contas cadastradas e nunca usadas ────────────────────────────
+
+-- Marca atividade real de consulta. Só o worker chama isso (service_role),
+-- com o username já verificado pelo token JWT — nunca confia em valor vindo
+-- direto do navegador, senão qualquer um poderia "reviver" qualquer conta.
+create or replace function bds_touch_activity(p_username text)
+returns void language sql security definer as $$
+  update bds_users set last_active_at = (extract(epoch from now()) * 1000)::bigint
+  where lower(username) = lower(p_username)
+$$;
+revoke all on function bds_touch_activity(text) from public, anon;
+grant execute on function bds_touch_activity(text) to service_role;
+
+-- Admin: lista contas cadastradas há 7+ dias, que nunca fizeram nenhuma
+-- consulta e não têm plano/crédito/acesso de revendedor ativo no momento.
+-- Não inclui contas criadas por um revendedor (essas têm ciclo de vida
+-- próprio, ligado ao crédito do revendedor).
+create or replace function bds_admin_list_inactive(p_hash text)
+returns jsonb language plpgsql security definer as $$
+declare
+  v_hash   text := bds_admin_hash();
+  v_now    bigint := (extract(epoch from now()) * 1000)::bigint;
+  v_cutoff bigint := v_now - 7 * 86400000;
+begin
+  if p_hash != v_hash then return jsonb_build_object('ok', false, 'msg', 'Unauthorized'); end if;
+  return jsonb_build_object('ok', true, 'accounts', (
+    select coalesce(jsonb_agg(jsonb_build_object(
+      'username', u.username, 'createdAt', u.created_at
+    ) order by u.created_at asc), '[]'::jsonb)
+    from bds_users u
+    left join bds_plans p on lower(p.username) = lower(u.username)
+    left join bds_reseller_credits rc on lower(rc.username) = lower(u.username)
+    left join bds_reseller_access ra on lower(ra.username) = lower(u.username)
+    where u.created_at <= v_cutoff
+      and u.last_active_at is null
+      and u.created_by_reseller is null
+      and lower(u.username) != lower('Dasorte')
+      and (p.plan_id is null or p.expires_at <= v_now)
+      and coalesce(rc.credits, 0) <= 0
+      and coalesce(ra.enabled, false) = false
+  ));
+end; $$;
+grant execute on function bds_admin_list_inactive(text) to anon;
+
+-- Admin: apaga uma conta candidata — revalida os mesmos critérios no
+-- servidor antes de apagar (não confia só na lista que o admin já tinha
+-- carregado, que pode estar desatualizada).
+create or replace function bds_admin_delete_inactive(p_hash text, p_username text)
+returns jsonb language plpgsql security definer as $$
+declare
+  v_hash   text := bds_admin_hash();
+  v_now    bigint := (extract(epoch from now()) * 1000)::bigint;
+  v_cutoff bigint := v_now - 7 * 86400000;
+  v_ok     boolean;
+begin
+  if p_hash != v_hash then return jsonb_build_object('ok', false, 'msg', 'Unauthorized'); end if;
+  select
+    u.created_at <= v_cutoff
+    and u.last_active_at is null
+    and u.created_by_reseller is null
+    and lower(u.username) != lower('Dasorte')
+    and (p.plan_id is null or p.expires_at <= v_now)
+    and coalesce(rc.credits, 0) <= 0
+    and coalesce(ra.enabled, false) = false
+  into v_ok
+  from bds_users u
+  left join bds_plans p on lower(p.username) = lower(u.username)
+  left join bds_reseller_credits rc on lower(rc.username) = lower(u.username)
+  left join bds_reseller_access ra on lower(ra.username) = lower(u.username)
+  where lower(u.username) = lower(p_username);
+
+  if not coalesce(v_ok, false) then
+    return jsonb_build_object('ok', false, 'msg', 'Conta não elegível (ficou ativa nesse meio tempo).');
+  end if;
+
+  delete from bds_plans where lower(username) = lower(p_username);
+  delete from bds_reseller_access where lower(username) = lower(p_username);
+  delete from bds_reseller_credits where lower(username) = lower(p_username);
+  delete from bds_users where lower(username) = lower(p_username);
+  return jsonb_build_object('ok', true, 'msg', 'Conta removida.');
+end; $$;
+grant execute on function bds_admin_delete_inactive(text, text) to anon;
 
 -- ── Permissões de acesso (anon pode chamar as funções) ─────────────────────
 
