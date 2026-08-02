@@ -219,13 +219,21 @@ begin
 end; $$;
 
 -- Revendedor: criar login de cliente
-create or replace function bds_create_reseller_login(p_reseller text, p_username text, p_password text, p_days integer)
+drop function if exists bds_create_reseller_login(text, text, text, integer);
+create or replace function bds_create_reseller_login(p_reseller text, p_reseller_password text, p_username text, p_password text, p_days integer)
 returns jsonb language plpgsql security definer as $$
 declare
+  v_admin_hash text := bds_admin_hash();
   v_credits integer := 0;
   v_expires  bigint;
   v_id       text;
 begin
+  if p_reseller_password is null or (
+     p_reseller_password != v_admin_hash
+     and not exists(select 1 from bds_users where lower(username) = lower(p_reseller) and password = p_reseller_password)
+  ) then
+    return jsonb_build_object('ok', false, 'msg', 'Não autorizado.');
+  end if;
   select credits into v_credits from bds_reseller_credits where lower(username) = lower(p_reseller);
   if coalesce(v_credits, 0) < 1 then
     return jsonb_build_object('ok', false, 'msg', 'Sem créditos de login.');
@@ -245,12 +253,20 @@ begin
 end; $$;
 
 -- Revendedor: desativar cliente
-create or replace function bds_deactivate_reseller_login(p_reseller text, p_login_id text)
+drop function if exists bds_deactivate_reseller_login(text, text);
+create or replace function bds_deactivate_reseller_login(p_reseller text, p_reseller_password text, p_login_id text)
 returns jsonb language plpgsql security definer as $$
 declare
+  v_admin_hash text := bds_admin_hash();
   v_expired bigint := (extract(epoch from now()) * 1000)::bigint - 1;
   v_username text;
 begin
+  if p_reseller_password is null or (
+     p_reseller_password != v_admin_hash
+     and not exists(select 1 from bds_users where lower(username) = lower(p_reseller) and password = p_reseller_password)
+  ) then
+    return jsonb_build_object('ok', false, 'msg', 'Não autorizado.');
+  end if;
   select username into v_username from bds_reseller_logins
   where id = p_login_id and lower(reseller_username) = lower(p_reseller);
   if not found then return jsonb_build_object('ok', false, 'msg', 'Login não encontrado.'); end if;
@@ -260,15 +276,23 @@ begin
 end; $$;
 
 -- Revendedor: renovar cliente
-create or replace function bds_renew_reseller_login(p_reseller text, p_login_id text, p_days integer)
+drop function if exists bds_renew_reseller_login(text, text, integer);
+create or replace function bds_renew_reseller_login(p_reseller text, p_reseller_password text, p_login_id text, p_days integer)
 returns jsonb language plpgsql security definer as $$
 declare
+  v_admin_hash text := bds_admin_hash();
   v_credits  integer := 0;
   v_username text;
   v_now      bigint := (extract(epoch from now()) * 1000)::bigint;
   v_base     bigint;
   v_expires  bigint;
 begin
+  if p_reseller_password is null or (
+     p_reseller_password != v_admin_hash
+     and not exists(select 1 from bds_users where lower(username) = lower(p_reseller) and password = p_reseller_password)
+  ) then
+    return jsonb_build_object('ok', false, 'msg', 'Não autorizado.');
+  end if;
   if p_days is null or p_days < 1 or p_days > 365 then
     return jsonb_build_object('ok', false, 'msg', 'Informe dias válidos.');
   end if;
@@ -291,10 +315,19 @@ begin
 end; $$;
 
 -- Revendedor: deletar cliente
-create or replace function bds_delete_reseller_login(p_reseller text, p_login_id text)
+drop function if exists bds_delete_reseller_login(text, text);
+create or replace function bds_delete_reseller_login(p_reseller text, p_reseller_password text, p_login_id text)
 returns jsonb language plpgsql security definer as $$
-declare v_username text;
+declare
+  v_admin_hash text := bds_admin_hash();
+  v_username text;
 begin
+  if p_reseller_password is null or (
+     p_reseller_password != v_admin_hash
+     and not exists(select 1 from bds_users where lower(username) = lower(p_reseller) and password = p_reseller_password)
+  ) then
+    return jsonb_build_object('ok', false, 'msg', 'Não autorizado.');
+  end if;
   select username into v_username from bds_reseller_logins
   where id = p_login_id and lower(reseller_username) = lower(p_reseller);
   if not found then return jsonb_build_object('ok', false, 'msg', 'Login não encontrado.'); end if;
@@ -395,9 +428,9 @@ grant execute on function bds_admin_set_plan(text, text, text, text, bigint) to 
 grant execute on function bds_admin_clear_plan(text, text) to anon;
 grant execute on function bds_admin_set_reseller(text, text, boolean) to anon;
 grant execute on function bds_admin_add_credits(text, text, integer) to anon;
-grant execute on function bds_create_reseller_login(text, text, text, integer) to anon;
+grant execute on function bds_create_reseller_login(text, text, text, text, integer) to anon;
 grant execute on function bds_record_sale(text, text, bigint, text, text, text, numeric, text, text) to anon;
 grant execute on function bds_get_affiliate_report(text) to anon;
-grant execute on function bds_deactivate_reseller_login(text, text) to anon;
-grant execute on function bds_delete_reseller_login(text, text) to anon;
-grant execute on function bds_renew_reseller_login(text, text, integer) to anon;
+grant execute on function bds_deactivate_reseller_login(text, text, text) to anon;
+grant execute on function bds_delete_reseller_login(text, text, text) to anon;
+grant execute on function bds_renew_reseller_login(text, text, text, integer) to anon;

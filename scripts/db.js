@@ -25,6 +25,19 @@
     return _rpc('bds_admin_check', { p_hash: hash });
   }
 
+  // Senha do usuário logado, guardada só nesta aba (sessionStorage) — usada
+  // para autenticar as ações de revendedor (renovar/criar/desativar/excluir
+  // cliente), que exigem a senha no servidor para não depender só da anon key.
+  var _resellerPass = null;
+  try { _resellerPass = sessionStorage.getItem('bds_reseller_p') || null; } catch (e) {}
+  function setResellerPassword(p) {
+    _resellerPass = p || null;
+    try {
+      if (p) sessionStorage.setItem('bds_reseller_p', p);
+      else sessionStorage.removeItem('bds_reseller_p');
+    } catch (e) {}
+  }
+
   function _ok() {
     return SB_URL !== 'SUPABASE_URL' && SB_KEY !== 'SUPABASE_ANON_KEY';
   }
@@ -243,23 +256,37 @@
   }
 
   // ── Revendedor: logins ─────────────────────────────────────────────────────
+  // p_reseller_password: senha do próprio revendedor (guardada no login) ou,
+  // se for o admin agindo em nome dele (painel admin > ver como revendedor),
+  // o hash de admin — a RPC aceita qualquer um dos dois.
+
+  function _resellerAuth() {
+    return _adminHash || _resellerPass;
+  }
 
   function createResellerLogin(reseller, username, password, days) {
     return _rpc('bds_create_reseller_login', {
-      p_reseller: reseller, p_username: username, p_password: password, p_days: days
+      p_reseller: reseller, p_reseller_password: _resellerAuth(),
+      p_username: username, p_password: password, p_days: days
     });
   }
 
   function deactivateResellerLogin(reseller, loginId) {
-    return _rpc('bds_deactivate_reseller_login', { p_reseller: reseller, p_login_id: loginId });
+    return _rpc('bds_deactivate_reseller_login', {
+      p_reseller: reseller, p_reseller_password: _resellerAuth(), p_login_id: loginId
+    });
   }
 
   function renewResellerLogin(reseller, loginId, days) {
-    return _rpc('bds_renew_reseller_login', { p_reseller: reseller, p_login_id: loginId, p_days: days });
+    return _rpc('bds_renew_reseller_login', {
+      p_reseller: reseller, p_reseller_password: _resellerAuth(), p_login_id: loginId, p_days: days
+    });
   }
 
   function deleteResellerLogin(reseller, loginId) {
-    return _rpc('bds_delete_reseller_login', { p_reseller: reseller, p_login_id: loginId });
+    return _rpc('bds_delete_reseller_login', {
+      p_reseller: reseller, p_reseller_password: _resellerAuth(), p_login_id: loginId
+    });
   }
 
   function _isSaleDup(localSales, localIds, localTxIds, s) {
@@ -328,6 +355,7 @@
     isConfigured: _ok,
     adminCheck: adminCheck,
     setAdminHash: setAdminHash,
+    setResellerPassword: setResellerPassword,
     registerUser: registerUser,
     loginUser: loginUser,
     syncOnLogin: syncOnLogin,

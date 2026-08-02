@@ -708,6 +708,7 @@ function clearSession() {
   localStorage.removeItem(SESSION_KEY);
   try { localStorage.removeItem('bds_admin_h'); } catch (e) {}
   if (window.DB && window.DB.setAdminHash) { try { window.DB.setAdminHash(null); } catch (e) {} }
+  if (window.DB && window.DB.setResellerPassword) { try { window.DB.setResellerPassword(null); } catch (e) {} }
   if (window.Auth && window.Auth.logout) { try { window.Auth.logout(); } catch (e) {} }
 }
 
@@ -789,6 +790,7 @@ async function doLogin() {
           }
         } catch (e) {}
         if (window.Auth) window.Auth.mint(user, pass, null);
+        if (window.DB) window.DB.setResellerPassword(pass);
         await window.DB.syncOnLogin(user);
         enterApp(user); return;
       }
@@ -800,6 +802,7 @@ async function doLogin() {
       _saveLock({c:0,l:0});
       setSession(user);
       if (window.Auth) window.Auth.mint(user, pass, null);
+      if (window.DB) window.DB.setResellerPassword(pass);
       // Auto-migra para o Supabase em background
       if (window.DB && window.DB.isConfigured()) {
         window.DB.registerUser(user, pass, found.createdByReseller || null).catch(() => {});
@@ -901,7 +904,7 @@ document.getElementById('login-user').addEventListener('keydown',e=>{if(e.key===
 </script>
 
 <script src="../scripts/toast.min.js?v=1"></script>
-<script src="../scripts/db.min.js?v=8"></script>
+<script src="../scripts/db.min.js?v=9"></script>
 <script src="../scripts/clovers.min.js?v=3"></script>
 <script src="../scripts/auth.min.js?v=3"></script>
 <script src="../scripts/history.min.js?v=1"></script>
