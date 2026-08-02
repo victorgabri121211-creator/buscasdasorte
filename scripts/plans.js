@@ -86,37 +86,55 @@
     return Object.assign({}, found.plan, { expiresAt: expiresAt });
   }
 
-  function setPlanForUser(username, planId) {
+  async function setPlanForUser(username, planId) {
     var key = normalizePlanUsername(username);
-    if (!key || key === PLAN_ADMIN_USER) return false;
+    if (!key || key === PLAN_ADMIN_USER) return { ok: false, msg: 'Usuário inválido.' };
     var ms = PLAN_DURATIONS_MS[planId];
-    if (!ms) return false;
+    if (!ms) return { ok: false, msg: 'Plano inválido.' };
     var expiresAt = Date.now() + ms;
     var period = PLAN_LABELS[planId] || planId;
+
+    if (typeof global.DB !== 'undefined' && global.DB.isConfigured()) {
+      var res = null;
+      try {
+        res = await global.DB.setUserPlan(key, planId, period, expiresAt);
+      } catch (e) {
+        res = null; // erro de rede — cai no fallback local
+      }
+      if (res && !res.ok) {
+        return { ok: false, msg: res.msg || 'Erro ao ativar plano no servidor.' };
+      }
+    }
+
     var store = getPlansStore();
     store[key] = { id: planId, period: period, expiresAt: expiresAt, grantedByAdmin: true };
     savePlansStore(store);
-    // Sincroniza com Supabase em background
-    if (typeof global.DB !== 'undefined' && global.DB.isConfigured()) {
-      global.DB.setUserPlan(key, planId, period, expiresAt).catch(function() {});
-    }
-    return true;
+    return { ok: true, msg: 'Plano ativado.' };
   }
 
-  function clearPlanForUser(username) {
+  async function clearPlanForUser(username) {
     var key = normalizePlanUsername(username);
-    if (!key) return false;
+    if (!key) return { ok: false, msg: 'Usuário inválido.' };
+
+    if (typeof global.DB !== 'undefined' && global.DB.isConfigured()) {
+      var res = null;
+      try {
+        res = await global.DB.clearUserPlan(key);
+      } catch (e) {
+        res = null; // erro de rede — cai no fallback local
+      }
+      if (res && !res.ok) {
+        return { ok: false, msg: res.msg || 'Erro ao desativar plano no servidor.' };
+      }
+    }
+
     var store = getPlansStore();
     var lower = key.toLowerCase();
     Object.keys(store).forEach(function (k) {
       if (String(k).trim().toLowerCase() === lower) delete store[k];
     });
     savePlansStore(store);
-    // Sincroniza com Supabase em background
-    if (typeof global.DB !== 'undefined' && global.DB.isConfigured()) {
-      global.DB.clearUserPlan(key).catch(function() {});
-    }
-    return true;
+    return { ok: true, msg: 'Plano desativado.' };
   }
 
   function hasActivePlanForSession() {

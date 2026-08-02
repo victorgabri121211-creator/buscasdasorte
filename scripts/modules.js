@@ -146,18 +146,19 @@ function activatePlan(planId) {
   if (!user || user === PLAN_ADMIN_USER) return false;
   const def = PLANS.find(p => p.id === planId);
   if (!def) return false;
-  if (typeof setPlanForUser === 'function') {
-    setPlanForUser(user, planId);
-  } else {
-    const store = getPlansStore();
-    const key = typeof normalizePlanUsername === 'function' ? normalizePlanUsername(user) : user;
-    store[key] = {
-      id: planId,
-      period: def.period,
-      expiresAt: Date.now() + (PLAN_DURATIONS_MS[planId] || PLAN_DURATIONS_MS.diaria),
-    };
-    savePlansStore(store);
-  }
+  // Escreve local diretamente (não via setPlanForUser): a RPC de plano é
+  // admin-only (bds_admin_set_plan exige hash de admin) e uma sessão de
+  // cliente comum nunca tem esse hash. A gravação real no Supabase já
+  // acontece no servidor via bds_fulfill_order (worker, service_role) quando
+  // o pagamento é confirmado — ver supabase-payment-webhook.sql.
+  const store = getPlansStore();
+  const key = typeof normalizePlanUsername === 'function' ? normalizePlanUsername(user) : user;
+  store[key] = {
+    id: planId,
+    period: def.period,
+    expiresAt: Date.now() + (PLAN_DURATIONS_MS[planId] || PLAN_DURATIONS_MS.diaria),
+  };
+  savePlansStore(store);
   if (typeof recordSale === 'function') {
     recordSale({
       category: 'plan',

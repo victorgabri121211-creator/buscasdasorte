@@ -15,15 +15,15 @@ function adminSavePlansStore(store) {
   localStorage.setItem(PLANS_STORE_KEY, JSON.stringify(store));
 }
 
-function adminActivateUserPlan(username, planId) {
-  if (!username || username === ADMIN_USER) return false;
-  if (typeof window.setPlanForUser !== 'function') return false;
+async function adminActivateUserPlan(username, planId) {
+  if (!username || username === ADMIN_USER) return { ok: false, msg: 'Usuário inválido.' };
+  if (typeof window.setPlanForUser !== 'function') return { ok: false, msg: 'Função indisponível.' };
   return window.setPlanForUser(String(username).trim(), planId);
 }
 
-function adminDeactivateUserPlan(username) {
-  if (!username || username === ADMIN_USER) return false;
-  if (typeof window.clearPlanForUser !== 'function') return false;
+async function adminDeactivateUserPlan(username) {
+  if (!username || username === ADMIN_USER) return { ok: false, msg: 'Usuário inválido.' };
+  if (typeof window.clearPlanForUser !== 'function') return { ok: false, msg: 'Função indisponível.' };
   return window.clearPlanForUser(String(username).trim());
 }
 
@@ -87,9 +87,22 @@ function syncRevendedorNav() {
   }
 }
 
-function setResellerEnabled(username, enabled) {
-  const map = getResellerAccessMap();
+async function setResellerEnabled(username, enabled) {
   const key = normalizeResellerUsername(username);
+
+  if (typeof DB !== 'undefined' && DB.isConfigured()) {
+    let res = null;
+    try {
+      res = await DB.setResellerAccess(key, enabled);
+    } catch (e) {
+      res = null; // erro de rede — cai no fallback local
+    }
+    if (res && !res.ok) {
+      return { ok: false, msg: res.msg || 'Erro ao atualizar acesso no servidor.' };
+    }
+  }
+
+  const map = getResellerAccessMap();
   const existing = findResellerAccessKey(map, key);
   if (existing && existing !== key) delete map[existing];
   if (enabled) map[key] = true;
@@ -98,10 +111,6 @@ function setResellerEnabled(username, enabled) {
     if (existing) delete map[existing];
   }
   saveResellerAccessMap(map);
-  // Sincroniza com Supabase em background
-  if (typeof DB !== 'undefined' && DB.isConfigured()) {
-    DB.setResellerAccess(key, enabled).catch(function() {});
-  }
   updateAppNavigation();
   if (
     !enabled &&
@@ -111,6 +120,7 @@ function setResellerEnabled(username, enabled) {
   ) {
     showAppView('modules');
   }
+  return { ok: true, msg: 'Acesso atualizado.' };
 }
 
 function canAccessRevendedor() {
@@ -497,20 +507,30 @@ function renderAdminClients(filter) {
   const bulkOnBtn = document.getElementById('admin-bulk-on-btn');
   const bulkOffBtn = document.getElementById('admin-bulk-off-btn');
   if (bulkOnBtn) {
-    bulkOnBtn.addEventListener('click', () => {
+    bulkOnBtn.addEventListener('click', async () => {
       const planId = document.getElementById('admin-bulk-plan-select').value;
       const selected = getAdminSelectedUsernames(root);
-      selected.forEach(u => adminActivateUserPlan(u, planId));
+      const results = await Promise.all(selected.map(u => adminActivateUserPlan(u, planId)));
+      const okCount = results.filter(r => r && r.ok).length;
       if (typeof refreshClientPlanState === 'function') refreshClientPlanState();
-      if (typeof showToast === 'function') showToast(selected.length + ' plano(s) ativado(s)');
+      if (typeof showToast === 'function') {
+        showToast(okCount === selected.length
+          ? okCount + ' plano(s) ativado(s)'
+          : okCount + ' de ' + selected.length + ' plano(s) ativado(s) — falha ao sincronizar o restante');
+      }
       renderAdminClients(filter);
     });
   }
   if (bulkOffBtn) {
-    bulkOffBtn.addEventListener('click', () => {
+    bulkOffBtn.addEventListener('click', async () => {
       const selected = getAdminSelectedUsernames(root);
-      selected.forEach(u => adminDeactivateUserPlan(u));
-      if (typeof showToast === 'function') showToast(selected.length + ' plano(s) desativado(s)');
+      const results = await Promise.all(selected.map(u => adminDeactivateUserPlan(u)));
+      const okCount = results.filter(r => r && r.ok).length;
+      if (typeof showToast === 'function') {
+        showToast(okCount === selected.length
+          ? okCount + ' plano(s) desativado(s)'
+          : okCount + ' de ' + selected.length + ' plano(s) desativado(s) — falha ao sincronizar o restante');
+      }
       renderAdminClients(filter);
     });
   }
@@ -522,23 +542,29 @@ function bindAdminClientPlanActions(tableEl, filter) {
   if (!tableEl) return;
 
   tableEl.querySelectorAll('.admin-plan-on-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
+    btn.addEventListener('click', async () => {
       const username = btn.getAttribute('data-username');
       const row = btn.closest('tr');
       const sel = row ? row.querySelector('.admin-plan-select') : null;
       if (!username || !sel) return;
-      if (adminActivateUserPlan(username, sel.value)) {
+      const result = await adminActivateUserPlan(username, sel.value);
+      if (result.ok) {
         if (typeof refreshClientPlanState === 'function') refreshClientPlanState();
+      } else if (typeof showToast === 'function') {
+        showToast(result.msg || 'Erro ao ativar plano.');
       }
       renderAdminClients(filter);
     });
   });
 
   tableEl.querySelectorAll('.admin-plan-off-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
+    btn.addEventListener('click', async () => {
       const username = btn.getAttribute('data-username');
       if (!username) return;
-      adminDeactivateUserPlan(username);
+      const result = await adminDeactivateUserPlan(username);
+      if (!result.ok && typeof showToast === 'function') {
+        showToast(result.msg || 'Erro ao desativar plano.');
+      }
       renderAdminClients(filter);
     });
   });
@@ -687,7 +713,7 @@ function renderAdminResellers() {
   }
 
   root.querySelectorAll('[data-reseller-action]').forEach(btn => {
-    btn.addEventListener('click', () => {
+    btn.addEventListener('click', async () => {
       const username = btn.getAttribute('data-username');
       const action = btn.getAttribute('data-reseller-action');
       if (!username || !action) return;
@@ -698,7 +724,11 @@ function renderAdminResellers() {
       } else if (action === 'panel') {
         if (typeof openAdminResellerPanel === 'function') openAdminResellerPanel(username);
       } else if (action === 'toggle') {
-        setResellerEnabled(username, btn.getAttribute('data-enabled') !== 'true');
+        const result = await setResellerEnabled(username, btn.getAttribute('data-enabled') !== 'true');
+        if (!result.ok) {
+          if (typeof showToast === 'function') showToast(result.msg || 'Erro ao atualizar acesso.');
+          return;
+        }
         renderAdminResellers();
       }
     });
