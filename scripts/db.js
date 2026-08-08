@@ -159,7 +159,7 @@
         _rpc('bds_get_plan', { p_username: username }),
         _rpc('bds_get_reseller_access', { p_username: username }),
         _rpc('bds_get_reseller_credits', { p_username: username }),
-        _rpc('bds_get_reseller_logins', { p_reseller: username })
+        _rpc('bds_get_reseller_logins', { p_reseller: username, p_reseller_password: _resellerAuth() })
       ]);
 
       const plans = _get('bds_active_plans', {});
@@ -252,15 +252,30 @@
     });
   }
 
-  // Relatório de indicações do afiliado (revendedor).
+  // Relatório de indicações do afiliado (revendedor). Exige a senha do
+  // próprio revendedor (ou hash de admin) — sem isso, qualquer um poderia
+  // ler o faturamento e os compradores de outro revendedor só sabendo o
+  // username (ver supabase-fix-client-data-exposure.sql).
   function getAffiliateReport(reseller) {
-    return _rpc('bds_get_affiliate_report', { p_reseller: reseller });
+    return _rpc('bds_get_affiliate_report', { p_reseller: reseller, p_reseller_password: _resellerAuth() });
   }
 
   // Ranking de revendedores por clientes criados (só agregados; ver
   // supabase-reseller-ranking.sql).
   function getResellerRanking() {
     return _rpc('bds_get_reseller_ranking', {});
+  }
+
+  // ── Chave de API (uso em bots externos) ─────────────────────────────────────
+  // Ver supabase-api-keys.sql. p_password é a senha do próprio usuário (ou
+  // hash de admin) — mesma exigência das funções de revendedor acima.
+
+  function getApiKey(username) {
+    return _rpc('bds_get_or_create_api_key', { p_username: username, p_password: _resellerAuth() });
+  }
+
+  function regenerateApiKey(username) {
+    return _rpc('bds_regenerate_api_key', { p_username: username, p_password: _resellerAuth() });
   }
 
   // ── Revendedor: logins ─────────────────────────────────────────────────────
@@ -383,7 +398,9 @@
     recordSale: recordSale,
     getAffiliateReport: getAffiliateReport,
     getResellerRanking: getResellerRanking,
-    syncSales: syncSales
+    syncSales: syncSales,
+    getApiKey: getApiKey,
+    regenerateApiKey: regenerateApiKey
   };
 
 })(typeof window !== 'undefined' ? window : global);

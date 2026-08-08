@@ -32,7 +32,7 @@ const PLANS = [
     id: 'vitalicio',
     period: 'Vitalício',
     durationLabel: 'Acesso permanente',
-    price: 150,
+    price: 147.9,
     perDay: 0,
     lifetime: true,
     tag: 'Pague uma vez',
@@ -139,6 +139,20 @@ function refreshClientPlanState() {
   applyResellerClientNavigation();
   updatePlanBanner();
   updateStoreActivePlan();
+  syncApiNav();
+}
+
+// Mostra "Minha API" só pra quem tem plano ativo agora — sem plano, o
+// worker recusaria a chave mesmo assim (ver bds_api_key_check).
+function syncApiNav() {
+  const navApi = document.getElementById('nav-api');
+  if (!navApi) return;
+  const show = typeof isAdmin === 'function' && isAdmin() ? false : hasActivePlan();
+  navApi.hidden = !show;
+  navApi.setAttribute('aria-hidden', show ? 'false' : 'true');
+  if (!show && document.getElementById('view-api') && document.getElementById('view-api').classList.contains('active')) {
+    showAppView('modules');
+  }
 }
 
 function activatePlan(planId) {
@@ -427,7 +441,7 @@ const MODULE_CATEGORIES = [
 
 const CATEGORY_ICON = '<path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/>';
 
-const APP_VIEWS = ['avisos', 'modules', 'search', 'revendedor', 'revendedor-painel', 'ranking', 'loja', 'admin-dashboard', 'admin-clientes', 'admin-revendedores'];
+const APP_VIEWS = ['avisos', 'modules', 'search', 'revendedor', 'revendedor-painel', 'ranking', 'loja', 'api', 'admin-dashboard', 'admin-clientes', 'admin-revendedores'];
 
 function showAppView(view) {
   if (view === 'loja' && isResellerClientAccount()) {
@@ -437,6 +451,9 @@ function showAppView(view) {
     view = 'modules';
   }
   if (view === 'revendedor' && typeof canAccessRevendedor === 'function' && !canAccessRevendedor()) {
+    view = 'modules';
+  }
+  if (view === 'api' && !hasActivePlan()) {
     view = 'modules';
   }
   if (view === 'revendedor-painel') {
@@ -468,6 +485,9 @@ function showAppView(view) {
   if (view === 'ranking' && typeof renderRankingView === 'function') {
     renderRankingView();
   }
+  if (view === 'api' && typeof renderApiKeyView === 'function') {
+    renderApiKeyView();
+  }
   if (view === 'modules') refreshClientPlanState();
   if (view === 'loja') renderPlansGrid();
   if (typeof setUserNavActive === 'function') setUserNavActive(view);
@@ -482,6 +502,7 @@ function setUserNavActive(view) {
     'revendedor-painel': 'nav-revendedor',
     ranking: 'nav-ranking',
     loja: 'nav-loja',
+    api: 'nav-api',
   };
   const activeId = map[view];
   document.querySelectorAll('#sidebar-user-menu .sidebar-item').forEach(el => {

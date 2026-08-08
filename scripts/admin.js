@@ -9,6 +9,7 @@ const ADMIN_PLAN_OPTIONS = [
   { id: 'diaria', period: 'Diária', ms: 24 * 60 * 60 * 1000 },
   { id: 'semana', period: '1 Semana', ms: 7 * 24 * 60 * 60 * 1000 },
   { id: 'mes', period: '1 Mês', ms: 30 * 24 * 60 * 60 * 1000 },
+  { id: 'vitalicio', period: 'Vitalício', ms: 100 * 365 * 24 * 60 * 60 * 1000 },
 ];
 
 function adminSavePlansStore(store) {
@@ -181,6 +182,7 @@ function updateAppNavigation() {
   if (adminMenu) adminMenu.hidden = !admin;
   if (consultasWrap) consultasWrap.hidden = admin;
   syncRevendedorNav();
+  if (typeof syncApiNav === 'function') syncApiNav();
 
   if (brand) {
     brand.setAttribute('title', admin ? 'Dashboard Admin' : 'Módulos');

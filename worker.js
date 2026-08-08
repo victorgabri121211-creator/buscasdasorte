@@ -8,7 +8,11 @@
  *       Nome: API_KEY         | Valor: <sua API Key da Snoop Intelligence>
  *       Nome: MISTICPAY_CI    | Valor: <seu client id da MisticPay>
  *       Nome: MISTICPAY_CS    | Valor: <seu client secret da MisticPay>
- *  4. Salve e faca o Deploy
+ *  4. (Opcional, para limitar chamadas por chave de API de bot) Settings ->
+ *     Bindings -> KV Namespace -> crie um namespace (ex.: "bds-rate-limit") e
+ *     vincule com o nome RATE_LIMIT_KV. Sem esse binding o worker funciona
+ *     normalmente, só sem limite de requisicoes por chave.
+ *  5. Salve e faca o Deploy
  *
  * NUNCA cole os valores reais das chaves neste arquivo - ele fica versionado
  * em repositorio publico. As chaves vivem apenas nas Secrets do Worker.
@@ -28,7 +32,7 @@ const ALLOWED_ORIGINS = [
 
 // Precos canonicos - a fonte da verdade do valor cobrado e o servidor,
 // nunca o valor enviado pelo navegador. Mantenha em sincronia com o site.
-const PLAN_PRICES = { diaria: 8.49, semana: 20.5, mes: 25.5, vitalicio: 150 };
+const PLAN_PRICES = { diaria: 8.49, semana: 20.5, mes: 25.5, vitalicio: 147.9 };
 const RESELLER_PRICES = { '1': 8.49, '10': 49.9, '20': 99.9, '30': 139.9, unlimited: 300 };
 // Conjunto de todos os valores validos (fallback p/ clientes sem productId).
 const VALID_AMOUNTS = Object.values(PLAN_PRICES).concat(Object.values(RESELLER_PRICES));
@@ -64,6 +68,13 @@ const SB_URL_DEFAULT = 'https://tgpyujrkdkgwnkvrckun.supabase.co';
 const ADMIN_USER      = 'Dasorte';
 const TOKEN_TTL_MS    = 24 * 60 * 60 * 1000;      // validade do token: 24h
 const REFRESH_WINDOW_MS = 30 * 24 * 60 * 60 * 1000; // renova sem senha por até 30 dias
+
+// ── Chave de API (uso em bots externos) ─────────────────────────────────────
+// Alternativa ao token de sessao (24h): uma chave fixa por cliente, gerada no
+// painel (bds_get_or_create_api_key / bds_regenerate_api_key), valida
+// enquanto o plano do dono estiver ativo. Ver supabase-api-keys.sql.
+const API_KEY_PREFIX     = 'bds_live_';
+const RATE_LIMIT_PER_MIN = 30; // por chave/usuario autenticado; ajuste se precisar
 
 const _enc = new TextEncoder();
 
@@ -197,6 +208,42 @@ async function authFromRequest(request, env) {
   return payload;
 }
 
+// Confere uma chave de API (bds_live_...) no Supabase — só service_role pode
+// chamar bds_api_key_check (ver supabase-api-keys.sql). Retorna {sub} ou null.
+async function apiKeyFromRequest(request, env) {
+  const h = request.headers.get('Authorization') || '';
+  const m = h.match(/^Bearer\s+(.+)$/i);
+  if (!m || !m[1].startsWith(API_KEY_PREFIX)) return null;
+  const res = await sbRpc(env, 'bds_api_key_check', { p_api_key: m[1] }, true);
+  if (!res || !res.ok || !res.username) return null;
+  return { sub: res.username, apiKey: m[1] };
+}
+
+// Resolve autenticação aceitando tanto o token de sessão (JWT, 24h, usado
+// pelo próprio site) quanto uma chave de API fixa (bds_live_..., usada por
+// bots externos). Retorna {sub, rateKey} ou null.
+async function resolveAuth(request, env) {
+  const jwtPayload = await authFromRequest(request, env);
+  if (jwtPayload) return { sub: jwtPayload.sub, rateKey: 'u:' + jwtPayload.sub };
+  const apiKeyPayload = await apiKeyFromRequest(request, env);
+  if (apiKeyPayload) return { sub: apiKeyPayload.sub, rateKey: 'k:' + apiKeyPayload.apiKey };
+  return null;
+}
+
+// Limite de requisicoes por minuto (janela fixa) via Cloudflare KV. Sem o
+// binding RATE_LIMIT_KV configurado, não aplica limite nenhum (soft — não
+// derruba o worker se o KV nao foi criado ainda).
+async function checkRateLimit(env, rateKey) {
+  if (!env.RATE_LIMIT_KV || !rateKey) return true;
+  const bucket = Math.floor(Date.now() / 60000);
+  const kvKey  = 'rl:' + rateKey + ':' + bucket;
+  let current = 0;
+  try { current = parseInt((await env.RATE_LIMIT_KV.get(kvKey)) || '0', 10) || 0; } catch (_) { return true; }
+  if (current >= RATE_LIMIT_PER_MIN) return false;
+  try { await env.RATE_LIMIT_KV.put(kvKey, String(current + 1), { expirationTtl: 90 }); } catch (_) {}
+  return true;
+}
+
 export default {
   async fetch(request, env, ctx) {
     const origin = allowedOrigin(request);
@@ -236,11 +283,15 @@ export default {
     const apiKey = env.API_KEY || '';
     if (!apiKey) return apiResponse({ error: 'Configuracao interna incorreta.' }, 500, origin);
 
-    // Exige token válido para consultar. Enquanto AUTH_ENFORCE != 'true' fica em
-    // modo SUAVE (não bloqueia) para não derrubar clientes durante a migração.
-    const auth = await authFromRequest(request, env);
+    // Exige token válido (sessão do site) ou chave de API (bot externo) para
+    // consultar. Enquanto AUTH_ENFORCE != 'true' fica em modo SUAVE (não
+    // bloqueia) para não derrubar clientes durante a migração.
+    const auth = await resolveAuth(request, env);
     if (env.AUTH_ENFORCE === 'true' && !auth) {
       return apiResponse({ error: 'Acesso nao autorizado. Faca login com um plano ativo.', code: 'no_auth' }, 401, origin);
+    }
+    if (auth && !(await checkRateLimit(env, auth.rateKey))) {
+      return apiResponse({ error: 'Limite de requisicoes excedido. Tente novamente em instantes.', code: 'rate_limited' }, 429, origin);
     }
 
     const targetUrl = API_BASE + path + url.search;
