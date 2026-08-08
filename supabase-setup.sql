@@ -1,5 +1,10 @@
 -- BuscasDaSorte — Setup do banco de dados Supabase
 -- Cole este SQL inteiro no SQL Editor do seu projeto Supabase e clique em RUN
+--
+-- ORDEM: rode este arquivo primeiro e, em seguida, supabase-admin-security.sql
+-- (ele cria bds_admin_hash(), usada pelas funcoes de admin abaixo — sem ele
+-- as funcoes de admin ficam sem checagem de senha ate voce rodar aquele
+-- arquivo).
 
 -- ── Tabelas ────────────────────────────────────────────────────────────────
 
@@ -131,7 +136,7 @@ end; $$;
 -- Admin: sincronização completa (retorna todos os dados de uma vez)
 create or replace function bds_admin_full_sync(p_hash text)
 returns jsonb language plpgsql security definer as $$
-declare v_hash text := '9dc3eba65b8905b9ea4fb08b06c800de0b35256d0ecfdd80bc59d9713b0bed8c';
+declare v_hash text := bds_admin_hash();
 begin
   if p_hash != v_hash then
     return jsonb_build_object('ok', false, 'msg', 'Unauthorized');
@@ -175,7 +180,7 @@ end; $$;
 -- Admin: ativar plano para usuário
 create or replace function bds_admin_set_plan(p_hash text, p_username text, p_plan_id text, p_period text, p_expires_at bigint)
 returns jsonb language plpgsql security definer as $$
-declare v_hash text := '9dc3eba65b8905b9ea4fb08b06c800de0b35256d0ecfdd80bc59d9713b0bed8c';
+declare v_hash text := bds_admin_hash();
 begin
   if p_hash != v_hash then return jsonb_build_object('ok', false, 'msg', 'Unauthorized'); end if;
   insert into bds_plans(username, plan_id, period, expires_at, granted_by_admin, updated_at)
@@ -189,7 +194,7 @@ end; $$;
 -- Admin: remover plano
 create or replace function bds_admin_clear_plan(p_hash text, p_username text)
 returns jsonb language plpgsql security definer as $$
-declare v_hash text := '9dc3eba65b8905b9ea4fb08b06c800de0b35256d0ecfdd80bc59d9713b0bed8c';
+declare v_hash text := bds_admin_hash();
 begin
   if p_hash != v_hash then return jsonb_build_object('ok', false, 'msg', 'Unauthorized'); end if;
   delete from bds_plans where lower(username) = lower(p_username);
@@ -199,7 +204,7 @@ end; $$;
 -- Admin: configurar acesso de revendedor
 create or replace function bds_admin_set_reseller(p_hash text, p_username text, p_enabled boolean)
 returns jsonb language plpgsql security definer as $$
-declare v_hash text := '9dc3eba65b8905b9ea4fb08b06c800de0b35256d0ecfdd80bc59d9713b0bed8c';
+declare v_hash text := bds_admin_hash();
 begin
   if p_hash != v_hash then return jsonb_build_object('ok', false, 'msg', 'Unauthorized'); end if;
   insert into bds_reseller_access(username, enabled) values(p_username, p_enabled)
@@ -211,7 +216,7 @@ end; $$;
 create or replace function bds_admin_add_credits(p_hash text, p_username text, p_amount integer)
 returns jsonb language plpgsql security definer as $$
 declare
-  v_hash text := '9dc3eba65b8905b9ea4fb08b06c800de0b35256d0ecfdd80bc59d9713b0bed8c';
+  v_hash text := bds_admin_hash();
   v_total integer;
 begin
   if p_hash != v_hash then return jsonb_build_object('ok', false, 'msg', 'Unauthorized'); end if;

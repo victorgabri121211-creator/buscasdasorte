@@ -8,8 +8,21 @@ create table if not exists bds_admin_config (
 );
 alter table bds_admin_config enable row level security;
 
-insert into bds_admin_config(id, admin_hash) values (1, '9dc3eba65b8905b9ea4fb08b06c800de0b35256d0ecfdd80bc59d9713b0bed8c')
+-- NAO coloque aqui o hash real da sua senha de admin — este arquivo fica
+-- versionado em repositorio publico, e um hash exposto pode ser atacado
+-- offline (forca bruta / dicionario) sem limite de tentativas.
+-- Gere o hash da SUA senha (SHA-256, minusculo, hex) no console do navegador:
+--   crypto.subtle.digest('SHA-256', new TextEncoder().encode('SUA_SENHA_AQUI'))
+--     .then(b => console.log(Array.from(new Uint8Array(b)).map(x => x.toString(16).padStart(2,'0')).join('')))
+-- e substitua o placeholder abaixo antes de rodar (ou rode com o
+-- placeholder e troque depois com o UPDATE comentado mais abaixo).
+insert into bds_admin_config(id, admin_hash) values (1, 'REPLACE_WITH_YOUR_OWN_SHA256_ADMIN_HASH')
 on conflict (id) do nothing;
+
+-- Para trocar a senha de admin depois (ex.: rotacionar uma credencial
+-- exposta), rode isto direto no SQL Editor do Supabase — nunca commite o
+-- hash real no repositorio:
+--   update bds_admin_config set admin_hash = 'NOVO_HASH_AQUI' where id = 1;
 
 create or replace function bds_admin_hash() returns text
 language sql security definer stable as $$
